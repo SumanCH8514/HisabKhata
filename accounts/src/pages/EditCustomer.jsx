@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import { useNavigate, useParams } from 'react-router-dom';
 import { dbService, db } from '../services/firebase';
 import { ref, onValue } from 'firebase/database';
+import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 
 const EditCustomer = () => {
     const navigate = useNavigate();
@@ -46,7 +47,8 @@ const EditCustomer = () => {
             await dbService.updateCustomer(id, formData);
             navigate(`/customer/${id}`);
         } catch (err) {
-            setError('Failed to update customer: ' + err.message);
+            setError(getFirebaseErrorMessage(err));
+        } finally {
             setSaving(false);
         }
     };

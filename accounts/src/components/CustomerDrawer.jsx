@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 import { X, ChevronDown } from 'lucide-react';
 
 const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
@@ -42,7 +43,7 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             onClose();
             setName(''); setPhone(''); setEmail(''); setOpeningBalance('');
         } catch (err) {
-            setError('Error: ' + err.message);
+            setError(getFirebaseErrorMessage(err));
         } finally {
             setLoading(false);
         }

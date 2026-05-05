@@ -353,8 +353,8 @@ const LandingPage = () => {
               <ul>
                 <li><a href="#">Help Center</a></li>
                 <li><a href="#">Blog</a></li>
-                <li><a href="#">Terms of Service</a></li>
-                <li><a href="#">Privacy Policy</a></li>
+                <li><Link to="/terms-of-condition">Terms of Service</Link></li>
+                <li><Link to="/privacy-policy">Privacy Policy</Link></li>
               </ul>
             </div>
             <div className="footer-links">
@@ -368,8 +368,8 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 HisabKhata. All rights reserved.</p>
-            <p>Made with ❤️ for Indian Businesses</p>
+            <p>&copy; {new Date().getFullYear()} HisabKhata. All rights reserved.</p>
+            <p>Made with ❤️ by SumanOnline Web Services</p>
           </div>
         </div>
       </footer>

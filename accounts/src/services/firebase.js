@@ -1,5 +1,6 @@
+
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { getDatabase, ref, set, get, push, update, remove, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 const firebaseConfig = {
@@ -18,9 +19,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-/**
- * Helper to send emails from frontend using EmailJS.
- */
+
 const sendEmailNotification = async (templateParams) => {
   try {
     // Basic email validation
@@ -79,45 +78,78 @@ export const authService = {
 
     return user;
   },
+  resetPassword: async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error("Password reset failed:", error.code, error.message);
+      throw error;
+    }
+  },
+  sendVerification: async () => {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+      }
+    } catch (error) {
+      console.error("Email verification failed:", error.code, error.message);
+      throw error;
+    }
+  },
   login: async (email, password) => {
-    return await signInWithEmailAndPassword(auth, email, password);
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Login failed:", error.code, error.message);
+      throw error;
+    }
   },
   logout: async () => {
-    return await signOut(auth);
+    try {
+      return await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+      throw error;
+    }
   },
   onAuthStateChanged: (callback) => {
     return onAuthStateChanged(auth, callback);
   },
   loginWithGoogle: async () => {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-    // Check if user already exists in DB
-    const userSnap = await get(ref(db, `users/${user.uid}`));
+      // Check if user already exists in DB
+      const userSnap = await get(ref(db, `users/${user.uid}`));
 
-    if (!userSnap.exists()) {
-      // New user from Google, create profile
-      await set(ref(db, `users/${user.uid}`), {
-        name: user.displayName || 'Google User',
-        email: user.email,
-        photoURL: user.photoURL || '',
-        phone: user.phoneNumber || '',
-        role: 'user',
-        createdAt: Date.now()
-      });
+      if (!userSnap.exists()) {
+        // New user from Google, create profile
+        await set(ref(db, `users/${user.uid}`), {
+          name: user.displayName || 'Google User',
+          email: user.email,
+          photoURL: user.photoURL || '',
+          phone: user.phoneNumber || '',
+          role: 'user',
+          createdAt: Date.now()
+        });
 
-      // Send Welcome Email
-      sendEmailNotification({
-        to_email: user.email,
-        to_name: user.displayName || 'Google User',
-        subject: 'Welcome to HisabKhata!',
-        message: `Hello ${user.displayName || 'User'}, welcome to HisabKhata! We are excited to help you manage your financial ledger securely.`,
-        type: 'WELCOME'
-      });
+        // Send Welcome Email
+        sendEmailNotification({
+          to_email: user.email,
+          to_name: user.displayName || 'Google User',
+          subject: 'Welcome to HisabKhata!',
+          message: `Hello ${user.displayName || 'User'}, welcome to HisabKhata! We are excited to help you manage your financial ledger securely.`,
+          type: 'WELCOME'
+        });
+      }
+
+      return user;
+    } catch (error) {
+      console.error("Google Login failed:", error.code, error.message);
+      throw error;
     }
-
-    return user;
   }
 };
 
@@ -161,7 +193,12 @@ export const dbService = {
   },
 
   updateCustomer: async (customerId, customerData) => {
-    await update(ref(db, `customers/${customerId}`), { ...customerData, updatedAt: Date.now() });
+    try {
+      await update(ref(db, `customers/${customerId}`), { ...customerData, updatedAt: Date.now() });
+    } catch (error) {
+      console.error("Update customer failed:", error.message);
+      throw error;
+    }
   },
 
   deleteCustomer: async (customerId) => {
@@ -234,12 +271,17 @@ export const dbService = {
       balance: newBalance,
       timestamp: Date.now()
     };
-    await set(transactionRef, newTransaction);
+    try {
+      await set(transactionRef, newTransaction);
 
-    await update(ref(db, `customers/${customerId}`), {
-      balance: newBalance,
-      updatedAt: Date.now()
-    });
+      await update(ref(db, `customers/${customerId}`), {
+        balance: newBalance,
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error("Add transaction failed:", error.message);
+      throw error;
+    }
 
     // Send Transaction Alert
     if (customerEmail) {
@@ -408,7 +450,12 @@ export const dbService = {
   },
 
   updateGlobalSettings: async (settings) => {
-    await update(ref(db, 'settings'), settings);
+    try {
+      await update(ref(ref(db, 'settings')), settings);
+    } catch (error) {
+      console.error("Update settings failed:", error.message);
+      throw error;
+    }
   },
 
   // User Management

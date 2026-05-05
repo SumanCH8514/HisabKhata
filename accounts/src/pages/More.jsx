@@ -82,16 +82,13 @@ const More = () => {
             <Sidebar />
 
             <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
-                {/* Mobile Header - Standard Branding */}
-                <div className="md:hidden bg-white px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                            <BookText size={18} className="text-white" />
+                {/* Mobile Header — Branding */}
+                <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
                         </div>
-                        <div className="flex items-center">
-                            <span className="text-[#0051bb] font-black text-lg tracking-tight">Hisab Khata</span>
-                            <span className="text-orange-500 font-black italic text-lg ml-1.5 uppercase">PRO</span>
-                        </div>
+                        <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
                     </div>
                 </div>
 

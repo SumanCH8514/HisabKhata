@@ -11,7 +11,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Customers = () => {
-    const { currentUser, globalSettings } = useAuth();
+    const { currentUser, globalSettings, sendVerification } = useAuth();
+    const [verificationSent, setVerificationSent] = useState(false);
+    const [verifying, setVerifying] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -178,6 +180,19 @@ const Customers = () => {
         window.open(smsUrl, '_blank');
     };
 
+    const handleResendVerification = async () => {
+        setVerifying(true);
+        try {
+            await sendVerification();
+            setVerificationSent(true);
+            setTimeout(() => setVerificationSent(false), 5000);
+        } catch (error) {
+            console.error('Failed to resend verification:', error);
+        } finally {
+            setVerifying(false);
+        }
+    };
+
     const getInitialColor = (name) => {
         const colors = ['#ef5350', '#ec407a', '#ab47bc', '#7e57c2', '#5c6bc0', '#42a5f5', '#26c6da', '#26a69a', '#66bb6a', '#d4e157', '#ffa726', '#ff7043'];
         const idx = (name?.charCodeAt(0) || 0) % colors.length;
@@ -189,7 +204,32 @@ const Customers = () => {
             <Sidebar />
 
             {/* Main content area */}
-            <div className="flex flex-1 ml-0 md:ml-[260px] overflow-hidden relative">
+            <div className="flex flex-col flex-1 ml-0 md:ml-[260px] overflow-hidden relative">
+                
+                {/* Email Verification Banner */}
+                {currentUser && !currentUser.emailVerified && (
+                    <div className="bg-orange-50 border-b border-orange-100 px-4 py-2 flex items-center justify-between z-30">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-orange-500 text-lg">warning</span>
+                            <p className="text-xs text-orange-800 font-medium">
+                                Please verify your email to secure your account.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={handleResendVerification}
+                            disabled={verifying || verificationSent}
+                            className={`text-xs font-bold px-3 py-1 rounded transition-all ${
+                                verificationSent 
+                                ? 'text-green-600 bg-green-50' 
+                                : 'text-orange-600 hover:bg-orange-100 bg-white border border-orange-200'
+                            }`}
+                        >
+                            {verifying ? 'Sending...' : verificationSent ? 'Email Sent!' : 'Resend Email'}
+                        </button>
+                    </div>
+                )}
+
+                <div className="flex flex-1 overflow-hidden relative">
 
                 {/* Middle pane: Customer List — ~640px like Khatabook */}
                 <div className={`flex flex-col w-full md:w-[640px] bg-white border-r border-gray-200 flex-shrink-0 ${selectedCustomer ? 'hidden md:flex' : 'flex'}`}>
@@ -843,6 +883,7 @@ const Customers = () => {
                             </div>
                         </>
                     )}
+                </div>
                 </div>
             </div>
 

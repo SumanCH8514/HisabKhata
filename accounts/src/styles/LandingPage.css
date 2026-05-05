@@ -385,6 +385,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
   color: #98A2B3;
   font-size: 0.9rem;
 }
@@ -474,6 +476,11 @@
   .landing-page .footer-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+  .landing-page .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
   }
 }
 

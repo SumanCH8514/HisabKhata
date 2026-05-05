@@ -66,6 +66,8 @@ export const AuthProvider = ({ children }) => {
         isBlocked: userData?.isBlocked === true,
         login,
         register,
+        resetPassword: authService.resetPassword,
+        sendVerification: authService.sendVerification,
         loginWithGoogle: authService.loginWithGoogle,
         logout
     };

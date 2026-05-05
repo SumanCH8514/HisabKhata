@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 import { ArrowLeft, Calendar, Camera, ChevronDown } from 'lucide-react';
 
 const AddTransaction = () => {
@@ -51,7 +52,7 @@ const AddTransaction = () => {
             navigate(`/customer/${customerId}`);
         } catch (err) {
             console.error(err);
-            setError('Failed to save transaction: ' + err.message);
+            setError(getFirebaseErrorMessage(err));
             setLoading(false);
         }
     };

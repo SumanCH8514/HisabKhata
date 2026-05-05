@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "users": {
+      // Allow admin to see all users
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$userId": {
+        // Profiles are public for shareable statement contact info
+        ".read": "true",
+        ".write": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+    "customers": {
+      // Authenticated users can list their own customers
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (query.orderByChild === 'userId' && query.equalTo === auth.uid))",
+      "$customerId": {
+        // Individual customer nodes are public for shareable statements
+        ".read": "true",
+        ".write": "auth != null && (data.exists() ? (data.child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin') : true)"
+      },
+      ".write": "auth != null",
+      ".indexOn": ["userId"]
+    },
+    "transactions": {
+      // Allow public read ONLY when querying by customerId (for shareable links)
+      // Also allow authenticated users to list their own transactions
+      ".read": "(query.orderByChild === 'customerId' && query.equalTo != null) || (auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (query.orderByChild === 'userId' && query.equalTo === auth.uid)))",
+      ".write": "auth != null",
+      ".indexOn": ["customerId", "userId"]
+    },
+    "settings": {
+      ".read": "true",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "hisabkhata-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix accounts",
+    "build": "npm run build --prefix accounts",
+    "install:all": "npm install --prefix accounts && npm install --prefix functions"
+  }
+}

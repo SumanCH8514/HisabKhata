@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "hisabkhata-sumanonline"
+  },
+  "targets": {
+    "hisabkhata-sumanonline": {
+      "hosting": {
+        "accounts": [
+          "hisabkhata-sumanonline"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -1,14 +1,16 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/HisabKhata_logo.png';
 import '../styles/LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [openFaq, setOpenFaq] = React.useState(null);
 
   useEffect(() => {
-    // Scroll Animations
+    // ... existing scroll animation logic ...
     const observerOptions = {
       threshold: 0.1
     };
@@ -33,12 +35,14 @@ const LandingPage = () => {
     // Navbar Scroll Effect
     const handleScroll = () => {
       const nav = document.querySelector('.landing-page nav');
-      if (window.scrollY > 50) {
-        nav.style.padding = '10px 0';
-        nav.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-      } else {
-        nav.style.padding = '20px 0';
-        nav.style.boxShadow = 'none';
+      if (nav) {
+        if (window.scrollY > 50) {
+          nav.style.padding = '10px 0';
+          nav.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+        } else {
+          nav.style.padding = '20px 0';
+          nav.style.boxShadow = 'none';
+        }
       }
     };
 
@@ -47,7 +51,7 @@ const LandingPage = () => {
     // Stat Counter Animation
     const statsSection = document.querySelector('.stats');
     const statsObserver = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
+      if (entries[0] && entries[0].isIntersecting) {
         animateCounters();
         statsObserver.unobserve(statsSection);
       }
@@ -78,7 +82,7 @@ const LandingPage = () => {
       });
     };
 
-    statsObserver.observe(statsSection);
+    if (statsSection) statsObserver.observe(statsSection);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -102,7 +106,11 @@ const LandingPage = () => {
             <a href="#faq">FAQ</a>
           </div>
           <div className="nav-actions">
-            <button className="btn btn-login" onClick={() => navigate('/login')}>Login</button>
+            {currentUser ? (
+              <button className="btn btn-login" onClick={() => navigate('/customers')}>Dashboard</button>
+            ) : (
+              <button className="btn btn-login" onClick={() => navigate('/login')}>Login</button>
+            )}
             <button className="btn btn-primary">Download App</button>
           </div>
         </div>
@@ -118,12 +126,19 @@ const LandingPage = () => {
               India's most trusted digital ledger. 100% Secure. 100% Free.
             </p>
             <div className="hero-cta">
-              <button className="btn btn-google-hero" onClick={() => navigate('/login')}>
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
-                Get started with Google Mail
-              </button>
+              {currentUser ? (
+                <button className="btn btn-google-hero" onClick={() => navigate('/reports')}>
+                  <span className="material-symbols-outlined" style={{ marginRight: '8px' }}>dashboard</span>
+                  Open Dashboard
+                </button>
+              ) : (
+                <button className="btn btn-google-hero" onClick={() => navigate('/login')}>
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+                  Get started with Google Mail
+                </button>
+              )}
               <p style={{ fontSize: '0.85rem', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                No credit card required • Instant access
+                {currentUser ? 'Welcome back! Manage your ledger instantly.' : 'No credit card required • Instant access'}
               </p>
             </div>
           </div>
@@ -326,8 +341,12 @@ const LandingPage = () => {
         <div className="container">
           <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Ready to Grow Your Business?</h2>
           <p style={{ fontSize: '1.2rem', marginBottom: '2.5rem', opacity: '0.9' }}>Join thousands of smart merchants who have already switched to HisabKhata.</p>
-          <button className="btn btn-primary" style={{ background: 'white', color: 'var(--primary-blue)', padding: '1rem 3rem', fontSize: '1.1rem' }} onClick={() => navigate('/signup')}>
-            Get Started for Free
+          <button
+            className="btn btn-primary"
+            style={{ background: 'white', color: 'var(--primary-blue)', padding: '1rem 3rem', fontSize: '1.1rem' }}
+            onClick={() => navigate(currentUser ? '/customers' : '/signup')}
+          >
+            {currentUser ? 'Open Dashboard' : 'Get Started for Free'}
           </button>
         </div>
       </section>

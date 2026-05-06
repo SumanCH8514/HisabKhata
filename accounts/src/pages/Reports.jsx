@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import { dbService } from '../services/firebase';
@@ -8,7 +9,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const Reports = () => {
-    const { currentUser, globalSettings } = useAuth();
+    const { currentUser, userData, globalSettings } = useAuth();
     const [transactions, setTransactions] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -46,7 +47,10 @@ const Reports = () => {
         let start = new Date();
         let end = new Date();
 
-        if (val === 'This Month') {
+        if (val === 'All') {
+            start = new Date(0); // Beginning of time
+            end = now;
+        } else if (val === 'This Month') {
             start = new Date(now.getFullYear(), now.getMonth(), 1);
             end = now;
         } else if (val === 'Last Month') {
@@ -92,29 +96,139 @@ const Reports = () => {
         return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    const sanitizeText = (text) => {
+        if (!text) return '-';
+        return text.replace(/[^\x00-\x7F]/g, ' ')
+                   .replace(/\s+/g, ' ')
+                   .trim();
+    };
+
     const handleDownloadPDF = () => {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text('Transaction Report', 14, 22);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // --- HEADER & BRANDING ---
+        doc.setFillColor(0, 87, 187); // Primary Blue
+        doc.rect(0, 0, pageWidth, 45, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("Hisab ", 15, 18);
+        const hisabWidth = doc.getTextWidth("Hisab ");
+        doc.setTextColor(255, 165, 0); // Orange
+        doc.text("Khata", 15 + hisabWidth, 18);
+
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
-        doc.text(`Period: ${startDate} to ${endDate}`, 14, 30);
-        doc.text(`Total Entries: ${filteredTx.length}`, 14, 35);
+        doc.setFont("helvetica", "bold");
+        doc.text("TRANSACTION REPORT", 15, 28);
         
-        const tableData = filteredTx.map(tx => [
-            formatDate(tx.timestamp || tx.date),
-            getCustomerName(tx.customerId),
-            tx.description || '-',
-            tx.amount < 0 || tx.type === 'GAVE' ? `Rs. ${Math.abs(tx.amount)}` : '-',
-            tx.amount > 0 || tx.type === 'GOT' ? `Rs. ${tx.amount}` : '-'
-        ]);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        const dateRangeText = `Statement for: ${new Date(startDate).toLocaleDateString('en-GB')} to ${new Date(endDate).toLocaleDateString('en-GB')}`;
+        doc.text(dateRangeText, 15, 34);
+
+        // Merchant Name (top right)
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        const merchantName = (userData?.businessName || currentUser?.displayName || 'Merchant').toUpperCase();
+        const mWidth = doc.getTextWidth(merchantName);
+        doc.text(merchantName, pageWidth - mWidth - 15, 18);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        const mPhone = userData?.phone || "";
+        const pWidth = doc.getTextWidth(mPhone);
+        if(mPhone) doc.text(mPhone, pageWidth - pWidth - 15, 24);
+
+        // --- SUMMARY BOX ---
+        const summaryY = 52;
+        doc.setDrawColor(220, 220, 220);
+        doc.setFillColor(252, 252, 252);
+        doc.roundedRect(10, summaryY, pageWidth - 20, 25, 2, 2, 'FD');
+
+        // Dividers
+        doc.line(pageWidth * 0.33, summaryY + 5, pageWidth * 0.33, summaryY + 20);
+        doc.line(pageWidth * 0.66, summaryY + 5, pageWidth * 0.66, summaryY + 20);
+
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        doc.text("Total Debit(-)", 15, summaryY + 7);
+        doc.text("Total Credit(+)", pageWidth * 0.33 + 5, summaryY + 7);
+        doc.text("Net Balance", pageWidth * 0.66 + 5, summaryY + 7);
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Rs. ${totalGive.toLocaleString('en-IN')}.00`, 15, summaryY + 15);
+        doc.text(`Rs. ${totalGot.toLocaleString('en-IN')}.00`, pageWidth * 0.33 + 5, summaryY + 15);
+        
+        // Net Balance Styling
+        const isDr = netBalance < 0;
+        if (isDr) {
+            doc.setTextColor(185, 28, 28); // Deeper red for Dr
+        } else {
+            doc.setTextColor(22, 163, 74); // Green for Cr
+        }
+        doc.text(`Rs. ${Math.abs(netBalance).toLocaleString('en-IN')}.00 ${isDr ? 'Dr' : 'Cr'}`, pageWidth * 0.66 + 5, summaryY + 15);
+        
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(150, 150, 150);
+        doc.text(`(Total Entries: ${filteredTx.length})`, 15, summaryY + 21);
+        doc.text(`(Net ${isDr ? 'Debit' : 'Credit'})`, pageWidth * 0.66 + 5, summaryY + 21);
+
+        // --- TABLE ---
+        const tableData = filteredTx.map(tx => {
+            const isGave = tx.amount < 0 || tx.type === 'GAVE';
+            const amount = Math.abs(tx.amount);
+            return [
+                formatDate(tx.timestamp || tx.date),
+                sanitizeText(getCustomerName(tx.customerId)),
+                sanitizeText(tx.description),
+                isGave ? `Rs. ${amount}.00` : '-',
+                !isGave ? `Rs. ${amount}.00` : '-'
+            ];
+        });
 
         autoTable(doc, {
-            startY: 45,
-            head: [['Date', 'Customer Name', 'Details', 'You Gave', 'You Got']],
+            startY: 85,
+            head: [['DATE', 'CUSTOMER NAME', 'DETAILS', 'DEBIT (-)', 'CREDIT (+)']],
             body: tableData,
             theme: 'striped',
-            headStyles: { fillColor: '#0057BB' }
+            headStyles: { 
+                fillColor: [240, 240, 240], 
+                textColor: [80, 80, 80], 
+                fontSize: 8, 
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            bodyStyles: { fontSize: 8, textColor: [50, 50, 50], cellPadding: 4 },
+            columnStyles: {
+                0: { cellWidth: 25, halign: 'center' },
+                1: { cellWidth: 40 },
+                2: { cellWidth: 'auto' },
+                3: { cellWidth: 25, halign: 'right', fillColor: [255, 249, 249] },
+                4: { cellWidth: 25, halign: 'right', fillColor: [249, 255, 249] }
+            }
         });
+
+        // --- FOOTER ---
+        const footerY = pageHeight - 15;
+        doc.setFillColor(0, 50, 120);
+        doc.rect(0, footerY, pageWidth, 15, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.text("Start Using HisabKhata.", 10, footerY + 8);
+
+        // Help and T&C
+        doc.text(`Need Help: +91-8918153949`, pageWidth - 65, footerY + 6);
+        const tcText = "T&C Apply";
+        const tcWidth = doc.getTextWidth(tcText);
+        doc.text(tcText, pageWidth - tcWidth - 10, footerY + 12);
+        doc.link(pageWidth - tcWidth - 10, footerY + 9, tcWidth, 4, { url: 'https://hisabkhata.sumanonline.com/terms-of-condition' });
 
         doc.save(`HisabKhata_Report_${startDate}_to_${endDate}.pdf`);
     };
@@ -234,6 +348,7 @@ const Reports = () => {
                                     value={period}
                                     onChange={e => handlePeriodChange(e.target.value)}
                                 >
+                                    <option>All</option>
                                     <option>This Month</option>
                                     <option>Last Month</option>
                                     <option>Last 7 Days</option>
@@ -319,7 +434,11 @@ const Reports = () => {
                                         return (
                                             <tr key={tx.id || idx} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="px-6 py-5 text-[13px] font-medium text-gray-700">{formatDate(tx.timestamp || tx.date)}</td>
-                                                <td className="px-6 py-5 text-[13px] font-bold text-gray-800">{getCustomerName(tx.customerId)}</td>
+                                                <td className="px-6 py-5 text-[13px] font-bold text-gray-800">
+                                                    <Link to={`/reports/customer/${tx.customerId}`} className="hover:text-blue-600 transition-colors">
+                                                        {getCustomerName(tx.customerId)}
+                                                    </Link>
+                                                </td>
                                                 <td className="px-6 py-5 text-[13px] text-gray-500 truncate max-w-[200px]">{tx.description || '-'}</td>
                                                 <td className="px-6 py-5 text-right text-[14px] font-bold text-red-500">
                                                     {isGave ? `₹${absAmt.toLocaleString('en-IN')}` : '-'}
@@ -343,7 +462,11 @@ const Reports = () => {
                                 const absAmt = Math.abs(tx.amount);
                                 const custName = getCustomerName(tx.customerId);
                                 return (
-                                    <div key={tx.id || idx} className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm active:bg-gray-50 transition-colors">
+                                    <Link 
+                                        to={`/reports/customer/${tx.customerId}`}
+                                        key={tx.id || idx} 
+                                        className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm active:bg-gray-50 transition-colors"
+                                    >
                                         <div className="flex items-center gap-3 min-w-0">
                                             <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-[#0057BB] font-black flex-shrink-0 border border-blue-50">
                                                 {custName.charAt(0).toUpperCase()}
@@ -362,7 +485,7 @@ const Reports = () => {
                                                 {isGave ? 'GAVE' : 'GOT'}
                                             </span>
                                         </div>
-                                    </div>
+                                    </Link>
                                 );
                             })}
                         </div>

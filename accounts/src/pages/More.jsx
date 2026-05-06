@@ -3,18 +3,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
-import { 
-    ChevronRight, 
-    Settings, 
-    Banknote, 
-    BookText, 
-    FileText, 
-    Package, 
-    Users, 
-    CalendarClock, 
-    ShieldCheck, 
+import {
+    ChevronRight,
+    Settings,
+    Banknote,
+    BookText,
+    FileText,
+    Package,
+    Users,
+    CalendarClock,
+    ShieldCheck,
     Wallet
 } from 'lucide-react';
+import { calculateProfileStrength } from '../utils/profileUtils';
 
 const More = () => {
     const { currentUser, userData, isAdmin } = useAuth();
@@ -24,43 +25,7 @@ const More = () => {
     const shopName = userData?.businessName || userData?.name || 'My Shop';
     const initial = (displayName.charAt(0) || 'M').toUpperCase();
 
-    const calculateStrength = () => {
-        if (!userData) return { percentage: 0, label: 'Weak', color: 'text-red-500', barColor: 'bg-red-500' };
-        
-        const fields = [
-            userData.photoURL,
-            userData.name,
-            userData.phone || userData.mobile,
-            userData.businessName,
-            userData.address,
-            userData.category,
-            userData.type,
-            userData.gstin,
-            userData.bankAccount,
-            userData.staffDetails
-        ];
-        
-        const filledFields = fields.filter(f => f && f.toString().trim() !== '').length;
-        const percentage = Math.round((filledFields / fields.length) * 100);
-        
-        let label = 'Weak';
-        let color = 'text-red-500';
-        let barColor = 'bg-red-500';
-        
-        if (percentage > 70) {
-            label = 'Strong';
-            color = 'text-green-600';
-            barColor = 'bg-green-500';
-        } else if (percentage > 30) {
-            label = 'Good';
-            color = 'text-yellow-600';
-            barColor = 'bg-yellow-500';
-        }
-        
-        return { percentage, label, color, barColor };
-    };
-
-    const strength = calculateStrength();
+    const strength = calculateProfileStrength(userData);
 
     const menuItems = [
         { id: 'loans', label: 'Loans', icon: <Banknote size={24} />, color: 'bg-green-50 text-green-600' },
@@ -83,13 +48,23 @@ const More = () => {
 
             <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
                 {/* Mobile Header — Branding */}
-                <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+                <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
                             <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
                         </div>
                         <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
                     </div>
+                    <button
+                        onClick={async () => {
+                            const { authService } = await import('../services/firebase');
+                            await authService.logout();
+                            navigate('/login');
+                        }}
+                        className="p-1 rounded text-gray-500 active:bg-gray-100"
+                    >
+                        <span className="material-symbols-outlined">logout</span>
+                    </button>
                 </div>
 
                 <main className="flex-1 max-w-2xl mx-auto w-full p-4 md:p-8 space-y-6">
@@ -98,7 +73,12 @@ const More = () => {
                         <div className="flex items-center gap-3 md:gap-4 min-w-0">
                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-pink-500 border-2 border-pink-100 flex items-center justify-center text-white text-xl font-black overflow-hidden shadow-sm flex-shrink-0">
                                 {userData?.photoURL ? (
-                                    <img src={userData.photoURL} alt="Shop" className="w-full h-full object-cover" />
+                                    <img 
+                                        key={userData.photoURL}
+                                        src={userData.photoURL} 
+                                        alt="Shop" 
+                                        className="w-full h-full object-cover" 
+                                    />
                                 ) : (
                                     initial
                                 )}
@@ -108,7 +88,7 @@ const More = () => {
                                 <p className="text-xs md:text-sm font-bold text-slate-400 truncate">{displayName}</p>
                             </div>
                         </div>
-                        <button 
+                        <button
                             onClick={() => navigate('/profile')}
                             className="ml-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-lg text-xs md:text-sm font-black hover:bg-blue-50 transition-colors flex-shrink-0 whitespace-nowrap"
                         >
@@ -130,7 +110,7 @@ const More = () => {
                     {/* Utilities Grid */}
                     <div className="grid grid-cols-3 gap-3">
                         {menuItems.map((item) => (
-                            <div 
+                            <div
                                 key={item.id}
                                 onClick={() => item.id === 'admin' ? navigate('/admin') : null}
                                 className="bg-white p-4 py-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
@@ -141,7 +121,7 @@ const More = () => {
                                 <span className="text-[11px] font-black text-slate-700 text-center leading-tight">
                                     {item.label}
                                 </span>
-                                
+
                                 {/* Coming Soon Badge */}
                                 {item.id !== 'admin' && (
                                     <div className="absolute top-0 right-0 bg-slate-100 text-slate-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-tighter">
@@ -154,7 +134,7 @@ const More = () => {
 
                     {/* Bottom Settings Link */}
                     <div className="pt-4">
-                        <button 
+                        <button
                             onClick={() => navigate('/settings')}
                             className="w-full bg-white px-5 py-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group active:bg-slate-50 transition-colors"
                         >
@@ -185,7 +165,7 @@ const More = () => {
                         <div className="text-center">
                             <p className="text-[11px] font-black text-slate-400 tracking-tighter uppercase">HisabKhata V0.1.4</p>
                         </div>
-                        
+
                         <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-4">
                             <Link to="/privacy-policy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
                             <Link to="/terms-of-condition" className="hover:text-blue-600 transition-colors">Terms of Condition</Link>

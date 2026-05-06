@@ -18,6 +18,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import { calculateProfileStrength } from '../utils/profileUtils';
+import { compressImage } from '../utils/imageUtils';
 
 const Profile = () => {
     const { currentUser } = useAuth();
@@ -25,6 +27,7 @@ const Profile = () => {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingField, setEditingField] = useState({ key: '', label: '', value: '' });
+    const [isUploading, setIsUploading] = useState(false);
     const [profileData, setProfileData] = useState({
         name: '',
         phone: '',
@@ -50,7 +53,7 @@ const Profile = () => {
                         phone: data.phone || data.mobile || '',
                         email: data.email || '',
                         photoURL: data.photoURL || '',
-                        businessName: data.businessName || data.name || ''
+                        businessName: data.businessName || ''
                     }));
                 }
             });
@@ -58,18 +61,19 @@ const Profile = () => {
         }
     }, [currentUser]);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 500000) {
-                alert("Image is too large. Please select an image under 500KB.");
-                return;
+            setIsUploading(true);
+            try {
+                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
+                await dbService.updateUserProfile(currentUser.uid, { photoURL: compressedBase64 });
+            } catch (error) {
+                console.error("Photo processing/upload failed:", error);
+                alert("Failed to process or upload photo. Please try again.");
+            } finally {
+                setIsUploading(false);
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                dbService.updateUserProfile(currentUser.uid, { photoURL: reader.result });
-            };
-            reader.readAsDataURL(file);
         }
     };
 
@@ -95,86 +99,83 @@ const Profile = () => {
         }
     };
 
-    const calculateStrength = () => {
-        const fields = [
-            profileData.photoURL,
-            profileData.name,
-            profileData.phone,
-            profileData.businessName,
-            profileData.address,
-            profileData.category,
-            profileData.type,
-            profileData.gstin,
-            profileData.bankAccount,
-            profileData.staffDetails
-        ];
-        const filledFields = fields.filter(f => f && f.toString().trim() !== '').length;
-        const percentage = Math.round((filledFields / fields.length) * 100);
-        
-        let label = 'Weak';
-        let color = 'text-red-500';
-        let barColor = 'bg-red-500';
-        
-        if (percentage > 70) {
-            label = 'Strong';
-            color = 'text-green-600';
-            barColor = 'bg-green-500';
-        } else if (percentage > 30) {
-            label = 'Good';
-            color = 'text-yellow-600';
-            barColor = 'bg-yellow-500';
-        }
-        
-        return { percentage, label, color, barColor };
-    };
-
-    const strength = calculateStrength();
+    const strength = calculateProfileStrength(profileData);
 
     const initial = (profileData.name?.charAt(0) || currentUser?.email?.charAt(0) || 'M').toUpperCase();
 
     const SectionHeader = ({ title }) => (
-        <div className="bg-slate-50 px-4 py-2 mt-4 first:mt-0 border-y border-slate-100">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</h3>
+        <div className="bg-slate-50 px-6 py-3 mt-6 first:mt-0 border-y border-slate-100">
+            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</h3>
         </div>
     );
 
     const ProfileItem = ({ icon: Icon, label, value, fieldKey }) => (
         <div 
             onClick={() => openEditModal(fieldKey, label, value)}
-            className="flex items-center gap-4 px-4 py-4 bg-white border-b border-slate-50 active:bg-slate-50 transition-colors cursor-pointer group"
+            className="flex items-center gap-4 px-6 py-5 bg-white border-b border-slate-50 active:bg-slate-50 transition-colors cursor-pointer group"
         >
-            <div className="text-slate-400 group-active:text-blue-600 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-active:bg-blue-600 group-active:text-white transition-all">
                 <Icon size={18} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight mb-0.5">{label}</p>
-                <p className="text-sm font-bold text-slate-800 truncate">{value || 'Tap to set'}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight mb-0.5">{label}</p>
+                <p className="text-sm font-bold text-slate-900 truncate">{value || 'Tap to set'}</p>
             </div>
-            <ChevronRight size={16} className="text-slate-300" />
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-400 transition-colors" />
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-white flex overflow-hidden">
-            {/* Sidebar Desktop */}
+        <div className="min-h-screen bg-[#F8FAFC] flex overflow-hidden">
             <Sidebar />
 
-            <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col bg-slate-50 relative h-screen overflow-y-auto">
-                {/* Mobile Header */}
-                <div className="bg-[#0051bb] px-4 py-4 flex items-center gap-4 text-white shadow-md sticky top-0 z-30">
-                    <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-                        <ArrowLeft size={24} />
+            <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col relative h-screen overflow-y-auto">
+                {/* Mobile Branded Header - Ultra Compact */}
+                <div className="md:hidden flex items-center justify-between px-4 py-1.5 bg-white border-b border-gray-100 sticky top-0 z-30">
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-[#0057BB] rounded-md flex items-center justify-center shadow-sm">
+                            <span className="material-symbols-outlined text-white text-[16px]">account_balance_wallet</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-[#0057BB] font-black text-[15px] tracking-tight">Hisab Khata</span>
+                            <span className="text-[#FF6B00] font-black italic text-[10px]">PRO</span>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                     </button>
-                    <h1 className="text-lg font-black tracking-tight">Book Profile</h1>
+                </div>
+
+                {/* Page Title — High Fidelity Branding */}
+                <div className="bg-white border-b border-gray-200 px-6 py-2 md:py-3 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-100 shrink-0">
+                        <span className="material-symbols-outlined text-white text-[22px]">person_outline</span>
+                    </div>
+                    <div>
+                        <h1 className="text-[17px] md:text-[19px] font-black text-gray-900 tracking-tight leading-none uppercase">Profile</h1>
+                        <p className="text-[#8eacc0] text-[10px] mt-1 uppercase tracking-[0.2em] font-black leading-none">Business Identity</p>
+                    </div>
                 </div>
 
                 <main className="max-w-2xl mx-auto w-full bg-white min-h-screen shadow-sm relative z-10">
                     {/* Photo & Strength Section */}
-                    <div className="pt-8 pb-4 flex flex-col items-center border-b border-slate-100">
-                        <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-upload').click()}>
-                            <div className="w-24 h-24 rounded-full bg-pink-500 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-3xl font-black text-white">
-                                {profileData.photoURL ? (
-                                    <img src={profileData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                    <div className="pt-8 pb-6 flex flex-col items-center border-b border-slate-100 bg-white">
+                        <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('avatar-upload').click()}>
+                            <div className="w-24 h-24 rounded-full bg-pink-500 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-3xl font-black text-white relative">
+                                {isUploading ? (
+                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    </div>
+                                ) : profileData.photoURL ? (
+                                    <img 
+                                        key={profileData.photoURL} // Force refresh on URL change
+                                        src={profileData.photoURL} 
+                                        alt="Profile" 
+                                        className="w-full h-full object-cover" 
+                                    />
                                 ) : (
                                     initial
                                 )}
@@ -191,10 +192,11 @@ const Profile = () => {
                             />
                         </div>
                         <button 
-                            onClick={() => document.getElementById('avatar-upload').click()}
-                            className="mt-3 text-blue-600 text-xs font-black uppercase tracking-wider hover:underline"
+                            onClick={() => !isUploading && document.getElementById('avatar-upload').click()}
+                            className="mt-3 text-blue-600 text-xs font-black uppercase tracking-wider hover:underline disabled:opacity-50"
+                            disabled={isUploading}
                         >
-                            Edit photo
+                            {isUploading ? 'Uploading...' : 'Edit photo'}
                         </button>
 
                         <div className="w-full px-6 mt-6 space-y-2">

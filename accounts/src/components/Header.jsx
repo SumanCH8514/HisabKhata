@@ -23,9 +23,11 @@ const Header = () => {
                 <button className="p-1 rounded text-gray-500 hover:bg-gray-100" onClick={() => setIsDrawerOpen(true)}>
                     <span className="material-symbols-outlined">menu</span>
                 </button>
-                <div className="flex items-center gap-1.5">
-                    <span className="text-lg font-bold tracking-tight text-gray-900">HisabKhata</span>
-                    <span className="pro-badge">PRO</span>
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
+                        <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
+                    </div>
+                    <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
                 </div>
             </div>
             <button onClick={handleLogout} className="p-1 rounded text-gray-500 hover:bg-gray-100">

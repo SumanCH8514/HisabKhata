@@ -39,12 +39,10 @@ const SignUp = () => {
         try {
             setError('');
             setLoading(true);
-            const userCredential = await loginWithGoogle();
-            const user = userCredential.user;
-
-            if (!user.emailVerified) {
-                await logout();
-                setError('Your Google account email is not verified. Please verify it to continue.');
+            const user = await loginWithGoogle();
+            
+            if (!user) {
+                setError('Google login failed. Please try again.');
                 return;
             }
 

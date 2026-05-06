@@ -8,10 +8,12 @@ import BottomNav from '../components/BottomNav';
 import FilterDrawer from '../components/FilterDrawer';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 const Customers = () => {
-    const { currentUser, globalSettings, sendVerification } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { currentUser, userData, globalSettings, sendVerification } = useAuth();
     const [verificationSent, setVerificationSent] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [customers, setCustomers] = useState([]);
@@ -33,6 +35,87 @@ const Customers = () => {
     const [isEntryDetailsOpen, setIsEntryDetailsOpen] = useState(false);
     const [isPartyProfileOpen, setIsPartyProfileOpen] = useState(false);
     const [showContactDetails, setShowContactDetails] = useState(false);
+    const [showFullFab, setShowFullFab] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+    const [previewImage, setPreviewImage] = useState(null);
+    const [isReportPanelOpen, setIsReportPanelOpen] = useState(false);
+    
+    // Side Panel Report States
+    const [panelSearchQuery, setPanelSearchQuery] = useState('');
+    const [panelFilterType, setPanelFilterType] = useState('ALL');
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const [panelStartDate, setPanelStartDate] = useState(thirtyDaysAgo.toISOString().split('T')[0]);
+    const [panelEndDate, setPanelEndDate] = useState(today.toISOString().split('T')[0]);
+    const [isPanelStartDateChanged, setIsPanelStartDateChanged] = useState(false);
+    const [isPanelEndDateChanged, setIsPanelEndDateChanged] = useState(false);
+    const [showPanelDurationModal, setShowPanelDurationModal] = useState(false);
+    const [panelSelectedDuration, setPanelSelectedDuration] = useState('Date Range');
+
+    const durationOptions = [
+        { label: 'All', value: 'All' },
+        { label: 'Single Day', value: 'Single Day' },
+        { label: 'Last Week', value: 'Last Week' },
+        { label: 'Last Month', value: 'Last Month' },
+        { label: 'Date Range', value: 'Date Range' }
+    ];
+
+    const handlePanelDurationSelect = (duration) => {
+        setPanelSelectedDuration(duration);
+        const now = new Date();
+        let start = new Date();
+        switch (duration) {
+            case 'All': start = new Date(0); break;
+            case 'Single Day': start = now; break;
+            case 'Last Week': start.setDate(now.getDate() - 7); break;
+            case 'Last Month': start.setDate(now.getDate() - 30); break;
+            case 'Date Range': setShowPanelDurationModal(false); return;
+        }
+        setPanelStartDate(start.toISOString().split('T')[0]);
+        setPanelEndDate(now.toISOString().split('T')[0]);
+        setIsPanelStartDateChanged(true);
+        setIsPanelEndDateChanged(true);
+        setShowPanelDurationModal(false);
+    };
+
+    const handleScroll = (e) => {
+        const currentScrollY = e.currentTarget.scrollTop;
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+            setShowFullFab(false);
+        } else if (currentScrollY < lastScrollY) {
+            setShowFullFab(true);
+        }
+        setLastScrollY(currentScrollY);
+    };
+
+    // Handle returning from report page with a selected customer
+    useEffect(() => {
+        if (location.state?.selectedCustomerId && customers.length > 0) {
+            const customer = customers.find(c => c.id === location.state.selectedCustomerId);
+            if (customer) {
+                setSelectedCustomer(customer);
+                // Clear state so it doesn't re-select if they refresh or navigate back again
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, customers]);
+
+    // Keep selectedCustomer in sync with real-time updates
+    useEffect(() => {
+        if (selectedCustomer && customers.length > 0) {
+            const updated = customers.find(c => c.id === selectedCustomer.id);
+            if (updated) {
+                // Only update if something actually changed to avoid infinite loops
+                if (updated.photoURL !== selectedCustomer.photoURL || 
+                    updated.balance !== selectedCustomer.balance || 
+                    updated.name !== selectedCustomer.name ||
+                    updated.phone !== selectedCustomer.phone) {
+                    setSelectedCustomer(updated);
+                }
+            }
+        }
+    }, [customers]);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -64,13 +147,9 @@ const Customers = () => {
             // Calculate running balances for display if missing in DB
             let currentRunning = selectedCustomer.balance || 0;
             const withBalance = sorted.map(tx => {
-                const txWithBal = { ...tx };
-                // If DB doesn't have balance, use calculated one
-                if (txWithBal.balance === undefined || txWithBal.balance === null) {
-                    txWithBal.balance = currentRunning;
-                    // Subtract this transaction's amount to get the balance BEFORE this transaction
-                    currentRunning -= (tx.amount || 0);
-                }
+                const txWithBal = { ...tx, balance: currentRunning };
+                // Subtract this transaction's amount to get the balance BEFORE this transaction
+                currentRunning -= (tx.amount || 0);
                 return txWithBal;
             });
 
@@ -78,7 +157,7 @@ const Customers = () => {
             setTxLoading(false);
         });
         return () => { if (typeof unsub === 'function') unsub(); };
-    }, [selectedCustomer?.id]);
+    }, [selectedCustomer]);
 
     // Apply search/filter/sort
     let filteredCustomers = customers.filter(c =>
@@ -207,7 +286,7 @@ const Customers = () => {
             <div className="flex flex-col flex-1 ml-0 md:ml-[260px] overflow-hidden relative">
                 
                 {/* Email Verification Banner */}
-                {currentUser && !currentUser.emailVerified && (
+                {currentUser && !currentUser.emailVerified && !currentUser.providerData?.some(p => p.providerId === 'google.com') && (
                     <div className="bg-orange-50 border-b border-orange-100 px-4 py-2 flex items-center justify-between z-30">
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-orange-500 text-lg">warning</span>
@@ -232,7 +311,10 @@ const Customers = () => {
                 <div className="flex flex-1 overflow-hidden relative">
 
                 {/* Middle pane: Customer List — ~640px like Khatabook */}
-                <div className={`flex flex-col w-full md:w-[640px] bg-white border-r border-gray-200 flex-shrink-0 ${selectedCustomer ? 'hidden md:flex' : 'flex'}`}>
+                <div 
+                    onScroll={handleScroll}
+                    className={`flex flex-col w-full md:w-[640px] bg-white border-r border-gray-200 flex-shrink-0 h-full overflow-y-auto md:overflow-y-hidden ${selectedCustomer ? 'hidden md:flex' : 'flex'}`}
+                >
 
                     {/* Mobile Header — Branding */}
                     <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
@@ -297,7 +379,7 @@ const Customers = () => {
                     )}
 
                     {/* Search + Filter + Sort Section */}
-                    <div className="px-4 py-3 bg-white border-b border-gray-100">
+                    <div className="sticky top-0 z-20 px-4 py-3 bg-white border-b border-gray-100 shadow-sm md:shadow-none">
                         {/* Mobile View: Modern Single Bar */}
                         <div className="md:hidden flex items-center gap-3">
                             <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
@@ -384,7 +466,7 @@ const Customers = () => {
                     </div>
 
                     {/* Customer list */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 overflow-y-visible md:overflow-y-auto custom-scrollbar pb-24 md:pb-0">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-32 text-gray-400 gap-2">
                                 <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -409,12 +491,16 @@ const Customers = () => {
                                     onClick={() => setSelectedCustomer(customer)}
                                     className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
                                 >
-                                    {/* Avatar with dynamic initial */}
+                                    {/* Avatar with dynamic initial or photo */}
                                     <div
-                                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm"
-                                        style={{ backgroundColor: bgColor }}
+                                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm overflow-hidden"
+                                        style={{ backgroundColor: customer.photoURL ? 'transparent' : bgColor }}
                                     >
-                                        {customer.name?.substring(0, 1).toUpperCase()}
+                                        {customer.photoURL ? (
+                                            <img key={customer.photoURL} src={customer.photoURL} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            customer.name?.substring(0, 1).toUpperCase()
+                                        )}
                                     </div>
 
                                     {/* Name and Time */}
@@ -464,10 +550,16 @@ const Customers = () => {
                     <div className="md:hidden fixed bottom-20 right-4 z-20">
                         <button
                             onClick={() => setIsCustomerDrawerOpen(true)}
-                            className="bg-[#0057BB] text-white flex items-center gap-2 px-5 py-3.5 rounded-full shadow-lg shadow-blue-200 active:scale-95 transition-transform"
+                            className={`bg-[#0057BB] text-white flex items-center shadow-lg shadow-blue-200 active:scale-95 transition-all duration-300 ease-in-out ${
+                                showFullFab ? 'px-5 py-3.5 rounded-full gap-2' : 'p-4 rounded-full'
+                            }`}
                         >
                             <span className="material-symbols-outlined text-[22px]">person_add</span>
-                            <span className="text-sm font-bold uppercase tracking-wide">Add Customer</span>
+                            {showFullFab && (
+                                <span className="text-sm font-bold uppercase tracking-wide overflow-hidden whitespace-nowrap animate-in slide-in-from-left-2 duration-300">
+                                    Add Customer
+                                </span>
+                            )}
                         </button>
                     </div>
 
@@ -514,13 +606,13 @@ const Customers = () => {
                                         <button onClick={() => setSelectedCustomer(null)} className="p-1 -ml-1 text-white">
                                             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
                                         </button>
-                                        <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden flex-shrink-0">
-                                            <div
-                                                className="w-full h-full flex items-center justify-center font-bold text-lg"
-                                                style={{ backgroundColor: getInitialColor(selectedCustomer.name) }}
-                                            >
-                                                {selectedCustomer.name?.substring(0, 1).toUpperCase()}
-                                            </div>
+                                        <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden flex-shrink-0 flex items-center justify-center"
+                                             style={{ backgroundColor: selectedCustomer.photoURL ? 'transparent' : getInitialColor(selectedCustomer.name) }}>
+                                            {selectedCustomer.photoURL ? (
+                                                <img key={selectedCustomer.photoURL} src={selectedCustomer.photoURL} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="font-bold text-lg">{selectedCustomer.name?.substring(0, 1).toUpperCase()}</span>
+                                            )}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
@@ -577,7 +669,7 @@ const Customers = () => {
                                             <h2 className="font-semibold text-gray-900 text-base leading-snug">{selectedCustomer.name}</h2>
                                             <button 
                                                 onClick={() => setShowContactDetails(!showContactDetails)}
-                                                className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+                                                className="inline-flex items-center justify-center p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
                                                 title={showContactDetails ? "Hide contact info" : "Show contact info"}
                                             >
                                                 <span className="material-symbols-outlined text-[18px]">
@@ -585,16 +677,14 @@ const Customers = () => {
                                                 </span>
                                             </button>
                                         </div>
-                                        {showContactDetails && (
-                                            <>
-                                                {selectedCustomer.phone && (
-                                                    <p className="text-xs text-gray-500 mt-0.5">+91 {selectedCustomer.phone}</p>
-                                                )}
-                                                {selectedCustomer.email && (
-                                                    <p className="text-[11px] text-gray-400 leading-tight">{selectedCustomer.email}</p>
-                                                )}
-                                            </>
-                                        )}
+                                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showContactDetails ? 'max-h-12 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                                            {selectedCustomer.phone && (
+                                                <p className="text-xs text-gray-500">+91 {selectedCustomer.phone}</p>
+                                            )}
+                                            {selectedCustomer.email && (
+                                                <p className="text-[11px] text-gray-400 leading-tight">{selectedCustomer.email}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2.5">
@@ -624,12 +714,15 @@ const Customers = () => {
 
                             {/* Mobile Action Buttons (Report, Reminder, SMS) */}
                             <div className="md:hidden grid grid-cols-4 bg-white border-b border-gray-100 py-3">
-                                <button className="flex flex-col items-center gap-1 group">
+                                <Link 
+                                    to={`/reports/customer/${selectedCustomer.id}`}
+                                    className="flex flex-col items-center gap-1 group"
+                                >
                                     <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-blue-600 group-hover:bg-blue-50 transition-colors">
                                         <span className="material-symbols-outlined text-[20px]">picture_as_pdf</span>
                                     </div>
                                     <span className="text-[11px] font-medium text-gray-600">Report</span>
-                                </button>
+                                </Link>
                                 {globalSettings?.shareLinks !== false && (
                                     <>
                                         <button
@@ -693,8 +786,17 @@ const Customers = () => {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    {/* Report */}
-                                    <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all">
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (window.innerWidth >= 768) {
+                                                setIsReportPanelOpen(true);
+                                            } else {
+                                                navigate(`/reports/customer/${selectedCustomer.id}`);
+                                            }
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all"
+                                    >
                                         <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
                                         Report
                                     </button>
@@ -799,18 +901,42 @@ const Customers = () => {
                                                         <p className="text-xs text-gray-400 mt-0.5">Balance: {(tx.balance || 0).toLocaleString('en-IN')}</p>
                                                     )}
                                                     {tx.description && (
-                                                        <p className="text-xs text-gray-400 mt-0.5 truncate">{tx.description}</p>
+                                                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-3">{tx.description}</p>
                                                     )}
                                                 </div>
                                                 <div className="hidden md:block col-span-3 text-right pt-0.5">
                                                     {isGave
-                                                        ? <p className="text-sm font-semibold text-red-500">₹{absAmount.toLocaleString('en-IN')}</p>
+                                                        ? (
+                                                            <div className="flex flex-col items-end">
+                                                                <p className="text-sm font-semibold text-red-500">₹{absAmount.toLocaleString('en-IN')}</p>
+                                                                {tx.attachment && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); setPreviewImage(tx.attachment); }}
+                                                                        className="text-blue-500 hover:text-blue-700 mt-1"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">image</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )
                                                         : <p className="text-sm text-gray-300">-</p>
                                                     }
                                                 </div>
                                                 <div className="hidden md:block col-span-3 text-right pt-0.5">
                                                     {!isGave
-                                                        ? <p className="text-sm font-semibold text-green-600">₹{absAmount.toLocaleString('en-IN')}</p>
+                                                        ? (
+                                                            <div className="flex flex-col items-end">
+                                                                <p className="text-sm font-semibold text-green-600">₹{absAmount.toLocaleString('en-IN')}</p>
+                                                                {tx.attachment && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); setPreviewImage(tx.attachment); }}
+                                                                        className="text-blue-500 hover:text-blue-700 mt-1"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">image</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )
                                                         : <p className="text-sm text-gray-300">-</p>
                                                     }
                                                 </div>
@@ -827,19 +953,43 @@ const Customers = () => {
                                                                 <p className={`text-[9px] font-black ${(tx.balance || 0) < 0 ? 'text-red-400' : 'text-green-600'}`}>Bal. ₹{(tx.balance || 0).toLocaleString('en-IN')}</p>
                                                             </div>
                                                         )}
-                                                        <p className="text-[13px] font-bold text-gray-700 leading-snug break-words">
+                                                        <p className="text-[13px] font-bold text-gray-700 leading-snug break-words line-clamp-3">
                                                             {tx.description || (isGave ? 'You gave' : 'You got')}
                                                         </p>
                                                     </div>
 
                                                     {/* Gave Column */}
-                                                    <div className={`flex items-center justify-center border-l border-gray-50 ${isGave ? 'bg-red-50/40' : ''}`}>
-                                                        {isGave && <span className="text-sm font-black text-red-500">₹{absAmount.toLocaleString('en-IN')}</span>}
+                                                    <div className={`flex flex-col items-center justify-center border-l border-gray-50 ${isGave ? 'bg-red-50/40' : ''}`}>
+                                                        {isGave && (
+                                                            <>
+                                                                <span className="text-sm font-black text-red-500">₹{absAmount.toLocaleString('en-IN')}</span>
+                                                                {tx.attachment && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); setPreviewImage(tx.attachment); }}
+                                                                        className="text-blue-500 active:scale-95 transition-transform mt-0.5"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">image</span>
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        )}
                                                     </div>
 
                                                     {/* Got Column */}
-                                                    <div className={`flex items-center justify-center border-l border-gray-50 ${!isGave ? 'bg-green-50/40' : ''}`}>
-                                                        {!isGave && <span className="text-sm font-black text-green-600">₹{absAmount.toLocaleString('en-IN')}</span>}
+                                                    <div className={`flex flex-col items-center justify-center border-l border-gray-50 ${!isGave ? 'bg-green-50/40' : ''}`}>
+                                                        {!isGave && (
+                                                            <>
+                                                                <span className="text-sm font-black text-green-600">₹{absAmount.toLocaleString('en-IN')}</span>
+                                                                {tx.attachment && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); setPreviewImage(tx.attachment); }}
+                                                                        className="text-blue-500 active:scale-95 transition-transform mt-0.5"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">image</span>
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -917,7 +1067,11 @@ const Customers = () => {
                 onClose={() => setIsEntryDetailsOpen(false)}
                 transaction={selectedTransaction}
                 customerName={selectedCustomer?.name}
+                customerPhone={selectedCustomer?.phone}
+                customerEmail={selectedCustomer?.email}
+                userData={userData}
                 onEdit={handleEditEntry}
+                onViewImage={setPreviewImage}
             />
 
             <PartyProfileDrawer
@@ -939,6 +1093,199 @@ const Customers = () => {
 
             {/* Bottom Nav — Mobile only (hide when ledger is open) */}
             {!selectedCustomer && <BottomNav />}
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div 
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <button className="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <span className="material-symbols-outlined text-[32px]">close</span>
+                    </button>
+                    <img 
+                        src={previewImage} 
+                        alt="Bill Attachment" 
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
+            {/* Customer Report Side Panel (Desktop) */}
+            {isReportPanelOpen && selectedCustomer && (
+                <div className="hidden md:flex fixed inset-0 z-[110] justify-end bg-black/20">
+                    <div className="w-[450px] h-full bg-[#0057BB] flex flex-col shadow-2xl animate-slide-left relative">
+                        {/* Header */}
+                        <div className="px-4 py-6 flex items-center gap-4">
+                            <button 
+                                onClick={() => setIsReportPanelOpen(false)}
+                                className="text-white hover:bg-white/10 p-1 rounded-full"
+                            >
+                                <span className="material-symbols-outlined text-[24px]">close</span>
+                            </button>
+                            <h2 className="text-[18px] font-bold text-white truncate">Report of {selectedCustomer.name}</h2>
+                        </div>
+
+                        {/* White Content Area */}
+                        <div className="flex-1 bg-[#F5F7F9] rounded-t-[20px] overflow-hidden flex flex-col relative">
+                            <div className="p-4 space-y-3 bg-[#0057BB] pb-6 sticky top-0 z-20 shadow-md">
+                                {/* Date Range */}
+                                <div className="flex bg-white rounded shadow-sm h-[48px] text-slate-800">
+                                    <div 
+                                        onClick={(e) => {
+                                            try { e.currentTarget.querySelector('input').showPicker(); } catch (err) {}
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 border-r border-slate-100 relative cursor-pointer hover:bg-slate-50 transition-colors rounded-l"
+                                    >
+                                        <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
+                                        <span className="text-[14px] font-bold text-[#0057BB] uppercase">
+                                            {isPanelStartDateChanged ? new Date(panelStartDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'START DATE'}
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={panelStartDate}
+                                            onChange={(e) => {
+                                                setPanelStartDate(e.target.value);
+                                                setIsPanelStartDateChanged(true);
+                                            }}
+                                            className="absolute inset-0 opacity-0 pointer-events-none"
+                                        />
+                                    </div>
+                                    <div
+                                        onClick={(e) => {
+                                            try { e.currentTarget.querySelector('input').showPicker(); } catch (err) { }
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 relative cursor-pointer hover:bg-slate-50 transition-colors rounded-r"
+                                    >
+                                        <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
+                                        <span className="text-[14px] font-bold text-[#0057BB] uppercase">
+                                            {isPanelEndDateChanged ? new Date(panelEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'END DATE'}
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={panelEndDate}
+                                            onChange={(e) => {
+                                                setPanelEndDate(e.target.value);
+                                                setIsPanelEndDateChanged(true);
+                                            }}
+                                            className="absolute inset-0 opacity-0 pointer-events-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Search & Duration */}
+                                <div className="flex bg-white rounded shadow-sm h-[48px] text-slate-800 items-center px-2 gap-2">
+                                    <span className="material-symbols-outlined text-[#0057BB] text-[24px]">search</span>
+                                    <div className="flex-1 h-[34px] border border-slate-300 rounded flex items-center px-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search Entries"
+                                            value={panelSearchQuery}
+                                            onChange={(e) => setPanelSearchQuery(e.target.value)}
+                                            className="w-full text-[13px] !outline-none !ring-0 font-medium placeholder:text-slate-400 bg-transparent border-none focus:border-none"
+                                            style={{ outline: 'none', boxShadow: 'none' }}
+                                        />
+                                    </div>
+                                    <div 
+                                        onClick={() => setShowPanelDurationModal(true)}
+                                        className="w-[120px] h-full bg-[#EAF2FC] flex items-center justify-between px-3 relative border-l border-slate-100 -mr-2 cursor-pointer"
+                                    >
+                                        <span className="text-[11px] font-bold text-[#0057BB] uppercase truncate">{panelSelectedDuration}</span>
+                                        <span className="material-symbols-outlined text-[#0057BB] text-[18px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scrollable Report Content */}
+                            <div className="flex-1 overflow-y-auto px-0 custom-scrollbar">
+                                {/* Balance Summary */}
+                                <div className="py-4 px-4 flex items-center justify-between bg-white border-b border-slate-100">
+                                    <span className="text-[16px] font-semibold text-slate-900">Net Balance</span>
+                                    <span className={`text-[16px] font-bold ${selectedCustomer.balance <= 0 ? 'text-green-600' : 'text-[#ef4444]'}`}>
+                                        ₹ {Math.abs(selectedCustomer.balance || 0).toLocaleString('en-IN')}
+                                    </span>
+                                </div>
+
+                                {/* Entries List */}
+                                <div className="bg-white">
+                                    {selectedCustomerTransactions
+                                        .filter(tx => {
+                                            const txDate = new Date(tx.timestamp || tx.date);
+                                            const start = new Date(panelStartDate);
+                                            const end = new Date(panelEndDate);
+                                            end.setHours(23, 59, 59, 999);
+                                            return txDate >= start && txDate <= end && 
+                                                   ((tx.description || '').toLowerCase().includes(panelSearchQuery.toLowerCase()) || 
+                                                    tx.amount.toString().includes(panelSearchQuery));
+                                        })
+                                        .map((tx, idx) => {
+                                            const isGave = tx.amount < 0 || tx.type === 'GAVE' || tx.type === 'credit';
+                                            const absAmt = Math.abs(tx.amount);
+                                            return (
+                                                <div 
+                                                    key={tx.id || idx} 
+                                                    onClick={() => handleEntryClick(tx)}
+                                                    className="grid grid-cols-12 bg-white items-start py-3 border-b border-slate-50 min-h-[70px] cursor-pointer hover:bg-slate-50 transition-colors"
+                                                >
+                                                    <div className="col-span-6 px-4 flex flex-col gap-1">
+                                                        <p className="text-[12px] font-bold text-slate-800">
+                                                            {new Date(tx.timestamp || tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
+                                                        </p>
+                                                        <div className="flex">
+                                                            <div className="bg-[#fef2f2] px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400">
+                                                                Bal. ₹ {Math.abs(tx.balance || 0).toLocaleString('en-IN')}
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5 line-clamp-3">{tx.description || '-'}</p>
+                                                    </div>
+                                                    <div className="col-span-6 flex items-center justify-end px-4 gap-4">
+                                                        {isGave ? (
+                                                            <p className="text-[13px] font-bold text-red-500">₹ {absAmt.toLocaleString('en-IN')}</p>
+                                                        ) : (
+                                                            <p className="text-[13px] font-bold text-green-600">₹ {absAmt.toLocaleString('en-IN')}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                </div>
+                            </div>
+
+                            {/* Footer Actions */}
+                            <div className="p-4 bg-white border-t border-slate-100 flex gap-3">
+                                <button className="flex-1 h-[44px] border border-[#0057BB] rounded-lg text-[#0057BB] font-bold text-[14px] flex items-center justify-center gap-2">
+                                    <span className="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+                                    DOWNLOAD
+                                </button>
+                                <button className="flex-1 h-[44px] bg-[#0057BB] rounded-lg text-white font-bold text-[14px] flex items-center justify-center gap-2">
+                                    <span className="material-symbols-outlined text-[20px]">share</span>
+                                    SHARE
+                                </button>
+                            </div>
+
+                            {/* Panel Duration Modal - Integrated into Side Panel */}
+                            {showPanelDurationModal && (
+                                <div className="absolute inset-0 z-[120] flex items-end bg-black/40">
+                                    <div className="w-full bg-white rounded-t-2xl p-6 animate-slide-up shadow-2xl">
+                                        <h3 className="text-[17px] font-bold text-slate-900 mb-5">Select report duration</h3>
+                                        <div className="space-y-5">
+                                            {durationOptions.map((opt) => (
+                                                <div key={opt.value} onClick={() => handlePanelDurationSelect(opt.value)} className="flex items-center justify-between cursor-pointer group">
+                                                    <span className={`text-[15px] font-medium ${panelSelectedDuration === opt.value ? 'text-[#0057BB]' : 'text-slate-600'}`}>{opt.label}</span>
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${panelSelectedDuration === opt.value ? 'border-[#0057BB]' : 'border-slate-300'}`}>
+                                                        {panelSelectedDuration === opt.value && <div className="w-2.5 h-2.5 rounded-full bg-[#0057BB]"></div>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

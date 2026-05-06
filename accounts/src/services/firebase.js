@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification, getAdditionalUserInfo } from 'firebase/auth';
 import { getDatabase, ref, set, get, push, update, remove, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 const firebaseConfig = {
@@ -34,19 +34,42 @@ const sendEmailNotification = async (templateParams) => {
     if (settings.emailNotifications === false) return;
 
     const config = settings.emailjs;
-    if (!config || !config.serviceId || !config.templateId || !config.publicKey) {
+    if (!config || !config.serviceId || !config.publicKey) {
       console.warn("EmailJS not configured in Admin Console.");
       return;
     }
 
+    // Determine which template to use
+    let templateId = config.templateId; // Fallback
+    if (templateParams.type === 'WELCOME' || templateParams.type === 'CUSTOMER_ADDED') {
+      templateId = config.welcomeTemplateId || config.templateId;
+    } else if (templateParams.type === 'TRANSACTION') {
+      templateId = config.alertTemplateId || config.templateId;
+    }
+
+    if (!templateId) {
+      console.warn("Email template ID not found.");
+      return;
+    }
+
+    const params = {
+      ...templateParams,
+      email: templateParams.to_email // Alias for templates using {{email}}
+    };
+
+    console.log(`email to: ${params.email}`);
+
+    // Initialize with Public Key
+    emailjs.init(config.publicKey);
+
     await emailjs.send(
       config.serviceId,
-      config.templateId,
-      templateParams,
-      config.publicKey
+      templateId,
+      params
     );
     console.log("Email sent successfully! ✅");
   } catch (error) {
+    console.error("EmailJS Error:", error);
     console.log("Email not sent ! ❌");
   }
 };
@@ -71,8 +94,9 @@ export const authService = {
     sendEmailNotification({
       to_email: email,
       to_name: name,
-      subject: 'Welcome to HisabKhata!',
+      subject: 'Welcome to HisabKhata! Manage your business with ease 📈',
       message: `Hello ${name}, welcome to HisabKhata! We are excited to help you manage your financial ledger securely.`,
+      action_url: 'https://hisabkhata.sumanonline.com/login',
       type: 'WELCOME'
     });
 
@@ -120,17 +144,25 @@ export const authService = {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const additionalInfo = getAdditionalUserInfo(result);
 
       // Check if user already exists in DB
       const userSnap = await get(ref(db, `users/${user.uid}`));
 
       if (!userSnap.exists()) {
         // New user from Google, create profile
+        // Attempt to get phone number from multiple sources
+        const fetchedPhone = user.phoneNumber || 
+                           user.providerData?.find(p => p.phoneNumber)?.phoneNumber || 
+                           additionalInfo?.profile?.phone_number || 
+                           additionalInfo?.profile?.mobile ||
+                           '';
+
         await set(ref(db, `users/${user.uid}`), {
           name: user.displayName || 'Google User',
           email: user.email,
           photoURL: user.photoURL || '',
-          phone: user.phoneNumber || '',
+          phone: fetchedPhone,
           role: 'user',
           createdAt: Date.now()
         });
@@ -173,10 +205,11 @@ export const dbService = {
         await sendEmailNotification({
           to_email: newCustomer.email,
           to_name: newCustomer.name,
-          subject: 'New Ledger Created - HisabKhata',
+          subject: 'New Ledger Created - Track your balance live on HisabKhata 🛡️',
           message: `You have been added as a customer on HisabKhata by ${merchant.name || 'a merchant'} (Phone: ${merchant.phone || 'N/A'}).`,
           merchant_name: merchant.name,
           merchant_phone: merchant.phone || 'N/A',
+          action_url: `https://hisabkhata.sumanonline.com/customer/share/${customerRef.key}`,
           type: 'CUSTOMER_ADDED'
         });
       } catch (err) {
@@ -269,7 +302,7 @@ export const dbService = {
       userId,
       customerId,
       balance: newBalance,
-      timestamp: Date.now()
+      timestamp: transactionData.timestamp || Date.now()
     };
     try {
       await set(transactionRef, newTransaction);
@@ -294,10 +327,11 @@ export const dbService = {
           to_email: customerEmail,
           to_name: customerName,
           subject: `Transaction Alert: ₹${Math.abs(transactionData.amount)} - HisabKhata`,
-          message: `A new transaction has been recorded on your account.\nType: ${typeStr}\nAmount: ₹${Math.abs(transactionData.amount)}\nNote: ${transactionData.description || 'N/A'}`,
+          message: `A new transaction has been recorded on your account.\nType: ${typeStr}\nAmount: ₹${Math.abs(transactionData.amount)}\nNote: ${transactionData.description || 'N/A'}\nTotal Balance: ₹${Math.abs(newBalance)}`,
           merchant_name: merchant.name || 'HisabKhata Merchant',
           merchant_phone: merchant.phone || merchant.mobile || 'N/A',
           amount: Math.abs(transactionData.amount),
+          balance: Math.abs(newBalance),
           tx_type: typeStr,
           type: 'TRANSACTION'
         });
@@ -451,7 +485,7 @@ export const dbService = {
 
   updateGlobalSettings: async (settings) => {
     try {
-      await update(ref(ref(db, 'settings')), settings);
+      await update(ref(db, 'settings'), settings);
     } catch (error) {
       console.error("Update settings failed:", error.message);
       throw error;
@@ -510,7 +544,13 @@ export const dbService = {
   exportDatabase: async () => {
     const snapshot = await get(ref(db));
     return snapshot.val();
-  }
+  },
+
+  importDatabase: async (data) => {
+    await set(ref(db), data);
+  },
+
+  sendEmailNotification
 };
 
 export { auth, db };

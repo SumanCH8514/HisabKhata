@@ -3,16 +3,19 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Reports from './pages/Reports';
+import CustomerReport from './pages/CustomerReport';
 import Customers from './pages/Customers';
 import ForgotPassword from './pages/ForgotPassword';
 import Transactions from './pages/Transactions';
 import EditCustomer from './pages/EditCustomer';
-import { Settings, Support } from './pages/Placeholders';
+import { Support } from './pages/Placeholders';
+import Settings from './pages/Settings';
 import CustomerLedgerDetail from './pages/CustomerLedgerDetail';
 import CustomerShareableView from './pages/CustomerShareableView';
 import AddTransaction from './pages/AddTransaction';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import PublicRoute from './components/PublicRoute';
 import LandingPage from './pages/LandingPage';
 import AdminDashboard from './pages/AdminDashboard';
 import Maintenance from './pages/Maintenance';
@@ -41,10 +44,11 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/reports/customer/:id" element={<ProtectedRoute><CustomerReport /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
         <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

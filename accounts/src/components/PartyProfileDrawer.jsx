@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/firebase';
+import { compressImage } from '../utils/imageUtils';
 
 const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -9,6 +10,7 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
     const [editGst, setEditGst] = useState('');
     const [editPhoto, setEditPhoto] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         if (customer) {
@@ -22,18 +24,19 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
 
     if (!isOpen || !customer) return null;
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 200 * 1024) { // 200KB limit for base64 storage
-                alert('Image size should be less than 200KB');
-                return;
+            setIsUploading(true);
+            try {
+                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
+                setEditPhoto(compressedBase64);
+            } catch (error) {
+                console.error("Compression error:", error);
+                alert("Failed to process image");
+            } finally {
+                setIsUploading(false);
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setEditPhoto(reader.result);
-            };
-            reader.readAsDataURL(file);
         }
     };
 
@@ -54,8 +57,6 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
                 photoURL: editPhoto
             });
             setIsEditing(false);
-            // We don't necessarily need to close the drawer, 
-            // the listener in Customers.jsx will update the data automatically.
         } catch (err) {
             alert('Error: ' + err.message);
         } finally {
@@ -97,7 +98,7 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-14 h-14 rounded-full bg-blue-50 border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
                                     {customer.photoURL ? (
-                                        <img src={customer.photoURL} alt="" className="w-full h-full object-cover" />
+                                        <img key={customer.photoURL} src={customer.photoURL} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="text-blue-600 font-bold text-xl uppercase">{customer.name?.[0]}</span>
                                     )}
@@ -156,10 +157,14 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
                         /* Edit Mode */
                         <form onSubmit={handleUpdate} className="space-y-6">
                             <div className="flex flex-col items-center mb-4">
-                                <div className="relative group cursor-pointer" onClick={() => document.getElementById('photo-upload').click()}>
-                                    <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-blue-50 flex items-center justify-center overflow-hidden shadow-inner">
-                                        {editPhoto ? (
-                                            <img src={editPhoto} alt="" className="w-full h-full object-cover" />
+                                <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('photo-upload').click()}>
+                                    <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-blue-50 flex items-center justify-center overflow-hidden shadow-inner relative">
+                                        {isUploading ? (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+                                                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                            </div>
+                                        ) : editPhoto ? (
+                                            <img key={editPhoto} src={editPhoto} alt="" className="w-full h-full object-cover" />
                                         ) : (
                                             <span className="text-blue-400 text-2xl font-bold">{editName?.[0]}</span>
                                         )}

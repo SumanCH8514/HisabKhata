@@ -162,11 +162,11 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
 
                     {/* Date & Bills Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="relative group cursor-pointer" onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}>
+                        <div className="relative group cursor-pointer">
                             <input 
                                 ref={dateInputRef}
                                 type="date"
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                                className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
                             />

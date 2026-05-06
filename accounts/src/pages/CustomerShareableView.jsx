@@ -44,23 +44,33 @@ const CustomerShareableView = () => {
             }
         });
 
+        return () => {
+            if (typeof unsubCustomer === 'function') unsubCustomer();
+        };
+    }, [id]);
+
+    useEffect(() => {
+        if (!id || !customer) return;
+
         // Listen to transactions
         const unsubTransactions = dbService.listenCustomerTransactions(id, (data) => {
-            const sorted = data.sort((a, b) => (a.timestamp || 0) - (a.timestamp || 0));
-            let currentBalance = 0;
+            // Sort by timestamp descending (latest first)
+            const sorted = data.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            
+            let running = customer.balance || 0;
             const withRunningBalance = sorted.map(tx => {
-                currentBalance += (tx.amount || 0);
-                return { ...tx, runningBalance: currentBalance };
+                const txWithBal = { ...tx, runningBalance: running };
+                running -= (tx.amount || 0);
+                return txWithBal;
             });
-            setTransactions(withRunningBalance.reverse());
+            setTransactions(withRunningBalance); // Already latest first
             setLoading(false);
         });
 
         return () => {
-            if (typeof unsubCustomer === 'function') unsubCustomer();
             if (typeof unsubTransactions === 'function') unsubTransactions();
         };
-    }, [id]);
+    }, [id, customer]);
 
     if (loading || !customer || globalSettings === null) {
         return (
@@ -311,7 +321,9 @@ const CustomerShareableView = () => {
 
                                             {/* Balance Column */}
                                             <td className="px-4 py-3 text-right">
-                                                <span className="text-sm font-medium text-red-500">{runningBalance} Dr</span>
+                                                <span className={`text-sm font-medium ${(tx.runningBalance || 0) < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                                    {Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')} {(tx.runningBalance || 0) < 0 ? 'Dr' : 'Cr'}
+                                                </span>
                                             </td>
                                         </tr>
                                     );

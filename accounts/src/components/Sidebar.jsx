@@ -55,7 +55,12 @@ const Sidebar = () => {
                         style={{ backgroundColor: '#e91e63' }}
                     >
                         {userData?.photoURL ? (
-                            <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                            <img 
+                                key={userData.photoURL}
+                                src={userData.photoURL} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover" 
+                            />
                         ) : (
                             initial
                         )}

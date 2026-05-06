@@ -3,6 +3,7 @@ import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 import { X, ChevronDown } from 'lucide-react';
+import { compressImage } from '../utils/imageUtils';
 
 const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     const { currentUser } = useAuth();
@@ -15,8 +16,26 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             : (customer.balance || 0) >= 0 ? 'get' : 'give'
     );
     const [partyType, setPartyType] = useState('customer');
+    const [photo, setPhoto] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setIsUploading(true);
+            try {
+                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
+                setPhoto(compressedBase64);
+            } catch (error) {
+                console.error("Compression error:", error);
+                alert("Failed to process image");
+            } finally {
+                setIsUploading(false);
+            }
+        }
+    };
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -32,7 +51,8 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                 phone,
                 email: email.trim(),
                 balance: finalBalance,
-                type: partyType
+                type: partyType,
+                photoURL: photo
             };
 
             if (customer) {
@@ -80,6 +100,34 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                                 {error}
                             </div>
                         )}
+
+                        {/* Photo Upload */}
+                        <div className="flex flex-col items-center pb-2">
+                            <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('new-party-photo').click()}>
+                                <div className="w-20 h-20 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shadow-inner relative">
+                                    {isUploading ? (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+                                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    ) : photo ? (
+                                        <img src={photo} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-slate-300 text-3xl">add_a_photo</span>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                                        <span className="material-symbols-outlined text-white text-xl">photo_camera</span>
+                                    </div>
+                                </div>
+                                <input 
+                                    id="new-party-photo"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Party Photo (Optional)</p>
+                        </div>
 
                         {/* Party Name */}
                         <div className="space-y-2">

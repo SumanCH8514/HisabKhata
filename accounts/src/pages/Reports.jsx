@@ -4,9 +4,7 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+// Heavy libraries (jsPDF, autoTable, XLSX) will be imported dynamically
 
 const Reports = () => {
     const { currentUser, userData, globalSettings } = useAuth();
@@ -103,7 +101,9 @@ const Reports = () => {
                    .trim();
     };
 
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
+        const { jsPDF } = await import('jspdf');
+        const autoTable = (await import('jspdf-autotable')).default;
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -233,7 +233,8 @@ const Reports = () => {
         doc.save(`HisabKhata_Report_${startDate}_to_${endDate}.pdf`);
     };
 
-    const handleDownloadExcel = () => {
+    const handleDownloadExcel = async () => {
+        const XLSX = await import('xlsx');
         const data = filteredTx.map(tx => ({
             Date: formatDate(tx.timestamp || tx.date),
             Customer: getCustomerName(tx.customerId),

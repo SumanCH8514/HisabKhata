@@ -7,14 +7,13 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
     const { currentUser } = useAuth();
     const fileInputRef = useRef(null);
     const dateInputRef = useRef(null);
-    
+
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
     const [attachment, setAttachment] = useState(null); // Base64 string
 
-    // Reset form when opened or when transaction changes
     useEffect(() => {
         if (isOpen) {
             if (transaction) {
@@ -35,7 +34,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         const file = e.target.files[0];
         if (!file) return;
 
-        // Check file size (limit to 1MB for base64 storage)
+        // limit 1MB for base64 storage
         if (file.size > 1024 * 1024) {
             alert('Image size must be less than 1MB');
             return;
@@ -55,24 +54,22 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         setLoading(true);
         try {
             const finalAmount = type === 'got' ? Math.abs(Number(amount)) : -Math.abs(Number(amount));
-            
+
             // Combine selected date with current time for accurate sorting/display
             const selectedDateObj = new Date(date);
             const now = new Date();
             selectedDateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-            
+
             const txData = {
                 amount: finalAmount,
                 description: description.trim(),
                 date,
                 timestamp: selectedDateObj.getTime(),
                 type: type === 'got' ? 'GOT' : 'GAVE',
-                attachment: attachment // Store as base64 string
+                attachment: attachment
             };
 
             if (transaction) {
-                // For edits, we might want to keep the original timestamp if only amount changed,
-                // but usually user expects the date to be updated if they changed it.
                 await dbService.updateTransaction(customerId, transaction.id, txData, transaction.amount);
             } else {
                 await dbService.addTransaction(currentUser.uid, customerId, txData);
@@ -87,11 +84,37 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         }
     };
 
+    const handlePaste = (e) => {
+        const items = e.clipboardData.items;
+        let imageFound = false;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    imageFound = true;
+                    if (blob.size > 1024 * 1024) {
+                        alert('Pasted image is too large (>1MB)');
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setAttachment(reader.result);
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        }
+        if (imageFound) {
+            e.preventDefault();
+        }
+    };
+
     if (!isOpen) return null;
 
     const isGave = type === 'gave';
     const activeHeaderColor = isGave ? '#A02C2C' : '#2C8A2C';
-    const activeButtonColor = isGave ? '#F39696' : '#96F396'; 
+    const activeButtonColor = isGave ? '#F39696' : '#96F396';
     const activeIconColor = isGave ? '#A02C2C' : '#2C8A2C';
 
     const formatDate = (dateStr) => {
@@ -100,14 +123,17 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-[#F0F2F5] md:bg-black/40 antialiased overflow-hidden">
+        <div
+            onPaste={handlePaste}
+            className="fixed inset-0 z-[100] flex flex-col bg-[#F0F2F5] md:bg-black/40 antialiased overflow-hidden"
+        >
             <div className="hidden md:block absolute inset-0" onClick={onClose}></div>
 
             <div className="relative w-full h-full md:max-w-md md:ml-auto bg-[#F0F2F5] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                
+
                 {/* Header */}
                 <header className="bg-white px-4 py-5 flex items-start gap-4 border-b border-slate-100 shadow-sm">
-                    <button 
+                    <button
                         onClick={onClose}
                         style={{ color: activeHeaderColor }}
                         className="mt-0.5 active:scale-90 transition-transform p-1 outline-none"
@@ -115,7 +141,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         <ArrowLeft size={30} strokeWidth={3} />
                     </button>
                     <div className="flex-1">
-                        <h1 
+                        <h1
                             style={{ color: activeHeaderColor }}
                             className="text-[18px] font-bold leading-tight"
                         >
@@ -130,7 +156,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         <label className="text-[10px] font-bold text-slate-400 ml-1 tracking-wider uppercase">Amount (₹)</label>
                         <div className="bg-white px-4 py-2 border border-slate-300 rounded-[16px] shadow-sm flex items-center focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all duration-200">
                             <span className="text-[24px] font-bold text-slate-300 mr-3 select-none leading-none">₹</span>
-                            <input 
+                            <input
                                 autoFocus
                                 type="text"
                                 inputMode="decimal"
@@ -151,7 +177,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                     <div className="space-y-3">
                         <label className="text-[10px] font-bold text-slate-400 ml-1 tracking-wider uppercase">Transaction Details (Optional)</label>
                         <div className="bg-white border border-slate-300 rounded-[16px] shadow-sm overflow-hidden focus-within:border-blue-400 transition-all duration-200">
-                            <textarea 
+                            <textarea
                                 placeholder="Enter details (Items, bill no., quantity, etc.)"
                                 className="w-full p-3 min-h-[80px] border-none outline-none focus:ring-0 text-slate-800 font-bold text-base placeholder-slate-300 resize-none leading-relaxed"
                                 value={description}
@@ -163,7 +189,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                     {/* Date & Bills Grid */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="relative group cursor-pointer">
-                            <input 
+                            <input
                                 ref={dateInputRef}
                                 type="date"
                                 className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full"
@@ -180,17 +206,19 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         </div>
 
                         <div className="relative">
-                            <input 
+                            <input
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
                                 onChange={handleFileChange}
                             />
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => attachment ? setAttachment(null) : fileInputRef.current.click()}
-                                className="w-full bg-white px-2 h-12 rounded-[14px] border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 group hover:border-slate-400 transition-all duration-300 active:scale-[0.98]"
+                                onPaste={handlePaste}
+                                title="Click to upload or Paste (Ctrl+V) image"
+                                className="w-full bg-white px-2 h-12 rounded-[14px] border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 group hover:border-slate-400 transition-all duration-300 active:scale-[0.98] outline-none focus:ring-2 focus:ring-blue-400"
                             >
                                 {attachment ? (
                                     <>
@@ -213,7 +241,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         <div className="animate-in fade-in zoom-in duration-300">
                             <div className="relative w-24 h-24 rounded-2xl border-2 border-white shadow-md overflow-hidden group">
                                 <img src={attachment} alt="Bill" className="w-full h-full object-cover" />
-                                <button 
+                                <button
                                     onClick={() => setAttachment(null)}
                                     className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                                 >
@@ -226,16 +254,15 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
 
                 {/* Fixed Footer SAVE Action */}
                 <div className="p-4 bg-[#F0F2F5] mt-auto">
-                    <button 
+                    <button
                         disabled={loading || !amount}
                         type="submit"
                         onClick={handleSubmit}
                         style={{ backgroundColor: activeButtonColor }}
-                        className={`w-full py-3.5 rounded-[16px] font-bold text-white text-lg tracking-wide shadow-lg transition-all duration-300 ${
-                            loading || !amount 
-                            ? 'opacity-40 cursor-not-allowed grayscale' 
+                        className={`w-full py-3.5 rounded-[16px] font-bold text-white text-lg tracking-wide shadow-lg transition-all duration-300 ${loading || !amount
+                            ? 'opacity-40 cursor-not-allowed grayscale'
                             : 'hover:opacity-90 active:scale-[0.98]'
-                        }`}
+                            }`}
                     >
                         {loading ? 'SAVING...' : transaction ? 'UPDATE' : 'SAVE'}
                     </button>

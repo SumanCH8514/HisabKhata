@@ -23,6 +23,8 @@ import Profile from './pages/Profile';
 import More from './pages/More';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfCondition from './pages/TermsOfCondition';
+import PaymentVerification from './pages/PaymentVerification';
+import Payments from './pages/Payments';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -58,6 +60,8 @@ function App() {
         <Route path="/customer/:id" element={<ProtectedRoute><CustomerLedgerDetail /></ProtectedRoute>} />
         <Route path="/customer/edit/:id" element={<ProtectedRoute><EditCustomer /></ProtectedRoute>} />
         <Route path="/customer/share/:id" element={<CustomerShareableView />} />
+        <Route path="/verify-payment" element={<ProtectedRoute><PaymentVerification /></ProtectedRoute>} />
+        <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
         <Route path="/add-transaction" element={<ProtectedRoute><AddTransaction /></ProtectedRoute>} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-condition" element={<TermsOfCondition />} />

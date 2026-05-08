@@ -101,6 +101,11 @@ const Sidebar = () => {
                     <span>Customers</span>
                 </Link>
 
+                <Link to="/payments" className={navLinkClass('/payments')}>
+                    <span className="material-symbols-outlined text-[20px]">payments</span>
+                    <span>Payments</span>
+                </Link>
+
                 <Link to="/reports" className={navLinkClass('/reports')}>
                     <span className="material-symbols-outlined text-[20px]">bar_chart_4_bars</span>
                     <span>Reports - Parties</span>

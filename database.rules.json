@@ -32,6 +32,20 @@
     "settings": {
       ".read": "true",
       ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "pending_payments": {
+      ".read": "auth != null",
+      "$paymentId": {
+        // Allow creation of new payments, and allow merchants to update their assigned payments
+        ".write": "(!data.exists()) || (auth != null && (data.child('merchantId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'))"
+      }
+    },
+    "services": {
+      "email_queue": {
+        // Allow public to queue emails (for payment confirmation alerts)
+        ".write": "true",
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
     }
   }
 }

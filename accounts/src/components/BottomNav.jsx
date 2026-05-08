@@ -12,6 +12,7 @@ const BottomNav = () => {
 
     const navItems = [
         { to: '/customers', label: 'Parties', icon: 'person' },
+        { to: '/payments', label: 'Payments', icon: 'payments' },
         { to: '/more', label: 'More', icon: 'more_horiz' },
     ];
 

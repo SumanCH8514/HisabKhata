@@ -1069,6 +1069,7 @@ const Customers = () => {
                 customerName={selectedCustomer?.name}
                 customerPhone={selectedCustomer?.phone}
                 customerEmail={selectedCustomer?.email}
+                customerPhoto={selectedCustomer?.photoURL}
                 userData={userData}
                 onEdit={handleEditEntry}
                 onViewImage={setPreviewImage}

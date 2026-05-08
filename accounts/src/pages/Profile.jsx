@@ -13,7 +13,8 @@ import {
     Users, 
     ChevronRight, 
     ArrowLeft,
-    Camera
+    Camera,
+    Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -39,6 +40,7 @@ const Profile = () => {
         type: '',
         gstin: '',
         bankAccount: '',
+        upiId: '',
         staffDetails: ''
     });
 
@@ -267,6 +269,12 @@ const Profile = () => {
                             label="Bank account" 
                             value={profileData.bankAccount} 
                             fieldKey="bankAccount"
+                        />
+                        <ProfileItem 
+                            icon={Smartphone} 
+                            label="UPI ID" 
+                            value={profileData.upiId} 
+                            fieldKey="upiId"
                         />
 
                         <SectionHeader title="Staff info" />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { dbService } from '../services/firebase';
 
-const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, customerPhone, customerEmail, userData, onDeleteSuccess, onEdit, onViewImage }) => {
+const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, customerPhone, customerEmail, customerPhoto, userData, onDeleteSuccess, onEdit, onViewImage }) => {
     // Local state to keep transaction data during closing animation
     const [displayTx, setDisplayTx] = React.useState(null);
     const [shouldRender, setShouldRender] = React.useState(false);
@@ -26,8 +26,8 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
 
     const isGave = tx.amount < 0 || tx.type === 'GAVE' || tx.type === 'credit';
     const absAmount = Math.abs(tx.amount);
-    
-    // Format date like: 05 May 26 • 10:23 PM
+
+    // Format date  05 May 26 • 10:23 PM
     const txDate = tx.timestamp ? new Date(tx.timestamp) : (tx.date ? new Date(tx.date) : null);
     const formattedDate = txDate ? (() => {
         const d = txDate;
@@ -121,14 +121,14 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
     };
 
     return (
-        <div 
-            className={`fixed inset-0 z-[110] flex flex-col md:justify-end md:flex-row transition-all duration-300 ${isOpen ? 'bg-black/40 visible' : 'bg-transparent invisible'}`} 
+        <div
+            className={`fixed inset-0 z-[110] flex flex-col md:justify-end md:flex-row transition-all duration-300 ${isOpen ? 'bg-black/40 visible' : 'bg-transparent invisible'}`}
             style={{ fontFamily: "'Roboto', sans-serif" }}
         >
             <div className="hidden md:block absolute inset-0" onClick={onClose} />
 
             <div className={`relative w-full h-full md:max-w-[400px] bg-[#EEEEEE] shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}>
-                
+
                 {/* Header */}
                 <div className="bg-[#0b5cba] text-white flex items-center px-4 h-14 shrink-0 shadow-sm z-10 relative">
                     <button onClick={onClose} className="p-2 -ml-2 mr-2 active:bg-white/10 rounded-full transition-colors">
@@ -146,8 +146,12 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                     <div className="relative z-10 mx-3 mt-3 bg-white rounded-md shadow-sm overflow-hidden border border-gray-200/50">
                         <div className="p-4 flex justify-between items-start">
                             <div className="flex gap-3">
-                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl border border-gray-100 shrink-0">
-                                    {customerName?.[0]?.toUpperCase() || 'C'}
+                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl border border-gray-100 shrink-0 overflow-hidden">
+                                    {customerPhoto ? (
+                                        <img src={customerPhoto} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        customerName?.[0]?.toUpperCase() || 'C'
+                                    )}
                                 </div>
                                 <div className="pt-0.5">
                                     <h3 className="text-[16px] font-medium text-gray-900 leading-tight">{customerName}</h3>
@@ -191,24 +195,24 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
 
                     {/* Reminder Buttons Grid */}
                     <div className="mx-3 mt-3 grid grid-cols-3 gap-2">
-                        <button onClick={() => { if(customerPhone) { const msg = `${userData?.businessName || 'HisabKhata User'} has requested ₹${absAmount} on HisabKhata. Details: ${window.location.origin}/customer/share/${tx.customerId}`; window.location.href = `sms:${customerPhone}?body=${encodeURIComponent(msg)}`; } else alert("No phone number"); }} className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-blue-600">
+                        <button onClick={() => { if (customerPhone) { const msg = `${userData?.businessName || 'HisabKhata User'} has requested ₹${absAmount} on HisabKhata. Details: ${window.location.origin}/customer/share/${tx.customerId}`; window.location.href = `sms:${customerPhone}?body=${encodeURIComponent(msg)}`; } else alert("No phone number"); }} className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-blue-600">
                             <span className="material-symbols-outlined text-[24px]">sms</span>
                             <span className="text-[11px] font-medium text-gray-700">Send SMS</span>
                         </button>
-                        <button onClick={() => { if(customerPhone) { const msg = `${userData?.businessName || 'HisabKhata User'} (${userData?.phone || ''}) has requested a payment of ₹ ${absAmount.toLocaleString('en-IN')} on HisabKhata. Please visit ${window.location.origin}/customer/share/${tx.customerId} to view details. If the link is not clickable, please save this contact and try again.`; window.open(`https://wa.me/${customerPhone.includes('+') ? customerPhone : '91'+customerPhone}?text=${encodeURIComponent(msg)}`, '_blank'); } else alert("No phone number"); }} className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-[#25D366]">
+                        <button onClick={() => { if (customerPhone) { const msg = `${userData?.businessName || 'HisabKhata User'} (${userData?.phone || ''}) has requested a payment of ₹ ${absAmount.toLocaleString('en-IN')} on HisabKhata. Please visit ${window.location.origin}/customer/share/${tx.customerId} to view details. If the link is not clickable, please save this contact and try again.`; window.open(`https://wa.me/${customerPhone.includes('+') ? customerPhone : '91' + customerPhone}?text=${encodeURIComponent(msg)}`, '_blank'); } else alert("No phone number"); }} className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-[#25D366]">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
                             </svg>
                             <span className="text-[11px] font-medium text-gray-700">Send Whatsapp</span>
                         </button>
-                        <button 
-                            onClick={async () => { 
-                                if(customerEmail) { 
+                        <button
+                            onClick={async () => {
+                                if (customerEmail) {
                                     const businessName = userData?.businessName || userData?.name || 'HisabKhata User';
                                     const businessPhone = userData?.phone || '';
                                     const action = isGave ? 'requested a payment of' : 'recorded a payment of';
                                     const msg = `${businessName} (${businessPhone}) has ${action} ₹ ${absAmount.toLocaleString('en-IN')} on HisabKhata. Please visit ${window.location.origin}/customer/share/${tx.customerId} to view details.`;
-                                    
+
                                     try {
                                         await dbService.sendEmailNotification({
                                             to_email: customerEmail,
@@ -222,8 +226,8 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                                         // Fallback to mailto
                                         window.location.href = `mailto:${customerEmail}?subject=Payment Reminder&body=${encodeURIComponent(msg)}`;
                                     }
-                                } else alert("No email"); 
-                            }} 
+                                } else alert("No email");
+                            }}
                             className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-red-500"
                         >
                             <span className="material-symbols-outlined text-[24px]">mail</span>

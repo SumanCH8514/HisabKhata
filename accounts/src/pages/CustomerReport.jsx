@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import EntryDetailsDrawer from '../components/EntryDetailsDrawer';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// PDF libraries will be imported dynamically
 
 const CustomerReport = () => {
     const { id } = useParams();
@@ -146,7 +145,9 @@ const CustomerReport = () => {
             .trim();
     };
 
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
+        const { jsPDF } = await import('jspdf');
+        const autoTable = (await import('jspdf-autotable')).default;
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();

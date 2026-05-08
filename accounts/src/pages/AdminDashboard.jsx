@@ -39,6 +39,7 @@ const AdminDashboard = () => {
     const [transactions, setTransactions] = useState([]);
     const [globalSettings, setGlobalSettings] = useState({});
     const [emailJSConfig, setEmailJSConfig] = useState({ serviceId: '', templateId: '', publicKey: '' });
+    const [paymentEmailJS, setPaymentEmailJS] = useState({ serviceId: '', templateId: '', publicKey: '' });
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +62,9 @@ const AdminDashboard = () => {
             if (data.emailjs) {
                 setEmailJSConfig(data.emailjs);
             }
+            if (data.paymentEmailjs) {
+                setPaymentEmailJS(data.paymentEmailjs);
+            }
         });
 
         return () => {
@@ -73,8 +77,11 @@ const AdminDashboard = () => {
 
     const handleSaveEmailJS = async () => {
         try {
-            await dbService.updateGlobalSettings({ emailjs: emailJSConfig });
-            alert("EmailJS configuration saved successfully!");
+            await dbService.updateGlobalSettings({ 
+                emailjs: emailJSConfig,
+                paymentEmailjs: paymentEmailJS
+            });
+            alert("Email configurations saved successfully!");
         } catch (err) {
             console.error("Save failed:", err);
             alert("Failed to save configuration.");
@@ -735,7 +742,56 @@ const AdminDashboard = () => {
                                 className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
                             >
                                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                                Save Configuration
+                                Save Basic Config
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6">
+                    <div className="flex items-center gap-3">
+                        <ShieldCheck className="text-orange-400" />
+                        <h3 className="text-xl font-bold">Payment EmailJS Config</h3>
+                    </div>
+                    <p className="text-xs text-slate-400">Dedicated account for Verification & Payment Alerts</p>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Service ID</label>
+                            <input 
+                                type="text" 
+                                value={paymentEmailJS.serviceId || ''} 
+                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, serviceId: e.target.value})}
+                                placeholder="service_payment"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Verification Template ID</label>
+                            <input 
+                                type="text" 
+                                value={paymentEmailJS.templateId || ''} 
+                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, templateId: e.target.value})}
+                                placeholder="template_payment"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Public Key</label>
+                            <input 
+                                type="text" 
+                                value={paymentEmailJS.publicKey || ''} 
+                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, publicKey: e.target.value})}
+                                placeholder="user_payment"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                            />
+                        </div>
+                        <div className="flex gap-4 mt-4">
+                            <button 
+                                onClick={handleSaveEmailJS}
+                                className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                                Save Payment Config
                             </button>
                         </div>
                     </div>

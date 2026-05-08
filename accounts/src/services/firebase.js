@@ -20,7 +20,7 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 
-const sendEmailNotification = async (templateParams) => {
+export const sendEmailNotification = async (templateParams) => {
   try {
     // Basic email validation
     if (!templateParams.to_email || !templateParams.to_email.includes('@')) {
@@ -33,7 +33,12 @@ const sendEmailNotification = async (templateParams) => {
 
     if (settings.emailNotifications === false) return;
 
-    const config = settings.emailjs;
+    // Use specific payment config for payment related emails
+    let config = settings.emailjs;
+    if (templateParams.type === 'PAYMENT_VERIFICATION' && settings.paymentEmailjs) {
+      config = settings.paymentEmailjs;
+    }
+
     if (!config || !config.serviceId || !config.publicKey) {
       console.warn("EmailJS not configured in Admin Console.");
       return;
@@ -45,6 +50,9 @@ const sendEmailNotification = async (templateParams) => {
       templateId = config.welcomeTemplateId || config.templateId;
     } else if (templateParams.type === 'TRANSACTION') {
       templateId = config.alertTemplateId || config.templateId;
+    } else if (templateParams.type === 'PAYMENT_VERIFICATION') {
+      // For payment verification, we prioritize the specific template in payment config
+      templateId = config.templateId; 
     }
 
     if (!templateId) {
@@ -54,7 +62,10 @@ const sendEmailNotification = async (templateParams) => {
 
     const params = {
       ...templateParams,
-      email: templateParams.to_email // Alias for templates using {{email}}
+      email: templateParams.to_email, // Alias for templates using {{email}}
+      link: templateParams.action_url, // Alias for templates using {{link}}
+      verification_link: templateParams.action_url, // Alias for templates using {{verification_link}}
+      action_link: templateParams.action_url // Alias for templates using {{action_link}}
     };
 
     console.log(`email to: ${params.email}`);

@@ -22,6 +22,7 @@ export const calculateProfileStrength = (userData) => {
         userData.type,
         userData.gstin,
         userData.bankAccount,
+        userData.upiId,
         userData.staffDetails
     ];
 

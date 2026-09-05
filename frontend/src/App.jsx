@@ -25,6 +25,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfCondition from './pages/TermsOfCondition';
 import PaymentVerification from './pages/PaymentVerification';
 import Payments from './pages/Payments';
+import PWAInstallBanner from './components/PWAInstallBanner';
+import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -34,6 +36,7 @@ function App() {
   if (globalSettings?.maintenanceMode && !isAdmin) {
     return (
       <Router>
+        <OfflineIndicator />
         <Routes>
           <Route path="*" element={<Maintenance />} />
         </Routes>
@@ -43,6 +46,8 @@ function App() {
 
   return (
     <Router>
+      <OfflineIndicator />
+      <PWAInstallBanner />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

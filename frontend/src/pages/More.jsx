@@ -15,12 +15,15 @@ import {
     CalendarClock,
     ShieldCheck,
     Wallet,
-    Store
+    Store,
+    Download
 } from 'lucide-react';
 import { calculateProfileStrength } from '../utils/profileUtils';
+import { usePWAInstall } from '../utils/pwaUtils';
 
 const More = () => {
     const { currentUser, userData, isAdmin } = useAuth();
+    const { canInstall, isInstalled, triggerInstall } = usePWAInstall();
     const navigate = useNavigate();
 
     const displayName = userData?.name || currentUser?.displayName || 'Merchant';
@@ -138,8 +141,28 @@ const More = () => {
                         ))}
                     </div>
 
-                    {/* Bottom Settings Link */}
-                    <div className="pt-4">
+                    {/* App Install Button & Settings */}
+                    <div className="pt-4 space-y-2.5">
+                        {canInstall && !isInstalled && (
+                            <button
+                                onClick={triggerInstall}
+                                className="w-full bg-gradient-to-r from-[#0057BB] to-[#004291] text-white px-5 py-3.5 rounded-2xl shadow-md shadow-blue-500/15 flex items-center justify-between group active:scale-[0.99] transition-all cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
+                                        <Download size={20} />
+                                    </div>
+                                    <div className="text-left">
+                                        <span className="block text-xs font-black tracking-wide">Install HisabKhata App</span>
+                                        <span className="block text-[10px] text-blue-100 font-medium">Faster access & offline support</span>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-bold bg-white text-[#0057BB] px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                    Install
+                                </span>
+                            </button>
+                        )}
+
                         <button
                             onClick={() => navigate('/settings')}
                             className="w-full bg-white px-5 py-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group active:bg-slate-50 transition-colors"

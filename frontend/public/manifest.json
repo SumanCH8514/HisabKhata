@@ -1,0 +1,74 @@
+{
+  "name": "HisabKhata - Simple & Secure Digital Ledger",
+  "short_name": "HisabKhata",
+  "description": "Manage your business transactions, customer ledgers, and credit history with HisabKhata.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0057BB",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": [
+    "finance",
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Customer Ledgers",
+      "short_name": "Customers",
+      "description": "View and manage customer khata balances",
+      "url": "/customers",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Transaction History",
+      "short_name": "Transactions",
+      "description": "View all debit and credit entries",
+      "url": "/transactions",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Online Payments",
+      "short_name": "Payments",
+      "description": "Review online payment collections",
+      "url": "/payments",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Financial Reports",
+      "short_name": "Reports",
+      "description": "Download statement and business reports",
+      "url": "/reports",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -172,11 +172,30 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                             </div>
                         )}
 
-                        {tx.attachment && (
-                            <div className="px-4 pb-4 flex gap-2 overflow-x-auto">
-                                <img src={tx.attachment} alt="Bill" className="w-16 h-16 object-cover rounded border border-gray-200 cursor-pointer" onClick={() => onViewImage ? onViewImage(tx.attachment) : window.open(tx.attachment, '_blank')} />
-                            </div>
-                        )}
+                        {(() => {
+                            const txAttachments = Array.isArray(tx.attachments) && tx.attachments.length > 0
+                                ? tx.attachments
+                                : (tx.attachment ? [tx.attachment] : []);
+                            if (txAttachments.length === 0) return null;
+                            return (
+                                <div className="px-4 pb-4">
+                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                                        Attachments ({txAttachments.length})
+                                    </p>
+                                    <div className="flex gap-2.5 overflow-x-auto pb-1 custom-scrollbar">
+                                        {txAttachments.map((imgUrl, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="relative w-16 h-16 rounded-xl border border-gray-200 overflow-hidden cursor-pointer shrink-0 shadow-sm hover:scale-105 transition-transform bg-slate-50"
+                                                onClick={() => onViewImage ? onViewImage(imgUrl) : window.open(imgUrl, '_blank')}
+                                            >
+                                                <img src={imgUrl} alt={`Bill ${idx + 1}`} className="w-full h-full object-cover" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         <div className="px-4 py-3 border-t border-gray-100 flex justify-between items-center bg-[#fafafa]">
                             <p className="text-[14px] text-gray-700">Running Balance</p>

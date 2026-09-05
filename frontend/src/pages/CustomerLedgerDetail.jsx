@@ -21,7 +21,8 @@ const CustomerLedgerDetail = () => {
     const [transactionType, setTransactionType] = useState('gave');
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [isEntryDetailsOpen, setIsEntryDetailsOpen] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null);
+    const [previewImages, setPreviewImages] = useState([]);
+    const [previewIndex, setPreviewIndex] = useState(0);
 
     useEffect(() => {
         if (!id) return;
@@ -312,7 +313,15 @@ const CustomerLedgerDetail = () => {
                 customerPhoto={customer?.photoURL}
                 userData={userData}
                 onEdit={handleEditEntry}
-                onViewImage={setPreviewImage}
+                onViewImage={(img) => {
+                    if (Array.isArray(img)) {
+                        setPreviewImages(img);
+                        setPreviewIndex(0);
+                    } else if (img) {
+                        setPreviewImages([img]);
+                        setPreviewIndex(0);
+                    }
+                }}
             />
 
             <ImportTransactionsModal
@@ -324,16 +333,76 @@ const CustomerLedgerDetail = () => {
                 }}
             />
 
-            {/* Image Preview Modal */}
-            {previewImage && (
+            {/* Image Preview Modal Gallery */}
+            {previewImages.length > 0 && (
                 <div 
-                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
-                    onClick={() => setPreviewImage(null)}
+                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImages([])}
                 >
-                    <img src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
-                    <button className="absolute top-6 right-6 text-white p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
-                        <span className="material-symbols-outlined text-[28px]">close</span>
-                    </button>
+                    {/* Top bar */}
+                    <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10 max-w-4xl mx-auto">
+                        <div className="text-white text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+                            {previewImages.length > 1 ? `${previewIndex + 1} / ${previewImages.length} Bills` : 'Bill Attachment'}
+                        </div>
+                        <button 
+                            onClick={() => setPreviewImages([])}
+                            className="text-white p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[24px] md:text-[28px]">close</span>
+                        </button>
+                    </div>
+
+                    {/* Main image with left/right buttons */}
+                    <div className="relative max-w-4xl max-h-[75vh] flex items-center justify-center">
+                        {previewImages.length > 1 && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewIndex((prev) => (prev > 0 ? prev - 1 : previewImages.length - 1));
+                                }}
+                                className="absolute left-2 md:-left-12 z-20 text-white p-2 bg-black/60 hover:bg-black/90 rounded-full backdrop-blur-md transition-all active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-[24px]">chevron_left</span>
+                            </button>
+                        )}
+
+                        <img 
+                            src={previewImages[previewIndex]} 
+                            alt={`Bill Attachment ${previewIndex + 1}`} 
+                            className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+
+                        {previewImages.length > 1 && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewIndex((prev) => (prev < previewImages.length - 1 ? prev + 1 : 0));
+                                }}
+                                className="absolute right-2 md:-right-12 z-20 text-white p-2 bg-black/60 hover:bg-black/90 rounded-full backdrop-blur-md transition-all active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-[24px]">chevron_right</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Bottom thumbnail strip */}
+                    {previewImages.length > 1 && (
+                        <div 
+                            className="mt-4 flex gap-2 overflow-x-auto max-w-full p-2 bg-black/40 rounded-2xl backdrop-blur-md z-10 custom-scrollbar"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {previewImages.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setPreviewIndex(idx)}
+                                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${previewIndex === idx ? 'border-blue-500 scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                >
+                                    <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

@@ -1,11 +1,3 @@
-/**
- * Standalone CLI Script to Migrate Base64 Images in Firebase to Cloudflare R2
- * 
- * Usage:
- *   node scripts/migrate-r2-cli.js --email your-email@domain.com --password yourpassword
- *   or set FIREBASE_EMAIL and FIREBASE_PASSWORD in .env
- */
-
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, update } from 'firebase/database';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
@@ -223,7 +215,27 @@ async function runMigration() {
         // 3. Transactions
         console.log('\n🧾 3. Checking Transaction Attachments (Bills/Receipts)...');
         for (const [txid, t] of Object.entries(transactions)) {
-            if (isBase64(t.attachment)) {
+            if (Array.isArray(t.attachments)) {
+                for (let idx = 0; idx < t.attachments.length; idx++) {
+                    const att = t.attachments[idx];
+                    if (isBase64(att)) {
+                        totalBase64Found++;
+                        process.stdout.write(`  -> Migrating tx attachment ${txid} [#${idx + 1}]... `);
+                        try {
+                            const url = await uploadImage(s3, att, R2_FOLDERS.TRANSACTION, `tx_${txid}_${idx}_${Date.now()}`);
+                            await update(ref(db, `transactions/${txid}/attachments`), { [idx]: url });
+                            if (idx === 0) {
+                                await update(ref(db, `transactions/${txid}`), { attachment: url, migratedAt: Date.now() });
+                            }
+                            console.log(`✅ ${url}`);
+                            migratedCount++;
+                        } catch (err) {
+                            console.log(`❌ Error: ${err.message}`);
+                            failedCount++;
+                        }
+                    }
+                }
+            } else if (isBase64(t.attachment)) {
                 totalBase64Found++;
                 process.stdout.write(`  -> Migrating tx attachment ${txid}... `);
                 try {

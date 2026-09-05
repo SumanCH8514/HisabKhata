@@ -376,7 +376,24 @@ export const migrateAllBase64ToR2 = async (onProgress = () => {}, customConfig =
 
         Object.entries(transactionsData).forEach(([txid, tx]) => {
             stats.totalScanned++;
-            if (isBase64(tx?.attachment)) {
+            if (Array.isArray(tx?.attachments)) {
+                tx.attachments.forEach((att, idx) => {
+                    if (isBase64(att)) {
+                        migrationQueue.push({
+                            type: 'TRANSACTION_ATTACHMENT',
+                            id: `${txid}_${idx}`,
+                            field: 'attachments',
+                            isArrayField: true,
+                            arrayIndex: idx,
+                            dbPath: `transactions/${txid}`,
+                            folder: R2_FOLDERS.TRANSACTION,
+                            customFilename: `tx_${txid}_${idx}_${Date.now()}`,
+                            data: att,
+                            label: `Transaction Attachment #${idx + 1}: ${txid}`
+                        });
+                    }
+                });
+            } else if (isBase64(tx?.attachment)) {
                 migrationQueue.push({
                     type: 'TRANSACTION_ATTACHMENT',
                     id: txid,
@@ -441,10 +458,19 @@ export const migrateAllBase64ToR2 = async (onProgress = () => {}, customConfig =
                 const publicUrl = await uploadToR2(item.data, item.folder, item.customFilename, config);
 
                 // 2. Update Firebase DB record
-                await update(ref(db, item.dbPath), {
-                    [item.field]: publicUrl,
-                    migratedAt: Date.now()
-                });
+                if (item.isArrayField) {
+                    await update(ref(db, `${item.dbPath}/attachments`), {
+                        [item.arrayIndex]: publicUrl
+                    });
+                    if (item.arrayIndex === 0) {
+                        await update(ref(db, item.dbPath), { attachment: publicUrl, migratedAt: Date.now() });
+                    }
+                } else {
+                    await update(ref(db, item.dbPath), {
+                        [item.field]: publicUrl,
+                        migratedAt: Date.now()
+                    });
+                }
 
                 stats.totalMigrated++;
                 if (item.type === 'USER_PHOTO') stats.users++;

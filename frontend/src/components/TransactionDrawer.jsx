@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Calendar, Camera, ChevronDown, X, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, Camera, ChevronDown, X, Check, Plus, Loader2 } from 'lucide-react';
 import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
 
@@ -14,7 +14,8 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
     const [description, setDescription] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
-    const [attachment, setAttachment] = useState(null); // URL or Base64 string
+    const [attachments, setAttachments] = useState([]); // Array of URLs or Base64 strings
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -22,38 +23,52 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                 setAmount(Math.abs(transaction.amount).toString());
                 setDescription(transaction.description || '');
                 setDate(transaction.date || new Date().toISOString().split('T')[0]);
-                setAttachment(transaction.attachment || null);
+                const initialList = Array.isArray(transaction.attachments) && transaction.attachments.length > 0
+                    ? transaction.attachments
+                    : (transaction.attachment ? [transaction.attachment] : []);
+                setAttachments(initialList);
             } else {
                 setAmount('');
                 setDescription('');
                 setDate(new Date().toISOString().split('T')[0]);
-                setAttachment(null);
+                setAttachments([]);
             }
         }
     }, [isOpen, transaction]);
 
     const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
+        setIsUploading(true);
         try {
-            // Resize to max 1200x1200 and compress to 80% JPEG
-            const compressed = await compressImage(file, 1200, 1200, 0.8);
-            setAttachment(compressed); // Immediate preview
-            try {
-                const r2Url = await uploadToR2(compressed, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}`);
-                // Delete previous attachment if replacing
-                if (transaction?.attachment && transaction.attachment.startsWith('http') && transaction.attachment !== r2Url) {
-                    deleteFromR2(transaction.attachment).catch(() => {});
+            for (const file of files) {
+                // Resize to max 1200x1200 and compress to 80% JPEG
+                const compressed = await compressImage(file, 1200, 1200, 0.8);
+                setAttachments(prev => [...prev, compressed]); // Immediate preview
+
+                try {
+                    const r2Url = await uploadToR2(compressed, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+                    setAttachments(prev => prev.map(item => item === compressed ? r2Url : item));
+                } catch (r2Err) {
+                    console.warn("R2 upload error, using compressed base64 fallback:", r2Err);
                 }
-                setAttachment(r2Url);
-            } catch (r2Err) {
-                console.warn("R2 upload error, using compressed base64 fallback:", r2Err);
             }
         } catch (err) {
             console.error("Failed to process image:", err);
             alert("Failed to process image");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    };
+
+    const handleRemoveAttachment = (indexToRemove) => {
+        const toRemove = attachments[indexToRemove];
+        if (toRemove && toRemove.startsWith('http')) {
+            deleteFromR2(toRemove).catch(() => {});
+        }
+        setAttachments(prev => prev.filter((_, idx) => idx !== indexToRemove));
     };
 
     const handleSubmit = async (e) => {
@@ -69,20 +84,20 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
             const now = new Date();
             selectedDateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
-            // Ensure attachment is uploaded to R2 if still base64
-            let finalAttachment = attachment;
-            if (attachment && attachment.startsWith('data:')) {
-                try {
-                    finalAttachment = await uploadToR2(attachment, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}`);
-                    if (transaction?.attachment && transaction.attachment.startsWith('http') && transaction.attachment !== finalAttachment) {
-                        deleteFromR2(transaction.attachment).catch(() => {});
+            // Ensure any remaining base64 attachments are uploaded to R2
+            const finalAttachments = [];
+            for (const att of attachments) {
+                if (att && att.startsWith('data:')) {
+                    try {
+                        const r2Url = await uploadToR2(att, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+                        finalAttachments.push(r2Url);
+                    } catch (r2Err) {
+                        console.warn("R2 upload fallback:", r2Err);
+                        finalAttachments.push(att);
                     }
-                } catch (r2Err) {
-                    console.warn("R2 upload fallback:", r2Err);
+                } else if (att) {
+                    finalAttachments.push(att);
                 }
-            } else if (!attachment && transaction?.attachment && transaction.attachment.startsWith('http')) {
-                // Attachment was removed
-                deleteFromR2(transaction.attachment).catch(() => {});
             }
 
             const txData = {
@@ -91,7 +106,8 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                 date,
                 timestamp: selectedDateObj.getTime(),
                 type: type === 'got' ? 'GOT' : 'GAVE',
-                attachment: finalAttachment
+                attachments: finalAttachments,
+                attachment: finalAttachments[0] || null // backward compatibility
             };
 
             if (transaction) {
@@ -109,30 +125,41 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         }
     };
 
-    const handlePaste = (e) => {
-        const items = e.clipboardData.items;
-        let imageFound = false;
+    const handlePaste = async (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
 
+        const imageFiles = [];
         for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
+            if (items[i].type && items[i].type.startsWith('image/')) {
                 const blob = items[i].getAsFile();
-                if (blob) {
-                    imageFound = true;
-                    if (blob.size > 1024 * 1024) {
-                        alert('Pasted image is too large (>1MB)');
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        setAttachment(reader.result);
-                    };
-                    reader.readAsDataURL(blob);
-                }
+                if (blob) imageFiles.push(blob);
             }
         }
-        if (imageFound) {
-            e.preventDefault();
+
+        if (imageFiles.length === 0) return;
+        e.preventDefault();
+
+        setIsUploading(true);
+        for (const blob of imageFiles) {
+            if (blob.size > 5 * 1024 * 1024) {
+                alert('Pasted image is too large (>5MB)');
+                continue;
+            }
+            try {
+                const compressed = await compressImage(blob, 1200, 1200, 0.8);
+                setAttachments(prev => [...prev, compressed]);
+                try {
+                    const r2Url = await uploadToR2(compressed, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+                    setAttachments(prev => prev.map(item => item === compressed ? r2Url : item));
+                } catch (r2Err) {
+                    console.warn("R2 upload fallback:", r2Err);
+                }
+            } catch (err) {
+                console.error("Failed to paste image:", err);
+            }
         }
+        setIsUploading(false);
     };
 
     if (!isOpen) return null;
@@ -235,42 +262,80 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 className="hidden"
                                 onChange={handleFileChange}
                             />
                             <button
                                 type="button"
-                                onClick={() => attachment ? setAttachment(null) : fileInputRef.current.click()}
+                                onClick={() => fileInputRef.current?.click()}
                                 onPaste={handlePaste}
-                                title="Click to upload or Paste (Ctrl+V) image"
-                                className="w-full bg-white px-2 h-12 rounded-[14px] border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 group hover:border-slate-400 transition-all duration-300 active:scale-[0.98] outline-none focus:ring-2 focus:ring-blue-400"
+                                title="Click to upload or Paste (Ctrl+V) images"
+                                className="w-full bg-white px-2.5 h-12 rounded-[14px] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-slate-400 transition-all duration-300 active:scale-[0.98] outline-none focus:ring-2 focus:ring-blue-400"
                             >
-                                {attachment ? (
-                                    <>
-                                        <Check className="text-green-500" size={24} />
-                                        <span className="text-[15px] font-black text-slate-700">Attached</span>
-                                        <X size={16} className="text-slate-300 ml-1" />
-                                    </>
-                                ) : (
-                                    <>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    {attachments.length > 0 ? (
+                                        <Check className="text-green-500 shrink-0" size={18} />
+                                    ) : (
                                         <Camera style={{ color: activeIconColor }} size={18} className="shrink-0" />
-                                        <span className="text-[13px] font-bold text-slate-700 truncate">Attach Bills</span>
-                                    </>
-                                )}
+                                    )}
+                                    <span className="text-[13px] font-bold text-slate-700 truncate">
+                                        {attachments.length > 0 ? `${attachments.length} Attached` : 'Attach Bills'}
+                                    </span>
+                                </div>
+                                <Plus size={15} className="text-slate-400 shrink-0" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Image Preview Thumbnail */}
-                    {attachment && (
-                        <div className="animate-in fade-in zoom-in duration-300">
-                            <div className="relative w-24 h-24 rounded-2xl border-2 border-white shadow-md overflow-hidden group">
-                                <img src={attachment} alt="Bill" className="w-full h-full object-cover" />
+                    {/* Image Preview Grid */}
+                    {(attachments.length > 0 || isUploading) && (
+                        <div className="space-y-2 animate-in fade-in zoom-in duration-300">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-bold text-slate-400 ml-1 tracking-wider uppercase">
+                                    Attached Bills ({attachments.length})
+                                </label>
                                 <button
-                                    onClick={() => setAttachment(null)}
-                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 active:scale-95 transition-transform"
                                 >
-                                    <X className="text-white" size={24} />
+                                    <Plus size={14} /> Add More
+                                </button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2.5">
+                                {attachments.map((att, idx) => (
+                                    <div key={idx} className="relative w-20 h-20 rounded-xl border-2 border-white shadow-sm overflow-hidden group bg-slate-100 shrink-0">
+                                        <img src={att} alt={`Bill ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); handleRemoveAttachment(idx); }}
+                                            title="Remove this attachment"
+                                            className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full shadow transition-colors flex items-center justify-center"
+                                        >
+                                            <X size={12} strokeWidth={3} />
+                                        </button>
+                                        <div className="absolute bottom-0 inset-x-0 bg-black/40 text-[9px] font-bold text-white text-center py-0.5 pointer-events-none">
+                                            #{idx + 1}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {isUploading && (
+                                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 flex flex-col items-center justify-center gap-1 text-blue-500 shrink-0 animate-pulse">
+                                        <Loader2 size={18} className="animate-spin" />
+                                        <span className="text-[9px] font-bold">Uploading</span>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/30 text-slate-400 hover:text-blue-600 flex flex-col items-center justify-center gap-1 transition-all shrink-0 active:scale-95"
+                                >
+                                    <Plus size={20} />
+                                    <span className="text-[10px] font-bold">Add Bill</span>
                                 </button>
                             </div>
                         </div>

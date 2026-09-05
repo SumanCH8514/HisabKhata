@@ -12,11 +12,22 @@ const CustomerShareableView = () => {
     const [customer, setCustomer] = useState(null);
     const [owner, setOwner] = useState(null);
     const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [viewImage, setViewImage] = useState(null);
+    const [viewImages, setViewImages] = useState([]);
+    const [viewIndex, setViewIndex] = useState(0);
     const [globalSettings, setGlobalSettings] = useState(null);
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
+
+    const handleOpenView = (imgs, idx = 0) => {
+        if (!imgs) return;
+        if (Array.isArray(imgs)) {
+            setViewImages(imgs);
+            setViewIndex(idx);
+        } else {
+            setViewImages([imgs]);
+            setViewIndex(0);
+        }
+    };
 
     const handleScreenshotChange = async (e) => {
         const file = e.target.files[0];
@@ -795,21 +806,76 @@ const CustomerShareableView = () => {
                 </div>
             )}
 
-            {/* Image Preview Modal */}
-            {viewImage && (
+            {/* Image Preview Modal Gallery */}
+            {viewImages.length > 0 && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 no-print"
-                    onClick={() => setViewImage(null)}
+                    className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 no-print"
+                    onClick={() => setViewImages([])}
                 >
-                    <button className="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors">
-                        <span className="material-symbols-outlined text-[32px]">close</span>
-                    </button>
-                    <img
-                        src={viewImage}
-                        alt="Bill Attachment"
-                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    {/* Top bar */}
+                    <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10 max-w-4xl mx-auto">
+                        <div className="text-white text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+                            {viewImages.length > 1 ? `${viewIndex + 1} / ${viewImages.length} Bills` : 'Bill Attachment'}
+                        </div>
+                        <button 
+                            onClick={() => setViewImages([])}
+                            className="text-white p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[24px] md:text-[28px]">close</span>
+                        </button>
+                    </div>
+
+                    {/* Main image with left/right buttons */}
+                    <div className="relative max-w-4xl max-h-[75vh] flex items-center justify-center">
+                        {viewImages.length > 1 && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewIndex((prev) => (prev > 0 ? prev - 1 : viewImages.length - 1));
+                                }}
+                                className="absolute left-2 md:-left-12 z-20 text-white p-2 bg-black/60 hover:bg-black/90 rounded-full backdrop-blur-md transition-all active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-[24px]">chevron_left</span>
+                            </button>
+                        )}
+
+                        <img
+                            src={viewImages[viewIndex]}
+                            alt={`Bill Attachment ${viewIndex + 1}`}
+                            className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+
+                        {viewImages.length > 1 && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewIndex((prev) => (prev < viewImages.length - 1 ? prev + 1 : 0));
+                                }}
+                                className="absolute right-2 md:-right-12 z-20 text-white p-2 bg-black/60 hover:bg-black/90 rounded-full backdrop-blur-md transition-all active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-[24px]">chevron_right</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Bottom thumbnail strip */}
+                    {viewImages.length > 1 && (
+                        <div 
+                            className="mt-4 flex gap-2 overflow-x-auto max-w-full p-2 bg-black/40 rounded-2xl backdrop-blur-md z-10 custom-scrollbar"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {viewImages.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setViewIndex(idx)}
+                                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${viewIndex === idx ? 'border-blue-500 scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                >
+                                    <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -968,16 +1034,22 @@ const CustomerShareableView = () => {
                                                     {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
                                                 </p>
                                                 <p className="text-[9px] md:text-xs text-slate-500 mt-0.5 line-clamp-2 md:line-clamp-none break-words leading-tight">{tx.description || 'General Entry'}</p>
-                                                {tx.attachment && (
-                                                    <div className="mt-1 no-print">
-                                                        <button
-                                                            onClick={() => setViewImage(tx.attachment)}
-                                                            className="text-blue-600 hover:text-blue-700"
-                                                        >
-                                                            <span className="material-symbols-outlined text-[16px] md:text-[18px]">image</span>
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
+                                                    if (atts.length === 0) return null;
+                                                    return (
+                                                        <div className="mt-1 no-print">
+                                                            <button
+                                                                onClick={() => handleOpenView(atts, 0)}
+                                                                className="text-blue-600 hover:text-blue-700 flex items-center gap-0.5 text-xs font-bold"
+                                                                title={`${atts.length} bill attachment(s)`}
+                                                            >
+                                                                <span className="material-symbols-outlined text-[16px] md:text-[18px]">image</span>
+                                                                {atts.length > 1 && <span>{atts.length}</span>}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
 
                                             {/* Debit Column */}

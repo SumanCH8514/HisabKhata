@@ -22,28 +22,87 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setIsUploading(true);
+    const processImageFile = async (file) => {
+        if (!file || !file.type?.startsWith('image/')) return;
+        setIsUploading(true);
+        try {
+            const compressedBase64 = await compressImage(file, 500, 500, 0.8);
+            // Set temporary preview
+            setPhoto(compressedBase64);
             try {
-                const compressedBase64 = await compressImage(file, 500, 500, 0.8);
-                // Set temporary preview
-                setPhoto(compressedBase64);
-                try {
-                    const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
-                    setPhoto(r2Url);
-                } catch (r2Err) {
-                    console.warn("R2 upload error, storing compressed image fallback:", r2Err);
+                const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
+                setPhoto(r2Url);
+            } catch (r2Err) {
+                console.warn("R2 upload error, storing compressed image fallback:", r2Err);
+            }
+        } catch (error) {
+            console.error("Compression error:", error);
+            alert("Failed to process image");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            processImageFile(file);
+        }
+    };
+
+    const handlePaste = (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.startsWith('image/')) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    e.preventDefault();
+                    processImageFile(blob);
+                    break;
                 }
-            } catch (error) {
-                console.error("Compression error:", error);
-                alert("Failed to process image");
-            } finally {
-                setIsUploading(false);
             }
         }
     };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = e.dataTransfer?.files;
+        if (files && files[0] && files[0].type.startsWith('image/')) {
+            processImageFile(files[0]);
+        }
+    };
+
+    React.useEffect(() => {
+        if (!isOpen) return;
+
+        const onWindowPaste = (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type && items[i].type.startsWith('image/')) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        e.preventDefault();
+                        processImageFile(blob);
+                        break;
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('paste', onWindowPaste);
+        return () => {
+            window.removeEventListener('paste', onWindowPaste);
+        };
+    }, [isOpen]);
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -85,7 +144,7 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity" onClick={onClose} />
 
             {/* Drawer panel */}
-            <div className="relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div onPaste={handlePaste} className="relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-slate-800">
@@ -111,19 +170,26 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
 
                         {/* Photo Upload */}
                         <div className="flex flex-col items-center pb-1">
-                            <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('new-party-photo').click()}>
-                                <div className="w-20 h-20 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shadow-inner relative">
+                            <div 
+                                className="relative group cursor-pointer" 
+                                onClick={() => !isUploading && document.getElementById('new-party-photo').click()}
+                                onDragOver={handleDragOver}
+                                onDrop={handleDrop}
+                                title="Click, paste (Ctrl+V), or drag & drop photo"
+                            >
+                                <div className="w-20 h-20 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shadow-inner relative group-hover:border-blue-300 transition-colors">
                                     {isUploading ? (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/50">
-                                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                                         </div>
                                     ) : photo ? (
                                         <img src={photo} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="material-symbols-outlined text-slate-300 text-3xl">add_a_photo</span>
                                     )}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                                        <span className="material-symbols-outlined text-white text-xl">photo_camera</span>
+                                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity rounded-full text-white">
+                                        <span className="material-symbols-outlined text-2xl">photo_camera</span>
+                                        <span className="text-[8px] font-bold uppercase tracking-tighter">Paste / Upload</span>
                                     </div>
                                 </div>
                                 <input 
@@ -134,7 +200,9 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                                     onChange={handleFileChange}
                                 />
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Party Photo (Optional)</p>
+                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest text-center">
+                                Tap or Paste (Ctrl+V) to change photo
+                            </p>
                         </div>
 
                         {/* Party Name */}

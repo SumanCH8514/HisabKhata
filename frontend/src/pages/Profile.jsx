@@ -68,32 +68,88 @@ const Profile = () => {
         }
     }, [currentUser]);
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setIsUploading(true);
-            const oldPhotoURL = profileData.photoURL;
+    const processImageFile = async (file) => {
+        if (!file || !file.type?.startsWith('image/')) return;
+        setIsUploading(true);
+        const oldPhotoURL = profileData.photoURL;
+        try {
+            const compressedBase64 = await compressImage(file, 500, 500, 0.8);
+            let finalPhotoURL = compressedBase64;
             try {
-                const compressedBase64 = await compressImage(file, 500, 500, 0.8);
-                let finalPhotoURL = compressedBase64;
-                try {
-                    finalPhotoURL = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `user_${currentUser.uid}_${Date.now()}`);
-                    // If successfully uploaded to R2 and there was an old R2 photo, delete it
-                    if (oldPhotoURL && oldPhotoURL.startsWith('http') && oldPhotoURL !== finalPhotoURL) {
-                        deleteFromR2(oldPhotoURL).catch(err => console.warn('Could not remove old profile photo from R2:', err));
-                    }
-                } catch (r2Err) {
-                    console.warn("R2 upload error, falling back to compressed image:", r2Err);
+                finalPhotoURL = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `user_${currentUser.uid}_${Date.now()}`);
+                // If successfully uploaded to R2 and there was an old R2 photo, delete it
+                if (oldPhotoURL && oldPhotoURL.startsWith('http') && oldPhotoURL !== finalPhotoURL) {
+                    deleteFromR2(oldPhotoURL).catch(err => console.warn('Could not remove old profile photo from R2:', err));
                 }
-                await dbService.updateUserProfile(currentUser.uid, { photoURL: finalPhotoURL });
-            } catch (error) {
-                console.error("Photo processing/upload failed:", error);
-                alert("Failed to process or upload photo. Please try again.");
-            } finally {
-                setIsUploading(false);
+            } catch (r2Err) {
+                console.warn("R2 upload error, falling back to compressed image:", r2Err);
+            }
+            await dbService.updateUserProfile(currentUser.uid, { photoURL: finalPhotoURL });
+        } catch (error) {
+            console.error("Photo processing/upload failed:", error);
+            alert("Failed to process or upload photo. Please try again.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            processImageFile(file);
+        }
+    };
+
+    const handlePaste = (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.startsWith('image/')) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    e.preventDefault();
+                    processImageFile(blob);
+                    break;
+                }
             }
         }
     };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = e.dataTransfer?.files;
+        if (files && files[0] && files[0].type.startsWith('image/')) {
+            processImageFile(files[0]);
+        }
+    };
+
+    useEffect(() => {
+        const onWindowPaste = (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type && items[i].type.startsWith('image/')) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        e.preventDefault();
+                        processImageFile(blob);
+                        break;
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('paste', onWindowPaste);
+        return () => {
+            window.removeEventListener('paste', onWindowPaste);
+        };
+    }, [currentUser, profileData]);
 
     const openEditModal = (key, label, value) => {
         setEditingField({ key, label, value: value || '' });
@@ -168,8 +224,14 @@ const Profile = () => {
                 <main className="max-w-2xl mx-auto w-full bg-white min-h-screen shadow-sm relative z-10">
                     {/* Photo & Strength Section */}
                     <div className="pt-8 pb-6 flex flex-col items-center border-b border-slate-100 bg-white">
-                        <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('avatar-upload').click()}>
-                            <div className="w-24 h-24 rounded-full bg-pink-500 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-3xl font-black text-white relative">
+                        <div 
+                            className="relative group cursor-pointer" 
+                            onClick={() => !isUploading && document.getElementById('avatar-upload').click()}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            title="Click, paste (Ctrl+V), or drag & drop photo"
+                        >
+                            <div className="w-24 h-24 rounded-full bg-pink-500 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-3xl font-black text-white relative group-hover:scale-105 transition-transform">
                                 {isUploading ? (
                                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                                         <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>

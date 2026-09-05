@@ -3,7 +3,7 @@ import { authService } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 
-const AppMobileHeader = ({ rightElement, onBack, showLogout = true }) => {
+const AppMobileHeader = ({ rightElement, onBack, showLogout = true, sticky = true }) => {
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -18,7 +18,7 @@ const AppMobileHeader = ({ rightElement, onBack, showLogout = true }) => {
     };
 
     return (
-        <header className="md:hidden sticky top-0 z-30 flex h-14 w-full items-center justify-between px-4 bg-white border-b border-gray-100 shadow-sm shrink-0">
+        <header className={`md:hidden ${sticky ? 'sticky top-0 z-30' : 'relative'} flex h-14 w-full items-center justify-between px-4 bg-white border-b border-gray-100 shadow-sm shrink-0`}>
             <div className="flex items-center gap-2.5">
                 {onBack && (
                     <button onClick={onBack} className="p-1 -ml-1 text-slate-500 hover:text-slate-800 transition-colors">

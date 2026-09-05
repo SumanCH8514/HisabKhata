@@ -591,11 +591,11 @@ const Customers = () => {
                                 <div
                                     key={customer.id}
                                     onClick={() => setSelectedCustomer(customer)}
-                                    className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
+                                    className={`flex items-center gap-2.5 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
                                 >
                                     {/* Avatar with dynamic initial or photo */}
                                     <div
-                                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm overflow-hidden"
+                                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0 shadow-sm overflow-hidden"
                                         style={{ backgroundColor: customer.photoURL ? 'transparent' : bgColor }}
                                     >
                                         {customer.photoURL ? (
@@ -606,12 +606,12 @@ const Customers = () => {
                                     </div>
 
                                     {/* Name, Time and Due Date */}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
+                                    <div className="flex-1 min-w-0 pr-1">
+                                        <p className="text-[14px] sm:text-[15px] font-semibold text-gray-900 truncate mb-0.5">
                                             {customer.name}
                                         </p>
                                         <div className="flex items-center gap-1.5 text-gray-400 overflow-hidden flex-nowrap">
-                                            <div className="flex items-center gap-1 shrink-0">
+                                            <div className="flex items-center gap-0.5 shrink-0">
                                                 <span className="material-symbols-outlined text-[12px]">schedule</span>
                                                 <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
                                                     {customer.updatedAt
@@ -626,8 +626,8 @@ const Customers = () => {
                                                 const dueStatus = getDueDateStatus(customer.dueDate);
                                                 if (!dueStatus) return null;
                                                 return (
-                                                    <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 whitespace-nowrap ${dueStatus.badgeColor}`}>
-                                                        <span className="material-symbols-outlined text-[10px]">timer</span>
+                                                    <span className={`inline-flex items-center gap-0.5 text-[8.5px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 whitespace-nowrap ${dueStatus.badgeColor}`}>
+                                                        <span className="material-symbols-outlined text-[9px] sm:text-[10px]">timer</span>
                                                         {dueStatus.shortLabel}
                                                     </span>
                                                 );
@@ -636,20 +636,20 @@ const Customers = () => {
                                     </div>
 
                                     {/* Amount and Status */}
-                                    <div className="text-right flex-shrink-0">
+                                    <div className="text-right shrink-0">
                                         {isZero ? (
-                                            <p className="text-sm font-bold text-gray-400">₹0</p>
+                                            <p className="text-xs sm:text-sm font-bold text-gray-400">₹0</p>
                                         ) : (
                                             <div className="flex flex-col items-end">
-                                                <div className="flex items-center gap-1">
-                                                    <span className={`text-[15px] font-black ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
+                                                <div className="flex items-center gap-0.5">
+                                                    <span className={`text-[13px] sm:text-[15px] font-black tracking-tight ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
                                                         ₹{balanceAbsolute}
                                                     </span>
-                                                    <span className={`material-symbols-outlined text-[16px] ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
+                                                    <span className={`material-symbols-outlined text-[13px] sm:text-[15px] ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
                                                         {isReceivable ? 'south_east' : 'north_east'}
                                                     </span>
                                                 </div>
-                                                <span className={`text-[9px] font-extrabold uppercase tracking-widest mt-0.5 px-1.5 py-0.5 rounded-sm ${isReceivable ? 'bg-red-50 text-red-400' : 'bg-green-50 text-green-500'}`}>
+                                                <span className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight mt-0.5 px-1 py-0.2 rounded-sm ${isReceivable ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
                                                     {isReceivable ? "You'll Get" : "You'll Give"}
                                                 </span>
                                             </div>
@@ -1513,7 +1513,7 @@ const Customers = () => {
     );
 };
 
-// Helper: format time ago (compact for clean mobile fit)
+// Helper: format time ago
 function formatTimeAgo(timestamp) {
     const now = Date.now();
     const diff = now - timestamp;
@@ -1522,11 +1522,11 @@ function formatTimeAgo(timestamp) {
     const days = Math.floor(diff / 86400000);
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
-    if (years > 0) return `${years}y ago`;
-    if (months > 0) return `${months}mo ago`;
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (mins > 0) return `${mins}m ago`;
+    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (mins > 0) return `${mins} minute${mins > 1 ? 's' : ''} ago`;
     return 'Just now';
 }
 

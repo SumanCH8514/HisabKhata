@@ -1,51 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirebaseErrorMessage } from '../utils/errorHandlers';
-import { X, ChevronDown, User, Phone, Mail, Building2, MapPin, Camera, Sparkles, Check } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { compressImage } from '../utils/imageUtils';
 import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
 
 const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     const { currentUser } = useAuth();
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
-    const [gst, setGst] = useState('');
-    const [address, setAddress] = useState('');
-    const [openingBalance, setOpeningBalance] = useState('');
-    const [balanceType, setBalanceType] = useState('give'); // 'give' | 'get'
-    const [partyType, setPartyType] = useState('customer'); // 'customer' | 'supplier'
+    const [name, setName] = useState(customer?.name || '');
+    const [phone, setPhone] = useState(customer?.phone || '');
+    const [email, setEmail] = useState(customer?.email || '');
+    const [openingBalance, setOpeningBalance] = useState(Math.abs(customer?.balance || 0) || '');
+    const [balanceType, setBalanceType] = useState(
+        !customer ? 'give'
+            : (customer.balance || 0) >= 0 ? 'get' : 'give'
+    );
+    const [partyType, setPartyType] = useState('customer');
     const [photo, setPhoto] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [isAddressOpen, setIsAddressOpen] = useState(false);
-
-    useEffect(() => {
-        if (customer && isOpen) {
-            setName(customer.name || '');
-            setPhone(customer.phone || '');
-            setEmail(customer.email || '');
-            setGst(customer.gst || '');
-            setAddress(customer.address || '');
-            setOpeningBalance(customer.balance ? String(Math.abs(customer.balance)) : '');
-            setBalanceType((customer.balance || 0) >= 0 ? 'get' : 'give');
-            setPartyType(customer.type || 'customer');
-            setPhoto(customer.photoURL || '');
-        } else if (!customer && isOpen) {
-            setName('');
-            setPhone('');
-            setEmail('');
-            setGst('');
-            setAddress('');
-            setOpeningBalance('');
-            setBalanceType('give');
-            setPartyType('customer');
-            setPhoto('');
-            setError('');
-        }
-    }, [customer, isOpen]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -53,6 +28,7 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             setIsUploading(true);
             try {
                 const compressedBase64 = await compressImage(file, 500, 500, 0.8);
+                // Set temporary preview
                 setPhoto(compressedBase64);
                 try {
                     const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
@@ -80,10 +56,8 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             const finalBalance = balanceType === 'get' ? Math.abs(balanceNum) : -Math.abs(balanceNum);
             const data = {
                 name: name.trim(),
-                phone: phone.trim(),
+                phone,
                 email: email.trim(),
-                gst: gst.trim(),
-                address: address.trim(),
                 balance: finalBalance,
                 type: partyType,
                 photoURL: photo
@@ -95,6 +69,7 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                 await dbService.addCustomer(currentUser.uid, data);
             }
             onClose();
+            setName(''); setPhone(''); setEmail(''); setOpeningBalance('');
         } catch (err) {
             setError(getFirebaseErrorMessage(err));
         } finally {
@@ -105,67 +80,50 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[120] flex justify-end">
+        <div className="fixed inset-0 z-[100] flex justify-end">
             {/* Backdrop */}
-            <div 
-                className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-300" 
-                onClick={onClose} 
-            />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity" onClick={onClose} />
 
             {/* Drawer panel */}
-            <div className="relative w-full max-w-[460px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 z-10">
+            <div className="relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-white">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-[#0057BB] border border-blue-100/60 shadow-sm">
-                            <User size={18} />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-black text-slate-800 tracking-tight">
-                                {customer ? 'Edit Party Details' : 'Add New Party'}
-                            </h2>
-                            <p className="text-[11px] font-medium text-slate-400">
-                                {customer ? 'Update party information' : 'Create a new customer or supplier ledger'}
-                            </p>
-                        </div>
-                    </div>
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                    <h2 className="text-xl font-bold text-slate-800">
+                        {customer ? 'Edit Party' : 'Add New Party'}
+                    </h2>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-                        title="Close Drawer"
+                        className="text-slate-400 hover:text-slate-600 transition-colors p-1"
                     >
-                        <X size={20} />
+                        <X size={24} />
                     </button>
                 </div>
 
                 {/* Form Body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                    <div className="space-y-5">
                         {error && (
-                            <div className="bg-red-50 border border-red-200/80 text-red-600 text-xs px-4 py-3 rounded-xl flex items-center gap-2 font-medium animate-in fade-in duration-200">
-                                <span className="material-symbols-outlined text-[18px]">error</span>
-                                <span>{error}</span>
+                            <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+                                <span className="material-symbols-outlined text-sm">error</span>
+                                {error}
                             </div>
                         )}
 
-                        {/* Photo Upload Card */}
-                        <div className="flex items-center gap-4 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100">
-                            <div 
-                                className="relative group cursor-pointer shrink-0" 
-                                onClick={() => !isUploading && document.getElementById('new-party-photo').click()}
-                            >
-                                <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#0057BB] bg-white flex items-center justify-center overflow-hidden transition-all shadow-sm group-hover:shadow-md">
+                        {/* Photo Upload */}
+                        <div className="flex flex-col items-center pb-1">
+                            <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('new-party-photo').click()}>
+                                <div className="w-20 h-20 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shadow-inner relative">
                                     {isUploading ? (
-                                        <div className="w-5 h-5 border-2 border-[#0057BB] border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+                                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
                                     ) : photo ? (
                                         <img src={photo} alt="" className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center text-slate-400 group-hover:text-[#0057BB] transition-colors">
-                                            <Camera size={20} />
-                                        </div>
+                                        <span className="material-symbols-outlined text-slate-300 text-3xl">add_a_photo</span>
                                     )}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
-                                        <Camera size={20} className="text-white" />
+                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                                        <span className="material-symbols-outlined text-white text-xl">photo_camera</span>
                                     </div>
                                 </div>
                                 <input 
@@ -176,82 +134,38 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                                     onChange={handleFileChange}
                                 />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-800 mb-0.5">Profile Photo</p>
-                                <p className="text-[11px] text-slate-400 leading-tight">Optional. Auto-compressed for fast loading.</p>
-                            </div>
-                        </div>
-
-                        {/* Party Type Selector (Segmented Cards) */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Party Type</label>
-                            <div className="grid grid-cols-2 gap-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
-                                <button
-                                    type="button"
-                                    onClick={() => setPartyType('customer')}
-                                    className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
-                                        partyType === 'customer'
-                                            ? 'bg-white text-[#0057BB] shadow-sm'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <User size={14} />
-                                    <span>Customer</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setPartyType('supplier')}
-                                    className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
-                                        partyType === 'supplier'
-                                            ? 'bg-white text-[#0057BB] shadow-sm'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Building2 size={14} />
-                                    <span>Supplier</span>
-                                </button>
-                            </div>
+                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Party Photo (Optional)</p>
                         </div>
 
                         {/* Party Name */}
                         <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Party Name <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                            <div className="relative flex items-center">
-                                <div className="absolute left-3.5 text-slate-400 pointer-events-none">
-                                    <User size={16} />
-                                </div>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="e.g. Rahul Sharma"
-                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal outline-none focus:border-[#0057BB] focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                />
-                            </div>
+                            <label className="text-sm font-bold text-slate-700">Party Name</label>
+                            <input
+                                required
+                                type="text"
+                                placeholder="Enter Party Name"
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none text-slate-800 font-medium placeholder:text-slate-400 shadow-sm"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                            />
                         </div>
 
                         {/* Phone Number */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Phone Number</label>
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Optional</span>
+                                <label className="text-sm font-bold text-slate-700">Phone Number</label>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
                             </div>
-                            <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50/50 hover:bg-white focus-within:bg-white focus-within:border-[#0057BB] focus-within:ring-4 focus-within:ring-blue-500/10 transition-all overflow-hidden">
-                                <div className="flex items-center gap-1 px-3.5 py-2.5 bg-slate-100/70 border-r border-slate-200 text-slate-600 text-xs font-bold shrink-0">
-                                    <span>🇮🇳</span>
-                                    <span>+91</span>
-                                </div>
+                            <div className="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all bg-white shadow-sm">
+                                <span className="flex items-center justify-center px-3.5 bg-slate-50 text-slate-600 text-sm font-bold border-r border-slate-200 select-none">
+                                    +91
+                                </span>
                                 <input
                                     type="tel"
-                                    placeholder="10-digit mobile number"
-                                    className="flex-1 px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal bg-transparent outline-none"
+                                    placeholder="Enter Phone Number"
+                                    className="flex-1 px-4 py-3 text-sm outline-none text-slate-800 font-medium bg-transparent border-0 placeholder:text-slate-400"
                                     value={phone}
-                                    onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                                    onChange={e => setPhone(e.target.value)}
                                     maxLength={10}
                                 />
                             </div>
@@ -260,136 +174,132 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                         {/* Email */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Email Address</label>
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Optional</span>
+                                <label className="text-sm font-bold text-slate-700">Email</label>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
                             </div>
-                            <div className="relative flex items-center">
-                                <div className="absolute left-3.5 text-slate-400 pointer-events-none">
-                                    <Mail size={16} />
-                                </div>
-                                <input
-                                    type="email"
-                                    placeholder="e.g. rahul@example.com"
-                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal outline-none focus:border-[#0057BB] focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                />
-                            </div>
+                            <input
+                                type="email"
+                                placeholder="Enter Email Address"
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none text-slate-800 font-medium placeholder:text-slate-400 shadow-sm"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                            />
                         </div>
 
-                        {/* Opening Balance (Clean Unified Component) */}
+                        {/* Opening Balance */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Opening Balance</label>
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Optional</span>
+                                <label className="text-sm font-bold text-slate-700">Opening Balance</label>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
                             </div>
-                            <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50/50 hover:bg-white focus-within:bg-white focus-within:border-[#0057BB] focus-within:ring-4 focus-within:ring-blue-500/10 transition-all overflow-hidden">
-                                <div className="px-3.5 py-2.5 bg-slate-100/70 border-r border-slate-200 text-slate-700 font-bold text-sm shrink-0">
+                            <div className="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all bg-white shadow-sm">
+                                <span className="flex items-center justify-center px-4 bg-slate-50 text-slate-600 text-sm font-bold border-r border-slate-200 select-none">
                                     ₹
-                                </div>
+                                </span>
                                 <input
                                     type="number"
-                                    placeholder="0.00"
-                                    className="flex-1 px-3.5 py-2.5 text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal bg-transparent outline-none min-w-0"
+                                    placeholder="Enter amount"
+                                    className="flex-1 px-4 py-3 text-sm outline-none text-slate-800 font-medium bg-transparent border-0 placeholder:text-slate-400"
                                     value={openingBalance}
                                     onChange={e => setOpeningBalance(e.target.value)}
                                     min="0"
-                                    step="any"
                                 />
-                                <div className="relative border-l border-slate-200 bg-white shrink-0">
+                                <div className="relative border-l border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center">
                                     <select
-                                        className={`h-full pl-3 pr-7 py-2.5 text-xs font-black uppercase tracking-wider outline-none cursor-pointer bg-transparent transition-colors appearance-none ${
+                                        className={`h-full pl-3 pr-8 py-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer bg-transparent border-0 transition-colors appearance-none ${
                                             balanceType === 'give' ? 'text-red-500' : 'text-green-600'
                                         }`}
                                         value={balanceType}
                                         onChange={e => setBalanceType(e.target.value)}
                                     >
-                                        <option value="give">You'll Get</option>
-                                        <option value="get">You'll Give</option>
+                                        <option value="give">You Gave</option>
+                                        <option value="get">You Got</option>
                                     </select>
-                                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-medium px-1">
-                                {balanceType === 'give' ? "Select 'You'll Get' if party owes you money" : "Select 'You'll Give' if you owe money to party"}
-                            </p>
                         </div>
 
-                        {/* GSTIN & Address Accordion */}
-                        <div className="pt-2 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => setIsAddressOpen(!isAddressOpen)}
-                                className="w-full flex items-center justify-between py-2 text-xs font-bold text-[#0057BB] hover:text-blue-700 transition-colors group"
-                            >
-                                <span className="flex items-center gap-1.5">
-                                    <Building2 size={15} />
-                                    Add GSTIN & Business Address
+                        {/* Who are they? */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700">Who are they?</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setPartyType('customer')}
+                                    className={`py-2.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2.5 transition-all shadow-sm ${
+                                        partyType === 'customer'
+                                            ? 'bg-blue-50/70 border-blue-500 text-blue-700 ring-1 ring-blue-500/20'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${partyType === 'customer' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                                        {partyType === 'customer' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    Customer
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPartyType('supplier')}
+                                    className={`py-2.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2.5 transition-all shadow-sm ${
+                                        partyType === 'supplier'
+                                            ? 'bg-blue-50/70 border-blue-500 text-blue-700 ring-1 ring-blue-500/20'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${partyType === 'supplier' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                                        {partyType === 'supplier' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    Supplier
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-100" />
+
+                        {/* Collapsible Section */}
+                        <details className="group border border-slate-200 rounded-xl p-3.5 bg-slate-50/40 transition-all">
+                            <summary className="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden font-bold text-sm text-[#0057BB]">
+                                <span className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                                    Add GSTIN & Address (Optional)
                                 </span>
-                                <ChevronDown 
-                                    size={16} 
-                                    className={`transition-transform duration-200 ${isAddressOpen ? 'rotate-180' : ''}`} 
-                                />
-                            </button>
-
-                            {isAddressOpen && (
-                                <div className="mt-3 space-y-3 p-3.5 bg-slate-50/70 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">GSTIN Number</label>
-                                        <input
-                                            type="text"
-                                            placeholder="22AAAAA0000A1Z5"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold uppercase text-slate-900 placeholder:text-slate-400 placeholder:font-normal outline-none focus:border-[#0057BB] transition-all"
-                                            value={gst}
-                                            onChange={e => setGst(e.target.value.toUpperCase())}
-                                            maxLength={15}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Billing Address</label>
-                                        <textarea
-                                            placeholder="Street, City, State, Pincode"
-                                            rows={2}
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0057BB] transition-all resize-none"
-                                            value={address}
-                                            onChange={e => setAddress(e.target.value)}
-                                        />
-                                    </div>
+                                <ChevronDown size={18} className="text-[#0057BB] group-open:rotate-180 transition-transform duration-300" />
+                            </summary>
+                            <div className="mt-3.5 pt-3.5 border-t border-slate-200 space-y-3.5 animate-in slide-in-from-top-2 duration-300">
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">GSTIN Number</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter 15-digit GSTIN"
+                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none font-medium placeholder:text-slate-400 shadow-sm"
+                                    />
                                 </div>
-                            )}
-                        </div>
-                    </form>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Billing Address</label>
+                                    <textarea
+                                        placeholder="Enter full address"
+                                        rows={2}
+                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-none font-medium placeholder:text-slate-400 shadow-sm"
+                                    />
+                                </div>
+                            </div>
+                        </details>
+                    </div>
                 </div>
 
-                {/* Footer Action */}
-                <div className="p-4 bg-white border-t border-slate-100 flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 h-[44px] border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-colors"
-                    >
-                        Cancel
-                    </button>
+                {/* Footer */}
+                <div className="p-5 bg-white border-t border-slate-100 mt-auto">
                     <button
                         disabled={loading || !name.trim()}
                         onClick={handleSubmit}
-                        className={`flex-1 h-[44px] rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm ${
+                        className={`w-full py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-sm ${
                             loading || !name.trim()
-                                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
-                                : 'bg-[#0057BB] hover:bg-blue-700 text-white shadow-blue-200/50 active:scale-[0.99]'
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                : 'bg-[#0057BB] text-white hover:bg-blue-700 shadow-blue-200 active:scale-[0.99]'
                         }`}
                     >
-                        {loading ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Check size={16} />
-                                <span>{customer ? 'Update Party' : 'Save Customer'}</span>
-                            </>
-                        )}
+                        {loading ? 'Processing...' : (customer ? 'Update Party' : 'Add Customer')}
                     </button>
                 </div>
             </div>

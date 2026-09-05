@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePWAInstall } from '../utils/pwaUtils';
 import logo from '../assets/HisabKhata_logo.png';
 import '../styles/LandingPage.css';
 
@@ -8,6 +9,23 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [openFaq, setOpenFaq] = React.useState(null);
+  const { canInstall, isInstalled, triggerInstall } = usePWAInstall();
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
+
+  const handleDownloadApp = async () => {
+    if (isInstalled) {
+      navigate('/customers');
+      return;
+    }
+    if (canInstall) {
+      const outcome = await triggerInstall();
+      if (outcome) {
+        navigate('/customers');
+      }
+    } else {
+      setShowInstallGuide(true);
+    }
+  };
 
   useEffect(() => {
     // ... existing scroll animation logic ...
@@ -111,7 +129,9 @@ const LandingPage = () => {
             ) : (
               <button className="btn btn-login" onClick={() => navigate('/login')}>Login</button>
             )}
-            <button className="btn btn-primary">Download App</button>
+            <button className="btn btn-primary" onClick={handleDownloadApp}>
+              {isInstalled ? 'Open App' : 'Download App'}
+            </button>
           </div>
         </div>
       </nav>
@@ -402,6 +422,50 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Fallback Install Instructions Modal */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm bg-[#0057BB]">
+                  <img src="/icons/icon.svg" alt="HisabKhata" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 leading-tight">Install HisabKhata App</h3>
+                  <p className="text-xs text-slate-500">Fast 1-tap ledger &amp; offline access</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowInstallGuide(false)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="py-5 space-y-3 text-xs text-slate-600">
+              <div className="p-3.5 bg-blue-50/80 rounded-2xl border border-blue-100">
+                <p className="font-bold text-blue-900 mb-1">On Chrome / Edge (Desktop &amp; Android):</p>
+                <p>Click the <strong>Install</strong> icon in your address bar or browser menu (⋮) &gt; <strong>Install HisabKhata</strong>.</p>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="font-bold text-slate-800 mb-1">On iPhone / iPad (Safari):</p>
+                <p>Tap the <strong>Share</strong> button (⎋) in Safari, scroll down and tap <strong>Add to Home Screen</strong> (⊞).</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInstallGuide(false)}
+              className="w-full py-3 bg-[#0057BB] text-white font-bold rounded-xl hover:bg-[#004291] transition-colors cursor-pointer"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

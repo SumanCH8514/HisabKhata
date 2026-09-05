@@ -46,6 +46,16 @@ const PaymentVerification = () => {
                 const snap = await get(ref(db, `pending_payments/${id}`));
                 if (snap.exists()) {
                     const data = snap.val();
+                    if (data.customerId) {
+                        try {
+                            const custSnap = await get(ref(db, `customers/${data.customerId}`));
+                            if (custSnap.exists()) {
+                                data.customerPhoto = custSnap.val()?.photoURL;
+                            }
+                        } catch (custErr) {
+                            console.warn("Failed to fetch customer photo:", custErr);
+                        }
+                    }
                     setPendingPayment(data);
                 } else {
                     setError("Payment record not found or already processed.");
@@ -225,8 +235,17 @@ const PaymentVerification = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Customer info */}
                                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
-                                            <User size={18} />
+                                        <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-slate-100">
+                                            {pendingPayment.customerPhoto ? (
+                                                <img 
+                                                    src={pendingPayment.customerPhoto} 
+                                                    alt={pendingPayment.customerName} 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                />
+                                            ) : (
+                                                <User size={18} />
+                                            )}
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Customer</p>

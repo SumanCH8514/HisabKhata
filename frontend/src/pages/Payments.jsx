@@ -39,6 +39,7 @@ const PaymentsDashboard = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [payments, setPayments] = useState([]);
+    const [customersMap, setCustomersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
@@ -50,7 +51,7 @@ const PaymentsDashboard = () => {
         if (!currentUser) return;
 
         const paymentsRef = ref(db, 'pending_payments');
-        const unsub = onValue(paymentsRef, (snapshot) => {
+        const unsubPayments = onValue(paymentsRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 const list = Object.values(data)
@@ -63,7 +64,18 @@ const PaymentsDashboard = () => {
             setLoading(false);
         });
 
-        return () => unsub();
+        const unsubCustomers = dbService.listenUserCustomers(currentUser.uid, (data) => {
+            const map = {};
+            data.forEach(c => {
+                map[c.id] = c;
+            });
+            setCustomersMap(map);
+        });
+
+        return () => {
+            unsubPayments();
+            if (typeof unsubCustomers === 'function') unsubCustomers();
+        };
     }, [currentUser]);
 
     const handleCopyRef = (text, id) => {
@@ -358,12 +370,27 @@ const PaymentsDashboard = () => {
                                                 {/* Left: Customer Info & Timestamp */}
                                                 <div className="flex items-start gap-3.5 min-w-0 flex-1">
                                                     {/* Avatar */}
-                                                    <div 
-                                                        className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm"
-                                                        style={{ backgroundColor: getInitialColor(payment.customerName) }}
-                                                    >
-                                                        {payment.customerName?.charAt(0).toUpperCase() || 'C'}
-                                                    </div>
+                                                    {(() => {
+                                                        const customer = customersMap[payment.customerId];
+                                                        const photo = customer?.photoURL || payment.customerPhoto || payment.photoURL;
+                                                        return (
+                                                            <div 
+                                                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm overflow-hidden border border-slate-100"
+                                                                style={{ backgroundColor: !photo ? getInitialColor(payment.customerName) : '#f1f5f9' }}
+                                                            >
+                                                                {photo ? (
+                                                                    <img 
+                                                                        src={photo} 
+                                                                        alt={payment.customerName} 
+                                                                        className="w-full h-full object-cover" 
+                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                    />
+                                                                ) : (
+                                                                    <span>{payment.customerName?.charAt(0).toUpperCase() || 'C'}</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
 
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex flex-wrap items-center gap-2">

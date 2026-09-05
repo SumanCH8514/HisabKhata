@@ -442,10 +442,10 @@ const Customers = () => {
                     <AppMobileHeader />
 
                     {/* Tab bar — Desktop only */}
-                    <div className="hidden md:flex border-b border-gray-200 bg-white">
+                    <div className="hidden md:flex items-center h-[56px] border-b border-gray-200 bg-white px-4">
                         <button
                             onClick={() => setActiveTab('customers')}
-                            className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                            className={`h-full px-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             Customers
@@ -458,21 +458,23 @@ const Customers = () => {
 
                     {/* Summary bar — Desktop View */}
                     {globalSettings?.analytics !== false && (
-                        <div className="hidden md:flex items-center px-4 py-2.5 bg-white border-b border-gray-100 gap-5 flex-wrap">
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-gray-700 text-sm">You'll Give:</span>
-                                <span className="text-green-600 font-semibold text-sm">₹{totalGive.toLocaleString('en-IN')}</span>
-                                <span className="text-green-500 text-[13px] font-bold">↗</span>
+                        <div className="hidden md:flex items-center justify-between h-[48px] px-4 bg-white border-b border-gray-100 gap-4 flex-wrap">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-gray-700 text-xs sm:text-sm font-medium">You'll Give:</span>
+                                    <span className="text-green-600 font-bold text-xs sm:text-sm">₹{totalGive.toLocaleString('en-IN')}</span>
+                                    <span className="text-green-500 text-[13px] font-bold">↗</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-gray-700 text-xs sm:text-sm font-medium">You'll Get:</span>
+                                    <span className="text-red-500 font-bold text-xs sm:text-sm">₹{totalGet.toLocaleString('en-IN')}</span>
+                                    {/* SW arrow — rendered as SVG to avoid font substitution */}
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="inline-block">
+                                        <path d="M9 3L3 9M3 9H7.5M3 9V4.5" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-gray-700 text-sm">You'll Get:</span>
-                                <span className="text-red-500 font-semibold text-sm">₹{totalGet.toLocaleString('en-IN')}</span>
-                                {/* SW arrow — rendered as SVG to avoid font substitution */}
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="inline-block">
-                                    <path d="M9 3L3 9M3 9H7.5M3 9V4.5" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                            <Link to="/reports" className="ml-auto flex items-center gap-1.5 px-3 py-1.5 border border-blue-500 rounded text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap">
+                            <Link to="/reports" className="flex items-center gap-1.5 px-2.5 py-1 border border-blue-500 rounded text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap">
                                 <span className="material-symbols-outlined text-[15px]">bar_chart</span>
                                 View Report
                             </Link>
@@ -494,7 +496,7 @@ const Customers = () => {
                     )}
 
                     {/* Search + Filter + Sort Section */}
-                    <div className="sticky top-0 z-20 px-4 py-3 bg-white border-b border-gray-100 shadow-sm md:shadow-none">
+                    <div className="sticky top-0 z-20 px-4 py-2 bg-white border-b border-gray-100 shadow-sm md:shadow-none md:h-[62px] md:flex md:flex-col md:justify-center">
                         {/* Mobile View: Modern Single Bar */}
                         <div className="md:hidden flex items-center gap-3">
                             <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
@@ -520,20 +522,20 @@ const Customers = () => {
                         {/* Desktop View: Khatabook 2-row layout */}
                         <div className="hidden md:block">
                             {/* Top row: label texts */}
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <span className="flex-1 text-xs text-gray-600">Search for customers</span>
-                                <span className="text-xs text-gray-600" style={{ minWidth: '120px' }}>Filter By</span>
-                                <span className="text-xs text-gray-600" style={{ minWidth: '110px' }}>Sort By</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="flex-1 text-[11px] text-gray-500 font-medium">Search for customers</span>
+                                <span className="text-[11px] text-gray-500 font-medium" style={{ minWidth: '120px' }}>Filter By</span>
+                                <span className="text-[11px] text-gray-500 font-medium" style={{ minWidth: '110px' }}>Sort By</span>
                             </div>
                             {/* Bottom row: inputs */}
                             <div className="flex items-center gap-2">
                                 {/* Search input */}
                                 <div className="relative flex-1">
-                                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[17px]">search</span>
+                                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">search</span>
                                     <input
                                         type="text"
                                         placeholder="Name or Phone Number"
-                                        className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-300 rounded text-sm outline-none focus:border-blue-400 transition-all"
+                                        className="w-full pl-8 pr-3 py-1 bg-white border border-gray-300 rounded text-xs outline-none focus:border-blue-400 transition-all"
                                         value={searchQuery}
                                         onChange={e => setSearchQuery(e.target.value)}
                                     />
@@ -541,10 +543,10 @@ const Customers = () => {
                                 {/* Filter By */}
                                 <div className="relative">
                                     <select
-                                        className="pl-7 pr-6 py-1.5 text-sm border border-gray-300 rounded bg-white text-gray-500 outline-none appearance-none cursor-pointer bg-none"
+                                        className="pl-6 pr-5 py-1 text-xs border border-gray-300 rounded bg-white text-gray-600 outline-none appearance-none cursor-pointer bg-none"
                                         value={filterBy}
                                         onChange={e => setFilterBy(e.target.value)}
-                                        style={{ minWidth: '130px' }}
+                                        style={{ minWidth: '120px' }}
                                     >
                                         <option value="">All</option>
                                         <option value="youllget">You'll Get</option>
@@ -554,13 +556,13 @@ const Customers = () => {
                                         <option value="upcoming">Upcoming Due</option>
                                         <option value="no_due_date">No Due Date</option>
                                     </select>
-                                    <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">filter_list</span>
-                                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">expand_more</span>
+                                    <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">filter_list</span>
+                                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">expand_more</span>
                                 </div>
                                 {/* Sort By */}
                                 <div className="relative">
                                     <select
-                                        className="pl-7 pr-6 py-1.5 text-sm border border-gray-300 rounded bg-white text-gray-500 outline-none appearance-none cursor-pointer bg-none"
+                                        className="pl-6 pr-5 py-1 text-xs border border-gray-300 rounded bg-white text-gray-600 outline-none appearance-none cursor-pointer bg-none"
                                         value={sortBy}
                                         onChange={e => setSortBy(e.target.value)}
                                         style={{ minWidth: '110px' }}
@@ -571,15 +573,15 @@ const Customers = () => {
                                         <option value="amount-low">Amount (Low)</option>
                                         <option value="recent">Most Recent</option>
                                     </select>
-                                    <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">swap_vert</span>
-                                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">expand_more</span>
+                                    <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">swap_vert</span>
+                                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">expand_more</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Column headers */}
-                    <div className="flex items-center px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center h-[38px] px-4 bg-gray-50 border-b border-gray-200">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1">Name</span>
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</span>
                     </div>
@@ -817,10 +819,10 @@ const Customers = () => {
                             </div>
 
                             {/* Desktop Detail Header */}
-                            <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+                            <div className="hidden md:flex items-center justify-between h-[56px] px-6 border-b border-gray-200 bg-white">
                                 <div className="flex items-center gap-3">
                                     <div
-                                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 overflow-hidden border-2 border-white shadow-sm"
+                                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden border border-gray-200 shadow-xs"
                                         style={{ backgroundColor: !selectedCustomer.photoURL ? getInitialColor(selectedCustomer.name) : 'transparent' }}
                                     >
                                         {selectedCustomer.photoURL ? (
@@ -829,57 +831,41 @@ const Customers = () => {
                                             selectedCustomer.name?.substring(0, 1).toUpperCase()
                                         )}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="font-semibold text-gray-900 text-base leading-snug">{selectedCustomer.name}</h2>
-                                            <button 
-                                                onClick={() => setShowContactDetails(!showContactDetails)}
-                                                className="inline-flex items-center justify-center p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-                                                title={showContactDetails ? "Hide contact info" : "Show contact info"}
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">
-                                                    {showContactDetails ? 'visibility' : 'visibility_off'}
-                                                </span>
-                                            </button>
-                                        </div>
-                                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showContactDetails ? 'max-h-12 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-                                            {selectedCustomer.phone && (
-                                                <p className="text-xs text-gray-500">+91 {selectedCustomer.phone}</p>
-                                            )}
-                                            {selectedCustomer.email && (
-                                                <p className="text-[11px] text-gray-400 leading-tight">{selectedCustomer.email}</p>
-                                            )}
-                                        </div>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="font-semibold text-gray-900 text-base leading-snug">{selectedCustomer.name}</h2>
+                                        {selectedCustomer.phone && (
+                                            <span className="text-xs text-gray-400 font-medium">+91 {selectedCustomer.phone}</span>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-2">
                                     <button 
                                         onClick={() => setIsImportModalOpen(true)}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full border border-blue-200 bg-blue-50/60 text-[#0057BB] hover:bg-blue-100 hover:border-blue-300 transition-all shadow-sm group"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full border border-blue-200 bg-blue-50/60 text-[#0057BB] hover:bg-blue-100 hover:border-blue-300 transition-all shadow-xs group"
                                         title="Import Khatabook / Excel Statement"
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">upload_file</span>
+                                        <span className="material-symbols-outlined text-[18px]">upload_file</span>
                                     </button>
                                     <button 
                                         onClick={() => { if(selectedCustomer.phone) window.location.href = `tel:+91${selectedCustomer.phone}`; }}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm group"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-xs group"
                                         title="Call Customer"
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">call</span>
+                                        <span className="material-symbols-outlined text-[18px]">call</span>
                                     </button>
                                     <button 
                                         onClick={() => { if(selectedCustomer.email) window.location.href = `mailto:${selectedCustomer.email}`; }}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all shadow-sm group"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all shadow-xs group"
                                         title="Email Statement"
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">mail</span>
+                                        <span className="material-symbols-outlined text-[18px]">mail</span>
                                     </button>
                                     <button
                                         onClick={() => setIsPartyProfileOpen(true)}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all shadow-sm"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all shadow-xs"
                                         title="Customer Settings"
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">settings</span>
+                                        <span className="material-symbols-outlined text-[18px]">settings</span>
                                     </button>
                                 </div>
                             </div>
@@ -938,7 +924,7 @@ const Customers = () => {
                             </div>
 
                             {/* Set Due Date row — Desktop only */}
-                            <div className="hidden md:flex items-center px-6 py-2.5 bg-white border-b border-gray-100 gap-4 min-h-[46px]">
+                            <div className="hidden md:flex items-center justify-between h-[48px] px-6 bg-white border-b border-gray-100 gap-4">
                                 <div className="flex items-center gap-2 flex-1 flex-wrap">
                                     {selectedCustomer.dueDate ? (
                                         /* Only show due date chip when date is selected */
@@ -946,8 +932,8 @@ const Customers = () => {
                                             const status = getDueDateStatus(selectedCustomer.dueDate);
                                             if (!status) return null;
                                             return (
-                                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold ${status.badgeColor} shadow-sm animate-in fade-in duration-200`}>
-                                                    <span className="material-symbols-outlined text-[16px]">event</span>
+                                                <div className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs font-bold ${status.badgeColor} shadow-xs animate-in fade-in duration-200`}>
+                                                    <span className="material-symbols-outlined text-[15px]">event</span>
                                                     <span>{status.label}</span>
                                                     <button
                                                         type="button"
@@ -955,7 +941,7 @@ const Customers = () => {
                                                         title="Remove Due Date"
                                                         className="p-0.5 hover:bg-black/10 rounded transition-colors ml-1 text-gray-400 hover:text-red-600 flex items-center justify-center"
                                                     >
-                                                        <span className="material-symbols-outlined text-[15px] leading-none block">close</span>
+                                                        <span className="material-symbols-outlined text-[14px] leading-none block">close</span>
                                                     </button>
                                                 </div>
                                             );
@@ -963,7 +949,7 @@ const Customers = () => {
                                     ) : (
                                         /* Show presets & Select Date when no due date is set */
                                         <>
-                                            <span className="material-symbols-outlined text-gray-400 text-[18px]">timer</span>
+                                            <span className="material-symbols-outlined text-gray-400 text-[16px]">timer</span>
                                             <span className="text-xs text-gray-600 font-bold">Set Due Date:</span>
                                             
                                             {/* Quick Preset Buttons */}
@@ -976,7 +962,7 @@ const Customers = () => {
                                                     key={days}
                                                     type="button"
                                                     onClick={() => handleSetDueDate(days)}
-                                                    className="px-3 py-1 rounded text-xs font-semibold transition-all border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-sm"
+                                                    className="px-2.5 py-1 rounded text-xs font-semibold transition-all border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-2xs"
                                                 >
                                                     {label}
                                                 </button>
@@ -999,7 +985,7 @@ const Customers = () => {
                                                             el.showPicker();
                                                         }
                                                     }}
-                                                    className="px-3 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white shadow-sm"
+                                                    className="px-2.5 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white shadow-2xs"
                                                 >
                                                     <span className="material-symbols-outlined text-[14px]">calendar_month</span>
                                                     Select Date
@@ -1008,26 +994,26 @@ const Customers = () => {
                                         </>
                                     )}
                                 </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">NET BALANCE:</p>
+                                <div className="flex items-center gap-1.5 text-right shrink-0">
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">NET BALANCE:</span>
                                     {(selectedCustomer.balance || 0) === 0 ? (
-                                        <p className="text-gray-600 font-semibold text-sm">₹0.00</p>
+                                        <span className="text-gray-600 font-semibold text-sm">₹0.00</span>
                                     ) : (selectedCustomer.balance || 0) < 0 ? (
-                                        <p className="text-red-500 font-semibold text-sm">You'll Get: ₹{Math.abs(selectedCustomer.balance).toLocaleString('en-IN')}</p>
+                                        <span className="text-red-500 font-bold text-sm">You'll Get: ₹{Math.abs(selectedCustomer.balance).toLocaleString('en-IN')}</span>
                                     ) : (
-                                        <p className="text-green-600 font-semibold text-sm">You'll Give: ₹{Math.abs(selectedCustomer.balance).toLocaleString('en-IN')}</p>
+                                        <span className="text-green-600 font-bold text-sm">You'll Give: ₹{Math.abs(selectedCustomer.balance).toLocaleString('en-IN')}</span>
                                     )}
                                 </div>
                             </div>
 
                             {/* Desktop Action Bar — Professional & Modern */}
-                            <div className="hidden md:flex items-center px-6 py-1 bg-white border-b border-gray-200 gap-8">
+                            <div className="hidden md:flex items-center justify-between h-[62px] px-6 bg-white border-b border-gray-200">
                                 <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold uppercase tracking-wider">
                                     <span>Send Reminder</span>
                                     <span className="material-symbols-outlined text-gray-400 text-[16px]">info</span>
                                 </div>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2.5 flex-wrap">
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -1037,35 +1023,35 @@ const Customers = () => {
                                                 navigate(`/reports/customer/${selectedCustomer.id}`);
                                             }
                                         }}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all shadow-2xs"
                                     >
-                                        <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                                        <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
                                         Report
                                     </button>
 
                                     {globalSettings?.shareLinks !== false && (
                                         <>
                                             {/* WhatsApp */}
-                                            <button onClick={handleWhatsappReminder} className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded text-xs font-semibold text-green-700 hover:bg-green-100 transition-all">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                            <button onClick={handleWhatsappReminder} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg text-xs font-semibold text-green-700 hover:bg-green-100 transition-all shadow-2xs">
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                                 Whatsapp
                                             </button>
 
                                             {/* SMS */}
-                                            <button onClick={handleSMSReminder} className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded text-xs font-semibold text-orange-700 hover:bg-orange-100 transition-all">
-                                                <span className="material-symbols-outlined text-[18px]">sms</span>
+                                            <button onClick={handleSMSReminder} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-xs font-semibold text-orange-700 hover:bg-orange-100 transition-all shadow-2xs">
+                                                <span className="material-symbols-outlined text-[16px]">sms</span>
                                                 SMS
                                             </button>
 
                                             {/* Email */}
-                                            <button onClick={handleEmailReminder} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-all">
-                                                <span className="material-symbols-outlined text-[18px]">mail</span>
+                                            <button onClick={handleEmailReminder} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-all shadow-2xs">
+                                                <span className="material-symbols-outlined text-[16px]">mail</span>
                                                 Email
                                             </button>
 
                                             {/* Copy Link */}
-                                            <button onClick={handleCopyLink} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all">
-                                                <span className="material-symbols-outlined text-[18px]">link</span>
+                                            <button onClick={handleCopyLink} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all shadow-2xs">
+                                                <span className="material-symbols-outlined text-[16px]">link</span>
                                                 Copy Link
                                             </button>
                                         </>
@@ -1074,7 +1060,7 @@ const Customers = () => {
                             </div>
 
                             {/* Entries column headers — Desktop Styled */}
-                            <div className="hidden md:grid grid-cols-12 px-6 py-2.5 bg-gray-50 border-b border-gray-200">
+                            <div className="hidden md:grid grid-cols-12 px-6 h-[38px] items-center bg-gray-50 border-b border-gray-200">
                                 <div className="col-span-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entries</div>
                                 <div className="col-span-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">You Gave</div>
                                 <div className="col-span-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">You Got</div>

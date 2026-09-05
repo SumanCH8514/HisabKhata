@@ -944,56 +944,69 @@ const CustomerShareableView = () => {
                                                 {/* PhonePe */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('phonepe')}
-                                                    className="p-3.5 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                    className="p-3 bg-white hover:bg-purple-50/60 border border-slate-200 hover:border-purple-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-9 h-9 rounded-xl bg-[#5f259f] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                                                        Pe
+                                                    <div className="w-10 h-10 rounded-2xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/20">
+                                                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="white">
+                                                            <path d="M19.2 3.8l-5.6 3.2v-2c0-.6-.4-1-1-1h-2.1c-.6 0-1 .4-1 1v2.5H7.8c-.6 0-1 .4-1 1v1.6c0 .6.4 1 1 1h1.7v5.5c0 2.8 2.2 5 5 5h1.6c.6 0 1-.4 1-1v-1.6c0-.6-.4-1-1-1h-1.6c-1.1 0-2-.9-2-2v-5.9h3.8c2.2 0 4-1.8 4-4 0-1.2-.5-2.2-1.3-2.9l2.8-1.6c.5-.3.7-.9.4-1.4s-.9-.7-1.4-.4zM16.1 11.2h-3.8V8.6h3.8c.8 0 1.4.6 1.4 1.3 0 .7-.6 1.3-1.4 1.3z" />
+                                                        </svg>
                                                     </div>
-                                                    <div>
-                                                        <span className="block text-xs font-bold text-slate-900">PhonePe</span>
-                                                        <span className="block text-[10px] text-purple-700 font-medium">1-Tap Pay</span>
+                                                    <div className="min-w-0">
+                                                        <span className="block text-xs font-bold text-slate-900 truncate">PhonePe</span>
+                                                        <span className="block text-[10px] text-purple-700 font-semibold">1-Tap Pay</span>
                                                     </div>
                                                 </button>
 
                                                 {/* Google Pay */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('gpay')}
-                                                    className="p-3.5 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                    className="p-3 bg-white hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-9 h-9 rounded-xl bg-[#1a73e8] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                                                        G
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
+                                                        <svg viewBox="0 0 24 24" className="w-full h-full">
+                                                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                                                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                                                        </svg>
                                                     </div>
-                                                    <div>
-                                                        <span className="block text-xs font-bold text-slate-900">Google Pay</span>
-                                                        <span className="block text-[10px] text-blue-700 font-medium">1-Tap Pay</span>
+                                                    <div className="min-w-0">
+                                                        <span className="block text-xs font-bold text-slate-900 truncate">Google Pay</span>
+                                                        <span className="block text-[10px] text-blue-700 font-semibold">1-Tap Pay</span>
                                                     </div>
                                                 </button>
 
                                                 {/* Paytm */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('paytm')}
-                                                    className="p-3.5 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                    className="p-3 bg-white hover:bg-sky-50/60 border border-slate-200 hover:border-sky-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-9 h-9 rounded-xl bg-[#00baf2] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                                                        Pay
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
+                                                        <svg viewBox="0 0 60 22" className="w-full h-auto">
+                                                            <path fill="#002970" d="M0 2.2C0 1 1 0 2.2 0h8.3c3.5 0 6.3 2.8 6.3 6.3 0 3.5-2.8 6.3-6.3 6.3H4.5v8.6H0V2.2zm4.5 8.4h5.6c1.3 0 2.4-1.1 2.4-2.4 0-1.3-1.1-2.4-2.4-2.4H4.5v4.8z"/>
+                                                            <path fill="#00BAF2" d="M20.5 7.8h4.5v13.4h-4.5V7.8zm0-5.8h4.5v3.8h-4.5V2zm7.5 5.8h4.2v2.6h-4.2v6.8c0 .9.5 1.2 1.3 1.2h2.9v2.8h-3.8c-3 0-4.9-1.6-4.9-4.5V10.4h-2.2V7.8h2.2V3.8l4.5-1.4v5.4zm9.8 0h4.5v2.4c.9-1.6 2.7-2.6 4.6-2.6 3 0 5.1 2 5.1 5.4v8.2h-4.5v-7.3c0-1.7-1-2.6-2.4-2.6s-2.8 1.1-2.8 2.9v7H37.8V7.8z"/>
+                                                        </svg>
                                                     </div>
-                                                    <div>
-                                                        <span className="block text-xs font-bold text-slate-900">Paytm</span>
-                                                        <span className="block text-[10px] text-sky-700 font-medium">1-Tap Pay</span>
+                                                    <div className="min-w-0">
+                                                        <span className="block text-xs font-bold text-slate-900 truncate">Paytm</span>
+                                                        <span className="block text-[10px] text-sky-700 font-semibold">1-Tap Pay</span>
                                                     </div>
                                                 </button>
 
                                                 {/* BHIM / Any UPI */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('upi')}
-                                                    className="p-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                    className="p-3 bg-white hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                                        <span className="material-symbols-outlined text-[20px]">bolt</span>
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
+                                                        <svg viewBox="0 0 36 24" className="w-7 h-5">
+                                                            <polygon points="12,2 2,22 14,22 24,2" fill="#097939" />
+                                                            <polygon points="22,2 12,22 20,22 30,2" fill="#ED752E" />
+                                                        </svg>
                                                     </div>
-                                                    <div>
-                                                        <span className="block text-xs font-bold text-slate-900">Any UPI App</span>
-                                                        <span className="block text-[10px] text-emerald-700 font-medium">BHIM / CRED / Other</span>
+                                                    <div className="min-w-0">
+                                                        <span className="block text-xs font-bold text-slate-900 truncate">Any UPI App</span>
+                                                        <span className="block text-[10px] text-emerald-700 font-semibold">BHIM / CRED / Other</span>
                                                     </div>
                                                 </button>
                                             </div>

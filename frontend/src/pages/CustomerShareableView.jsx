@@ -931,13 +931,35 @@ const CustomerShareableView = () => {
                         )}
                     </div>
                 </div>
-                <p className="text-[10px] font-medium text-blue-100 uppercase tracking-wider">Statement: {customer.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-[10px] uppercase overflow-hidden shrink-0">
+                        {customer.photoURL ? (
+                            <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                        ) : (
+                            initials
+                        )}
+                    </div>
+                    <p className="text-[11px] font-medium text-blue-100 uppercase tracking-wider truncate">Statement: {customer.name}</p>
+                </div>
             </header>
 
             <main className="flex-1 w-full max-w-4xl mx-auto p-0 md:p-6 space-y-4 md:space-y-6 print-container">
 
                 {/* Mobile Identity / Balance Card */}
                 <div className="md:hidden bg-[#0057BB] text-white px-4 pb-12 pt-4">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-lg border border-white/20 uppercase overflow-hidden shrink-0">
+                            {customer.photoURL ? (
+                                <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                            ) : (
+                                initials
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-bold text-white truncate">{customer.name}</h2>
+                            {customer.phone && <p className="text-xs text-blue-100 font-medium opacity-80">+91 {customer.phone}</p>}
+                        </div>
+                    </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-xs text-blue-100 opacity-80 uppercase font-medium tracking-wider">Net Balance</p>
                         <div className="flex items-center gap-2">
@@ -954,8 +976,12 @@ const CustomerShareableView = () => {
                     <div className="absolute top-0 left-0 w-full h-1 bg-[#0057BB]"></div>
                     <div className="flex items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[#0057BB] text-2xl border border-slate-200 uppercase">
-                                {initials}
+                            <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[#0057BB] text-2xl border border-slate-200 uppercase overflow-hidden shrink-0">
+                                {customer.photoURL ? (
+                                    <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    initials
+                                )}
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Account Statement For</p>

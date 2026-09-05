@@ -676,16 +676,16 @@ const Customers = () => {
                     </div>
 
                     {/* Bottom actions — Desktop only */}
-                    <div className="hidden md:flex p-4 bg-white border-t border-gray-200 gap-3">
+                    <div className="hidden md:flex h-[68px] items-center px-4 bg-white border-t border-gray-200 gap-3 shrink-0">
                         <button
-                            className="flex-1 py-2.5 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+                            className="flex-1 h-[42px] border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                         >
                             <span className="material-symbols-outlined text-[18px]">upload</span>
                             Bulk Upload Customers
                         </button>
                         <button
                             onClick={() => { setIsCustomerDrawerOpen(true); }}
-                            className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-semibold text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                            className="flex-1 h-[42px] bg-[#0057BB] hover:bg-blue-700 rounded-lg text-sm font-semibold text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                         >
                             <span className="material-symbols-outlined text-[18px]">add</span>
                             Add Customer
@@ -1202,18 +1202,18 @@ const Customers = () => {
                                 </button>
                             </div>
 
-                            {/* Entry buttons — Desktop Styled (Preserved) */}
-                            <div className="hidden md:grid grid-cols-2 gap-0 border-t border-gray-200">
+                            {/* Entry buttons — Desktop Styled */}
+                            <div className="hidden md:flex h-[68px] items-center px-4 bg-white border-t border-gray-200 gap-3 shrink-0">
                                 <button
                                     onClick={() => handleAddEntry('gave')}
-                                    className="py-4 text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors border-r border-gray-200 flex items-center justify-center gap-1.5"
+                                    className="flex-1 h-[42px] rounded-lg text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.99]"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">call_made</span>
                                     You Gave ₹
                                 </button>
                                 <button
                                     onClick={() => handleAddEntry('got')}
-                                    className="py-4 text-sm font-semibold text-green-600 bg-green-50 hover:bg-green-100 transition-colors flex items-center justify-center gap-1.5"
+                                    className="flex-1 h-[42px] rounded-lg text-sm font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.99]"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">call_received</span>
                                     You Got ₹

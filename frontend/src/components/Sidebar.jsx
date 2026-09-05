@@ -125,10 +125,10 @@ const Sidebar = () => {
             </div>
 
             {/* Bottom logout */}
-            <div className="px-3 pb-4 border-t border-[#243446] pt-3">
+            <div className="h-[68px] flex items-center px-3 border-t border-[#243446] shrink-0">
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded text-sm font-medium text-[#9bbdd4] hover:bg-white/5 hover:text-white transition-colors"
+                    className="flex items-center gap-3 w-full px-3 h-[42px] rounded-lg text-sm font-medium text-[#9bbdd4] hover:bg-white/5 hover:text-white transition-colors"
                 >
                     <span className="material-symbols-outlined text-[20px]">logout</span>
                     <span>Logout</span>

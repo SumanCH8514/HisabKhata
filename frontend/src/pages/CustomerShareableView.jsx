@@ -4,6 +4,7 @@ import { dbService, db, sendEmailNotification } from '../services/firebase';
 import { ref, onValue, push, set } from 'firebase/database';
 import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
+import { getDueDateStatus } from '../utils/dueDateUtils';
 // Heavy PDF libraries will be imported dynamically when needed
 
 const CustomerShareableView = () => {
@@ -903,6 +904,16 @@ const CustomerShareableView = () => {
                             <p className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
                                 {isReceivable ? 'Pending Due Payment' : 'Settled / Credit Available'}
                             </p>
+                            {customer.dueDate && isReceivable && (() => {
+                                const status = getDueDateStatus(customer.dueDate);
+                                if (!status) return null;
+                                return (
+                                    <div className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold border ${status.badgeColor}`}>
+                                        <span className="material-symbols-outlined text-[13px]">event</span>
+                                        {status.label}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

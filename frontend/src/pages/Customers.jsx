@@ -9,6 +9,7 @@ import FilterDrawer from '../components/FilterDrawer';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { getFutureDateString, formatDueDate, getDueDateStatus, isDueToday, isUpcomingDue, isOverdue } from '../utils/dueDateUtils';
 
 const Customers = () => {
     const location = useLocation();
@@ -110,7 +111,8 @@ const Customers = () => {
                 if (updated.photoURL !== selectedCustomer.photoURL || 
                     updated.balance !== selectedCustomer.balance || 
                     updated.name !== selectedCustomer.name ||
-                    updated.phone !== selectedCustomer.phone) {
+                    updated.phone !== selectedCustomer.phone ||
+                    updated.dueDate !== selectedCustomer.dueDate) {
                     setSelectedCustomer(updated);
                 }
             }
@@ -166,6 +168,10 @@ const Customers = () => {
     );
     if (filterBy === 'youllget') filteredCustomers = filteredCustomers.filter(c => (c.balance || 0) < 0);
     if (filterBy === 'youllgive') filteredCustomers = filteredCustomers.filter(c => (c.balance || 0) > 0);
+    if (filterBy === 'settled') filteredCustomers = filteredCustomers.filter(c => (c.balance || 0) === 0);
+    if (filterBy === 'due_today') filteredCustomers = filteredCustomers.filter(c => isDueToday(c.dueDate));
+    if (filterBy === 'upcoming') filteredCustomers = filteredCustomers.filter(c => isUpcomingDue(c.dueDate));
+    if (filterBy === 'no_due_date') filteredCustomers = filteredCustomers.filter(c => !c.dueDate);
     // Sort logic
     if (sortBy === 'name') filteredCustomers = [...filteredCustomers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (sortBy === 'amount-high') filteredCustomers = [...filteredCustomers].sort((a, b) => Math.abs(b.balance || 0) - Math.abs(a.balance || 0));
@@ -219,15 +225,19 @@ const Customers = () => {
         const linkIcon = String.fromCodePoint(0x1F517);
         const pray = String.fromCodePoint(0x1F64F);
         const documentIcon = String.fromCodePoint(0x1F4D1);
+        const calendarIcon = String.fromCodePoint(0x1F4C5);
+
+        const dueStr = selectedCustomer.dueDate ? formatDueDate(selectedCustomer.dueDate) : '';
 
         let message = '';
         if (isReceivable) {
             message = `${wavingHand} *Hello ${selectedCustomer.name},*\n\n` +
                 `${megaphone} *Payment Reminder from HisabKhata Web*\n\n` +
-                `Your outstanding balance is: *₹${balance}*\n\n` +
+                `Your outstanding balance is: *₹${balance}*\n` +
+                (dueStr ? `${calendarIcon} *Due Date:* ${dueStr}\n\n` : `\n`) +
                 `${linkIcon} *View your full digital statement here:*\n` +
                 `${shareLink}\n\n` +
-                `${pray} Please verify your transactions. Thank you!`;
+                `${pray} Please verify your transactions and clear dues. Thank you!`;
         } else {
             message = `${wavingHand} *Hello ${selectedCustomer.name},*\n\n` +
                 `${documentIcon} *Statement Update from Hisab Khata*\n\n` +
@@ -247,16 +257,51 @@ const Customers = () => {
         const balance = Math.abs(selectedCustomer.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
         const shareLink = `${window.location.origin}/customer/share/${selectedCustomer.id}`;
         const isReceivable = (selectedCustomer.balance || 0) < 0;
+        const dueStr = selectedCustomer.dueDate ? formatDueDate(selectedCustomer.dueDate) : '';
 
         let message = "";
         if (isReceivable) {
-            message = `Hello ${selectedCustomer.name}, Payment Reminder. Your outstanding balance is: ₹${balance}. View full statement here: ${shareLink}`;
+            message = `Hello ${selectedCustomer.name}, Payment Reminder. Your outstanding balance is: ₹${balance}.${dueStr ? ` Due Date: ${dueStr}.` : ''} View full statement here: ${shareLink}`;
         } else {
             message = `Hello ${selectedCustomer.name}, your latest statement from Hisab Khata is ready. View it here: ${shareLink}`;
         }
 
         const smsUrl = `sms:+91${selectedCustomer.phone}?body=${encodeURIComponent(message)}`;
         window.open(smsUrl, '_blank');
+    };
+
+    const handleSetDueDate = async (days) => {
+        if (!selectedCustomer) return;
+        const targetDate = getFutureDateString(days);
+        try {
+            await dbService.updateCustomer(selectedCustomer.id, { dueDate: targetDate });
+            setSelectedCustomer(prev => ({ ...prev, dueDate: targetDate }));
+        } catch (err) {
+            console.error("Failed to update due date:", err);
+            alert("Failed to update due date");
+        }
+    };
+
+    const handleCustomDueDate = async (dateStr) => {
+        if (!selectedCustomer || !dateStr) return;
+        try {
+            await dbService.updateCustomer(selectedCustomer.id, { dueDate: dateStr });
+            setSelectedCustomer(prev => ({ ...prev, dueDate: dateStr }));
+        } catch (err) {
+            console.error("Failed to update due date:", err);
+            alert("Failed to update due date");
+        }
+    };
+
+    const handleClearDueDate = async () => {
+        if (!selectedCustomer) return;
+        try {
+            await dbService.updateCustomer(selectedCustomer.id, { dueDate: null });
+            setSelectedCustomer(prev => ({ ...prev, dueDate: null }));
+        } catch (err) {
+            console.error("Failed to clear due date:", err);
+            alert("Failed to clear due date");
+        }
     };
 
     const handleResendVerification = async () => {
@@ -429,11 +474,15 @@ const Customers = () => {
                                         className="pl-7 pr-6 py-1.5 text-sm border border-gray-300 rounded bg-white text-gray-500 outline-none appearance-none cursor-pointer bg-none"
                                         value={filterBy}
                                         onChange={e => setFilterBy(e.target.value)}
-                                        style={{ minWidth: '120px' }}
+                                        style={{ minWidth: '130px' }}
                                     >
-                                        <option value="">Select</option>
+                                        <option value="">All</option>
                                         <option value="youllget">You'll Get</option>
                                         <option value="youllgive">You'll Give</option>
+                                        <option value="settled">Settled</option>
+                                        <option value="due_today">Due Today</option>
+                                        <option value="upcoming">Upcoming Due</option>
+                                        <option value="no_due_date">No Due Date</option>
                                     </select>
                                     <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">filter_list</span>
                                     <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[15px] pointer-events-none">expand_more</span>
@@ -503,11 +552,23 @@ const Customers = () => {
                                         )}
                                     </div>
 
-                                    {/* Name and Time */}
+                                    {/* Name, Time and Due Date */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
-                                            {customer.name}
-                                        </p>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <p className="text-[15px] font-semibold text-gray-900 truncate">
+                                                {customer.name}
+                                            </p>
+                                            {customer.dueDate && (customer.balance || 0) < 0 && (() => {
+                                                const dueStatus = getDueDateStatus(customer.dueDate);
+                                                if (!dueStatus) return null;
+                                                return (
+                                                    <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${dueStatus.badgeColor}`}>
+                                                        <span className="material-symbols-outlined text-[10px]">timer</span>
+                                                        {dueStatus.shortLabel}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
                                         <div className="flex items-center gap-1.5 text-gray-400">
                                             <span className="material-symbols-outlined text-[14px]">schedule</span>
                                             <span className="text-[11px] font-medium uppercase tracking-wide">
@@ -757,16 +818,80 @@ const Customers = () => {
                             </div>
 
                             {/* Set Due Date row — Desktop only */}
-                            <div className="hidden md:flex items-center px-6 py-2.5 bg-white border-b border-gray-100">
-                                <div className="flex items-center gap-2 flex-1">
-                                    <span className="material-symbols-outlined text-gray-400 text-[16px]">timer</span>
-                                    <span className="text-xs text-gray-600 font-medium">Set Due Date:</span>
-                                    {['7 days', '14 days', '30 days'].map(d => (
-                                        <button key={d} className="px-2.5 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50 transition-colors">{d}</button>
-                                    ))}
-                                    <button className="px-2.5 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50 transition-colors">Select Date</button>
+                            <div className="hidden md:flex items-center px-6 py-2.5 bg-white border-b border-gray-100 gap-4">
+                                <div className="flex items-center gap-2 flex-1 flex-wrap">
+                                    <span className="material-symbols-outlined text-gray-400 text-[18px]">timer</span>
+                                    <span className="text-xs text-gray-600 font-bold">Set Due Date:</span>
+                                    
+                                    {/* Quick Preset Buttons */}
+                                    {[
+                                        { label: '7 days', days: 7 },
+                                        { label: '14 days', days: 14 },
+                                        { label: '30 days', days: 30 }
+                                    ].map(({ label, days }) => {
+                                        const presetDate = getFutureDateString(days);
+                                        const isSelected = selectedCustomer.dueDate === presetDate;
+                                        return (
+                                            <button
+                                                key={days}
+                                                type="button"
+                                                onClick={() => handleSetDueDate(days)}
+                                                className={`px-3 py-1 rounded text-xs font-semibold transition-all border ${
+                                                    isSelected 
+                                                        ? 'bg-[#0057BB] text-white border-[#0057BB] shadow-sm' 
+                                                        : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                {label}
+                                            </button>
+                                        );
+                                    })}
+
+                                    {/* Custom Date Picker */}
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="date"
+                                            min={getFutureDateString(0)}
+                                            value={selectedCustomer.dueDate || ''}
+                                            onChange={(e) => handleCustomDueDate(e.target.value)}
+                                            className="sr-only"
+                                            id="customer-due-date-picker"
+                                        />
+                                        <span 
+                                            onClick={() => {
+                                                const el = document.getElementById('customer-due-date-picker');
+                                                if (el && typeof el.showPicker === 'function') {
+                                                    el.showPicker();
+                                                }
+                                            }}
+                                            className="px-3 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                                            Select Date
+                                        </span>
+                                    </label>
+
+                                    {/* Active Due Date Status Badge */}
+                                    {selectedCustomer.dueDate && (() => {
+                                        const status = getDueDateStatus(selectedCustomer.dueDate);
+                                        if (!status) return null;
+                                        return (
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${status.badgeColor} ml-1`}>
+                                                <span className="material-symbols-outlined text-[15px]">event</span>
+                                                <span>{status.label}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearDueDate}
+                                                    title="Remove Due Date"
+                                                    className="p-0.5 hover:bg-black/10 rounded transition-colors ml-1 text-gray-500 hover:text-red-600"
+                                                >
+                                                    <span className="material-symbols-outlined text-[14px] leading-none block">close</span>
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right shrink-0">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">NET BALANCE:</p>
                                     {(selectedCustomer.balance || 0) === 0 ? (
                                         <p className="text-gray-600 font-semibold text-sm">₹0.00</p>

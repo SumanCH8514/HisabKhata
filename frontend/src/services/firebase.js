@@ -41,14 +41,14 @@ export const sendEmailNotification = async (templateParams) => {
 
     if (!config || !config.serviceId || !config.publicKey) {
       console.warn("EmailJS not configured in Admin Console.");
-      return;
+      throw new Error("EmailJS not configured in Admin Console.");
     }
 
     // Determine which template to use
     let templateId = config.templateId; // Fallback
     if (templateParams.type === 'WELCOME' || templateParams.type === 'CUSTOMER_ADDED') {
       templateId = config.welcomeTemplateId || config.templateId;
-    } else if (templateParams.type === 'TRANSACTION') {
+    } else if (templateParams.type === 'TRANSACTION' || templateParams.type === 'TRANSACTION_NOTIFICATION' || templateParams.type === 'REMINDER') {
       templateId = config.alertTemplateId || config.templateId;
     } else if (templateParams.type === 'PAYMENT_VERIFICATION') {
       // For payment verification, we prioritize the specific template in payment config
@@ -57,15 +57,32 @@ export const sendEmailNotification = async (templateParams) => {
 
     if (!templateId) {
       console.warn("Email template ID not found.");
-      return;
+      throw new Error("Email template ID not found.");
     }
+
+    const toName = templateParams.to_name || templateParams.customer_name || 'Valued Customer';
+    const merchantName = templateParams.merchant_name || templateParams.business_name || 'HisabKhata Merchant';
+    const merchantPhone = templateParams.merchant_phone || templateParams.phone || '';
+    const amountVal = templateParams.amount != null ? templateParams.amount : '';
+    const balanceVal = templateParams.balance != null ? templateParams.balance : (templateParams.current_balance != null ? templateParams.current_balance : amountVal);
 
     const params = {
       ...templateParams,
       email: templateParams.to_email, // Alias for templates using {{email}}
-      link: templateParams.action_url, // Alias for templates using {{link}}
-      verification_link: templateParams.action_url, // Alias for templates using {{verification_link}}
-      action_link: templateParams.action_url // Alias for templates using {{action_link}}
+      to_name: toName,
+      customer_name: toName,
+      merchant_name: merchantName,
+      merchant_phone: merchantPhone,
+      amount: amountVal,
+      transaction_amount: amountVal,
+      balance: balanceVal,
+      current_balance: balanceVal,
+      tx_type: templateParams.tx_type || 'Payment Reminder',
+      status: templateParams.status || 'Active',
+      link: templateParams.action_url || '',
+      verification_link: templateParams.action_url || '',
+      action_link: templateParams.action_url || '',
+      action_url: templateParams.action_url || ''
     };
 
     console.log(`email to: ${params.email}`);
@@ -79,9 +96,11 @@ export const sendEmailNotification = async (templateParams) => {
       params
     );
     console.log("Email sent successfully! ✅");
+    return true;
   } catch (error) {
     console.error("EmailJS Error:", error);
     console.log("Email not sent ! ❌");
+    throw error;
   }
 };
 

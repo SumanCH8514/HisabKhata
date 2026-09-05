@@ -287,52 +287,63 @@ const Customers = () => {
 
     const handleEmailReminder = async () => {
         if (!selectedCustomer) return;
-        const balance = Math.abs(selectedCustomer.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        const balanceNum = Math.abs(selectedCustomer.balance || 0);
+        const balanceStr = balanceNum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
         const shareLink = `${window.location.origin}/customer/share/${selectedCustomer.id}`;
         const isReceivable = (selectedCustomer.balance || 0) < 0;
         const dueStr = selectedCustomer.dueDate ? formatDueDate(selectedCustomer.dueDate) : '';
+        const businessName = userData?.businessName || userData?.name || 'HisabKhata Merchant';
+        const businessPhone = userData?.phone || userData?.mobile || '';
 
         const subject = isReceivable
-            ? `Payment Reminder: Outstanding Balance ₹${balance} - HisabKhata`
-            : `Account Statement Update - HisabKhata`;
+            ? `Payment Reminder: Outstanding Balance ₹${balanceStr} - ${businessName}`
+            : `Account Statement Update - ${businessName}`;
 
         const body = isReceivable
             ? `Hello ${selectedCustomer.name},\n\n` +
-              `This is a payment reminder for your outstanding balance of ₹${balance}.\n` +
+              `This is a payment reminder for your outstanding balance of ₹${balanceStr}.\n` +
               (dueStr ? `Due Date: ${dueStr}\n\n` : `\n`) +
               `View your complete digital statement & transaction details here:\n` +
               `${shareLink}\n\n` +
               `Please clear the dues at your earliest convenience.\n\n` +
-              `Thank you,\n${userData?.name || 'HisabKhata'}`
+              `Thank you,\n${businessName}`
             : `Hello ${selectedCustomer.name},\n\n` +
               `Your updated account statement is ready.\n` +
-              `Current balance: ₹${balance}\n\n` +
+              `Current balance: ₹${balanceStr}\n\n` +
               `View statement:\n` +
               `${shareLink}\n\n` +
-              `Thank you,\n${userData?.name || 'HisabKhata'}`;
+              `Thank you,\n${businessName}`;
 
-        const emailTarget = selectedCustomer.email || '';
-        
-        // Open user's email client with pre-filled content
-        const mailtoUrl = `mailto:${emailTarget}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.location.href = mailtoUrl;
-
-        // Trigger background automated notification if customer has an email address
         if (selectedCustomer.email) {
             try {
                 await sendEmailNotification({
                     to_email: selectedCustomer.email,
                     to_name: selectedCustomer.name,
+                    customer_name: selectedCustomer.name,
                     subject: subject,
                     message: isReceivable
-                        ? `You have an outstanding balance of ₹${balance}${dueStr ? ` (Due Date: ${dueStr})` : ''}. Please view your verified digital statement online.`
-                        : `Your digital ledger statement has been updated. Current balance: ₹${balance}.`,
+                        ? `You have an outstanding balance of ₹${balanceStr}${dueStr ? ` (Due Date: ${dueStr})` : ''}. Please view your verified digital statement online.`
+                        : `Your digital ledger statement has been updated. Current balance: ₹${balanceStr}.`,
+                    amount: balanceNum,
+                    balance: balanceNum,
+                    current_balance: balanceNum,
+                    transaction_amount: balanceNum,
+                    merchant_name: businessName,
+                    merchant_phone: businessPhone,
+                    tx_type: isReceivable ? 'Payment Reminder' : 'Statement Update',
+                    status: 'Active',
                     action_url: shareLink,
-                    type: 'TRANSACTION_NOTIFICATION'
+                    type: 'TRANSACTION'
                 });
+                alert(`Reminder email sent successfully to ${selectedCustomer.email}! ✅`);
             } catch (err) {
-                console.warn("Email notification error:", err);
+                console.warn("Email service error, opening mail client as fallback:", err);
+                const mailtoUrl = `mailto:${selectedCustomer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = mailtoUrl;
             }
+        } else {
+            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoUrl;
         }
     };
 

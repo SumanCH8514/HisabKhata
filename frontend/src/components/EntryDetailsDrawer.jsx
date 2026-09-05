@@ -236,14 +236,24 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                                         await dbService.sendEmailNotification({
                                             to_email: customerEmail,
                                             to_name: customerName,
-                                            subject: `Payment Reminder - ${businessName}`,
+                                            customer_name: customerName,
+                                            subject: `Payment Reminder: ₹${absAmount} - ${businessName}`,
                                             message: msg,
-                                            type: 'REMINDER'
+                                            amount: absAmount,
+                                            balance: Math.abs(tx.balance || 0),
+                                            current_balance: Math.abs(tx.balance || 0),
+                                            transaction_amount: absAmount,
+                                            merchant_name: businessName,
+                                            merchant_phone: businessPhone,
+                                            tx_type: isGave ? 'Payment Requested' : 'Payment Received',
+                                            status: 'Recorded',
+                                            action_url: `${window.location.origin}/customer/share/${tx.customerId}`,
+                                            type: 'TRANSACTION'
                                         });
-                                        alert('Email sent successfully! ✅');
+                                        alert(`Email sent successfully to ${customerEmail}! ✅`);
                                     } catch (err) {
                                         // Fallback to mailto
-                                        window.location.href = `mailto:${customerEmail}?subject=Payment Reminder&body=${encodeURIComponent(msg)}`;
+                                        window.location.href = `mailto:${customerEmail}?subject=${encodeURIComponent(`Payment Reminder - ${businessName}`)}&body=${encodeURIComponent(msg)}`;
                                     }
                                 } else alert("No email");
                             }}

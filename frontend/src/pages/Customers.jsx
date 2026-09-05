@@ -760,13 +760,47 @@ const Customers = () => {
                                                 ₹{Math.abs(selectedCustomer.balance || 0).toLocaleString('en-IN')}
                                             </span>
                                         </div>
-                                        <div className="px-4 py-2.5 flex items-center justify-between bg-blue-50/30">
-                                            <div className="flex items-center gap-2 text-[#0057BB]">
-                                                <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                                                <span className="text-[11px] font-bold uppercase tracking-wide">Set collection reminder</span>
-                                            </div>
-                                            <button className="text-[11px] font-bold text-[#0057BB] uppercase">SET DATE</button>
-                                        </div>
+                                        {/* Set Due Date / Collection Reminder */}
+                                        {selectedCustomer.dueDate ? (
+                                            (() => {
+                                                const status = getDueDateStatus(selectedCustomer.dueDate);
+                                                if (!status) return null;
+                                                return (
+                                                    <div className={`px-4 py-2.5 flex items-center justify-between ${status.badgeColor} border-t border-gray-100 animate-in fade-in duration-200`}>
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <span className="material-symbols-outlined text-[18px]">event</span>
+                                                            <span className="text-[11px] font-bold truncate">{status.label}</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); handleClearDueDate(); }}
+                                                            title="Remove Due Date"
+                                                            className="p-1 hover:bg-black/10 rounded transition-colors text-gray-500 hover:text-red-600 flex items-center justify-center shrink-0"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[16px]">close</span>
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })()
+                                        ) : (
+                                            <label className="px-4 py-2.5 flex items-center justify-between bg-blue-50/40 hover:bg-blue-50 active:bg-blue-100 transition-colors cursor-pointer border-t border-gray-100 relative group">
+                                                <input
+                                                    type="date"
+                                                    min={getFutureDateString(0)}
+                                                    value=""
+                                                    onChange={(e) => handleCustomDueDate(e.target.value)}
+                                                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                                                    id="mobile-customer-due-date-picker"
+                                                />
+                                                <div className="flex items-center gap-2 text-[#0057BB]">
+                                                    <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                                                    <span className="text-[11px] font-bold uppercase tracking-wide">Set collection reminder</span>
+                                                </div>
+                                                <span className="text-[11px] font-black text-[#0057BB] uppercase tracking-wide group-active:scale-95 transition-transform">
+                                                    SET DATE
+                                                </span>
+                                            </label>
+                                        )}
                                     </div>
                                 </div>
                             </div>

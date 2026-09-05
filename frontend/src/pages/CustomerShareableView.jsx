@@ -874,16 +874,16 @@ const CustomerShareableView = () => {
             )}
 
             {/* Desktop Header */}
-            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 px-8 h-16 items-center justify-between shadow-xs">
+            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-16 items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-linear-to-br from-[#0057BB] to-[#003C82] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 text-white shrink-0">
-                            <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                        <div className="w-10 h-10 bg-[#0057BB] rounded-xl flex items-center justify-center shadow-md text-white shrink-0">
+                            <span className="material-symbols-outlined text-[22px]">account_balance_wallet</span>
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-extrabold text-slate-900 text-base leading-tight tracking-tight">Hisab Khata</span>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-100">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-200">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#0057BB]"></span> Verified Ledger
                                 </span>
                             </div>
@@ -984,11 +984,11 @@ const CustomerShareableView = () => {
                 </div>
 
                 {/* Identity Card (Desktop Only) */}
-                <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 p-7 shadow-xs relative overflow-hidden print-rounded">
-                    <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-[#0057BB] via-blue-500 to-indigo-600"></div>
+                <div className="hidden md:block bg-white rounded-2xl border border-slate-200 p-7 shadow-sm relative overflow-hidden print-rounded">
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-[#0057BB]"></div>
                     <div className="flex items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center font-black text-[#0057BB] text-2xl border border-slate-200/80 shadow-xs uppercase overflow-hidden shrink-0">
+                            <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center font-black text-[#0057BB] text-2xl border border-blue-100 shadow-sm uppercase overflow-hidden shrink-0">
                                 {customer.photoURL ? (
                                     <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -1004,7 +1004,7 @@ const CustomerShareableView = () => {
                                 <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{customer.name}</h1>
                                 <div className="flex items-center gap-2 pt-0.5">
                                     {customer.phone ? (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200/60">
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
                                             <span className="material-symbols-outlined text-[14px] text-slate-500">call</span>
                                             +91 {customer.phone}
                                         </span>
@@ -1012,7 +1012,7 @@ const CustomerShareableView = () => {
                                         <span className="text-xs text-slate-400 italic">No phone linked</span>
                                     )}
                                     {customer.address && (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200/60 truncate max-w-xs">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 truncate max-w-xs">
                                             <span className="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
                                             {customer.address}
                                         </span>
@@ -1024,20 +1024,20 @@ const CustomerShareableView = () => {
                         {/* Net Balance Panel */}
                         <div className={`p-5 rounded-2xl border min-w-[240px] text-right transition-all print:bg-white print:border-slate-200 ${
                             isReceivable 
-                                ? 'bg-rose-50/70 border-rose-200/70' 
-                                : 'bg-emerald-50/70 border-emerald-200/70'
+                                ? 'bg-red-50 border-red-200 text-red-700' 
+                                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
                         }`}>
                             <div className="flex items-center justify-end gap-1.5 mb-1">
-                                <span className={`w-2 h-2 rounded-full ${isReceivable ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
+                                <span className={`w-2 h-2 rounded-full ${isReceivable ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Net Balance</p>
                             </div>
-                            <h3 className={`text-3xl font-extrabold tracking-tight ${isReceivable ? 'text-rose-600' : 'text-emerald-700'}`}>
+                            <h3 className={`text-3xl font-extrabold tracking-tight ${isReceivable ? 'text-red-600' : 'text-emerald-700'}`}>
                                 ₹{balanceAbsolute}
                             </h3>
                             <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                                <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-md ${
                                     isReceivable 
-                                        ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                                        ? 'bg-red-100 text-red-800 border border-red-200' 
                                         : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                 }`}>
                                     {isReceivable ? 'Pending Due' : 'Settled / Advance'}
@@ -1059,18 +1059,18 @@ const CustomerShareableView = () => {
 
                 {/* Desktop 3-Card Summary Grid */}
                 <div className="hidden md:grid grid-cols-3 gap-4 no-print">
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex items-center justify-between">
                         <div>
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Purchases</p>
-                            <p className="text-2xl font-black text-rose-600">₹{totalGave}</p>
+                            <p className="text-2xl font-black text-red-600">₹{totalGave}</p>
                             <p className="text-[11px] text-slate-500 mt-1 font-medium">Debit / You Gave</p>
                         </div>
-                        <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
                             <span className="material-symbols-outlined text-[24px]">trending_down</span>
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex items-center justify-between">
                         <div>
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Payments</p>
                             <p className="text-2xl font-black text-emerald-600">₹{totalGot}</p>
@@ -1081,12 +1081,12 @@ const CustomerShareableView = () => {
                         </div>
                     </div>
 
-                    <div className={`p-5 rounded-2xl border shadow-2xs transition-all flex items-center justify-between ${
-                        isReceivable ? 'bg-rose-50/40 border-rose-200/60' : 'bg-emerald-50/40 border-emerald-200/60'
+                    <div className={`p-5 rounded-2xl border shadow-sm transition-all flex items-center justify-between ${
+                        isReceivable ? 'bg-red-50/50 border-red-200' : 'bg-emerald-50/50 border-emerald-200'
                     }`}>
                         <div>
                             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Closing Balance</p>
-                            <p className={`text-2xl font-black ${isReceivable ? 'text-rose-600' : 'text-emerald-700'}`}>
+                            <p className={`text-2xl font-black ${isReceivable ? 'text-red-600' : 'text-emerald-700'}`}>
                                 ₹{balanceAbsolute}
                             </p>
                             <p className="text-[11px] text-slate-500 mt-1 font-medium">
@@ -1095,8 +1095,8 @@ const CustomerShareableView = () => {
                         </div>
                         <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${
                             isReceivable 
-                                ? 'bg-rose-100/80 border-rose-200 text-rose-700' 
-                                : 'bg-emerald-100/80 border-emerald-200 text-emerald-700'
+                                ? 'bg-red-100 border-red-200 text-red-700' 
+                                : 'bg-emerald-100 border-emerald-200 text-emerald-700'
                         }`}>
                             <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
                         </div>

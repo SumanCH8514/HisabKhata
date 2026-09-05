@@ -1313,11 +1313,11 @@ const CustomerShareableView = () => {
                                                             <button
                                                                 onClick={() => handleOpenView(atts, 0)}
                                                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-[10px] font-semibold transition-colors cursor-pointer border border-blue-100"
-                                                                title={`${atts.length} bill attachment(s)`}
+                                                                title={`${atts.length} attachment(s)`}
                                                             >
-                                                                <span className="material-symbols-outlined text-[13px] md:text-[15px]">receipt_long</span>
+                                                                <span className="material-symbols-outlined text-[14px] md:text-[15px]">attach_file</span>
                                                                 <span className="hidden md:inline text-xs">{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
-                                                                <span className="md:hidden text-[9px] font-bold">{atts.length > 1 ? `${atts.length} Bills` : 'Bill'}</span>
+                                                                {atts.length > 1 && <span className="md:hidden text-[9px] font-bold">{atts.length}</span>}
                                                             </button>
                                                         </div>
                                                     );

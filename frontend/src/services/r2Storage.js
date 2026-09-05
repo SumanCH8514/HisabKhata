@@ -9,6 +9,21 @@ export const R2_FOLDERS = {
 };
 
 const DEFAULT_BACKEND_URL = 'https://backend.hisabkhata.sumanonline.com';
+export const DEFAULT_CDN_URL = 'https://cdn.backend.hisabkhata.sumanonline.com';
+
+/**
+ * Ensures any image URL using HTTP from our CDN or R2 is upgraded to HTTPS
+ */
+export const ensureHttpsUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (url.startsWith('http://cdn.backend.hisabkhata.sumanonline.com')) {
+        return url.replace('http://', 'https://');
+    }
+    if (url.startsWith('http://') && (url.includes('sumanonline.com') || url.includes('r2.cloudflarestorage.com'))) {
+        return url.replace('http://', 'https://');
+    }
+    return url;
+};
 
 /**
  * Fetch dynamic R2 configuration from Firebase settings or fall back to .env
@@ -24,13 +39,16 @@ export const getR2Config = async () => {
         console.warn('Could not read R2 settings from database, using env:', e.message);
     }
 
+    const publicUrl = (settings.publicUrl || import.meta.env.VITE_R2_PUBLIC_URL || DEFAULT_CDN_URL)
+        .replace(/^http:\/\//i, 'https://');
+
     return {
         backendUrl: settings.backendUrl || import.meta.env.VITE_BACKEND_WORKER_URL || DEFAULT_BACKEND_URL,
         accountId: settings.accountId || import.meta.env.VITE_R2_ACCOUNT_ID || '',
         accessKeyId: settings.accessKeyId || import.meta.env.VITE_R2_ACCESS_KEY_ID || '',
         secretAccessKey: settings.secretAccessKey || import.meta.env.VITE_R2_SECRET_ACCESS_KEY || '',
         bucketName: settings.bucketName || import.meta.env.VITE_R2_BUCKET_NAME || 'hisabkhata',
-        publicUrl: settings.publicUrl || import.meta.env.VITE_R2_PUBLIC_URL || 'http://cdn.backend.hisabkhata.sumanonline.com'
+        publicUrl
     };
 };
 
@@ -181,7 +199,7 @@ export const uploadToR2 = async (fileOrBase64, folder = R2_FOLDERS.PROFILE, cust
             ContentType: contentType
         }));
 
-        const baseUrl = (config.publicUrl || 'http://cdn.backend.hisabkhata.sumanonline.com').replace(/\/+$/, '');
+        const baseUrl = (config.publicUrl || DEFAULT_CDN_URL).replace(/\/+$/, '').replace(/^http:\/\//i, 'https://');
         return `${baseUrl}/${key}`;
     }
 

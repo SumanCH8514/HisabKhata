@@ -39,7 +39,7 @@ app.get('/', (c) => {
         status: 'ONLINE',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
-        cdn_url: c.env.PUBLIC_CDN_URL || 'http://cdn.backend.hisabkhata.sumanonline.com'
+        cdn_url: (c.env.PUBLIC_CDN_URL || 'https://cdn.backend.hisabkhata.sumanonline.com').replace(/^http:\/\//i, 'https://')
     });
 });
 
@@ -172,7 +172,7 @@ app.post('/api/upload', async (c) => {
             }
         });
 
-        const baseUrl = (c.env.PUBLIC_CDN_URL || 'http://cdn.backend.hisabkhata.sumanonline.com').replace(/\/+$/, '');
+        const baseUrl = (c.env.PUBLIC_CDN_URL || 'https://cdn.backend.hisabkhata.sumanonline.com').replace(/\/+$/, '').replace(/^http:\/\//i, 'https://');
         const publicUrl = `${baseUrl}/${key}`;
 
         return c.json({
@@ -207,7 +207,7 @@ app.post('/api/delete', async (c) => {
 
         let key = target;
         if (key.startsWith('http')) {
-            const baseUrl = (c.env.PUBLIC_CDN_URL || 'http://cdn.backend.hisabkhata.sumanonline.com').replace(/\/+$/, '');
+            const baseUrl = (c.env.PUBLIC_CDN_URL || 'https://cdn.backend.hisabkhata.sumanonline.com').replace(/\/+$/, '');
             if (key.startsWith(baseUrl)) {
                 key = key.replace(`${baseUrl}/`, '');
             } else {

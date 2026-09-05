@@ -57,7 +57,7 @@ const AdminDashboard = () => {
         accessKeyId: '',
         secretAccessKey: '',
         bucketName: 'hisabkhata',
-        publicUrl: 'http://cdn.backend.hisabkhata.sumanonline.com'
+        publicUrl: 'https://cdn.backend.hisabkhata.sumanonline.com'
     });
     const [r2Testing, setR2Testing] = useState(false);
     const [r2TestResult, setR2TestResult] = useState(null);
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
                     ...prev,
                     ...data.r2,
                     bucketName: data.r2.bucketName || 'hisabkhata',
-                    publicUrl: data.r2.publicUrl || 'http://cdn.backend.hisabkhata.sumanonline.com'
+                    publicUrl: (data.r2.publicUrl || 'https://cdn.backend.hisabkhata.sumanonline.com').replace(/^http:\/\//i, 'https://')
                 }));
             }
         });
@@ -963,7 +963,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <a 
-                            href={r2Config.publicUrl || "http://cdn.backend.hisabkhata.sumanonline.com"} 
+                            href={r2Config.publicUrl || "https://cdn.backend.hisabkhata.sumanonline.com"} 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 backdrop-blur-sm border border-white/10"
@@ -1078,7 +1078,7 @@ const AdminDashboard = () => {
                                     type="text" 
                                     value={r2Config.publicUrl || ''} 
                                     onChange={(e) => setR2Config({...r2Config, publicUrl: e.target.value.trim()})}
-                                    placeholder="http://cdn.backend.hisabkhata.sumanonline.com"
+                                    placeholder="https://cdn.backend.hisabkhata.sumanonline.com"
                                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" 
                                 />
                             </div>

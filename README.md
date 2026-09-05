@@ -39,7 +39,7 @@
   - Transparent transaction timelines, invoice downloads, and 1-tap WhatsApp/UPI payment buttons.
 
 - **☁️ Cloudflare R2 & Edge Worker Architecture**:
-  - High-speed image and invoice bill attachments served via global edge CDN (`http://cdn.backend.hisabkhata.sumanonline.com/`).
+  - High-speed image and invoice bill attachments served via global edge CDN (`https://cdn.backend.hisabkhata.sumanonline.com/`).
   - Automatic client-side image downscaling and compression before upload.
   - Automatic deletion of outdated images to prevent storage bloat.
 
@@ -119,7 +119,7 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_BACKEND_WORKER_URL=https://backend.hisabkhata.sumanonline.com
-VITE_R2_PUBLIC_URL=http://cdn.backend.hisabkhata.sumanonline.com
+VITE_R2_PUBLIC_URL=https://cdn.backend.hisabkhata.sumanonline.com
 ```
 
 ### 4. Run Development Servers

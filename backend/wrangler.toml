@@ -13,5 +13,5 @@ binding = "MY_BUCKET"
 bucket_name = "hisabkhata"
 
 [vars]
-PUBLIC_CDN_URL = "http://cdn.backend.hisabkhata.sumanonline.com"
+PUBLIC_CDN_URL = "https://cdn.backend.hisabkhata.sumanonline.com"
 ENVIRONMENT = "production"

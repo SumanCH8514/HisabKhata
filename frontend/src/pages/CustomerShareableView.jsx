@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { dbService, db, sendEmailNotification } from '../services/firebase';
 import { ref, onValue, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
-import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
+import { uploadToR2, R2_FOLDERS, ensureHttpsUrl } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
 import { getDueDateStatus } from '../utils/dueDateUtils';
 // Heavy PDF libraries will be imported dynamically when needed
@@ -129,13 +129,17 @@ const CustomerShareableView = () => {
 
                 if (customerSnap.exists()) {
                     const cData = { id: customerSnap.key, ...customerSnap.val() };
+                    if (cData.photoURL) cData.photoURL = ensureHttpsUrl(cData.photoURL);
                     setCustomer(cData);
                     setNotFound(false);
 
                     if (cData.userId) {
                         get(ref(db, `users/${cData.userId}`)).then((uSnap) => {
                             if (isMounted && uSnap.exists()) {
-                                setOwner(uSnap.val());
+                                const oData = uSnap.val() || {};
+                                if (oData.photoURL) oData.photoURL = ensureHttpsUrl(oData.photoURL);
+                                if (oData.businessLogo) oData.businessLogo = ensureHttpsUrl(oData.businessLogo);
+                                setOwner(oData);
                             }
                         }).catch(() => {});
                     }
@@ -152,7 +156,13 @@ const CustomerShareableView = () => {
                 const txList = [];
                 if (txSnap.exists()) {
                     txSnap.forEach((child) => {
-                        txList.push({ id: child.key, ...child.val() });
+                        const val = child.val() || {};
+                        txList.push({ 
+                            id: child.key, 
+                            ...val,
+                            billUrl: ensureHttpsUrl(val.billUrl),
+                            attachments: Array.isArray(val.attachments) ? val.attachments.map(ensureHttpsUrl) : val.attachments
+                        });
                     });
                 }
                 setRawTransactions(txList);
@@ -171,13 +181,17 @@ const CustomerShareableView = () => {
             if (!isMounted) return;
             if (snapshot.exists()) {
                 const customerData = { id: snapshot.key, ...snapshot.val() };
+                if (customerData.photoURL) customerData.photoURL = ensureHttpsUrl(customerData.photoURL);
                 setCustomer(customerData);
                 setNotFound(false);
 
                 if (customerData.userId) {
                     onValue(ref(db, `users/${customerData.userId}`), (ownerSnap) => {
                         if (isMounted && ownerSnap.exists()) {
-                            setOwner(ownerSnap.val());
+                            const oData = ownerSnap.val() || {};
+                            if (oData.photoURL) oData.photoURL = ensureHttpsUrl(oData.photoURL);
+                            if (oData.businessLogo) oData.businessLogo = ensureHttpsUrl(oData.businessLogo);
+                            setOwner(oData);
                         }
                     }, { onlyOnce: true });
                 }
@@ -196,7 +210,13 @@ const CustomerShareableView = () => {
             if (!isMounted) return;
             const list = [];
             snapshot.forEach((childSnapshot) => {
-                list.push({ id: childSnapshot.key, ...childSnapshot.val() });
+                const val = childSnapshot.val() || {};
+                list.push({ 
+                    id: childSnapshot.key, 
+                    ...val,
+                    billUrl: ensureHttpsUrl(val.billUrl),
+                    attachments: Array.isArray(val.attachments) ? val.attachments.map(ensureHttpsUrl) : val.attachments
+                });
             });
             setRawTransactions(list);
             setLoading(false);

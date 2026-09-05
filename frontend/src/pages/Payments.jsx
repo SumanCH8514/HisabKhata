@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, dbService } from '../services/firebase';
-import { ref, onValue, update, remove, set, push } from 'firebase/database';
+import { ref, onValue, update, set, push } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { 
     CheckCircle2, 
@@ -8,14 +8,16 @@ import {
     Clock, 
     User, 
     Search, 
-    Filter, 
-    ChevronRight, 
-    IndianRupee, 
     Eye,
     AlertCircle,
     ArrowUpRight,
     CreditCard,
-    LogOut
+    Copy,
+    Check,
+    ShieldCheck,
+    X,
+    Filter,
+    ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,14 +25,26 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AppMobileHeader from '../components/AppMobileHeader';
 
+const getInitialColor = (name) => {
+    if (!name) return '#0057BB';
+    const colors = ['#0057BB', '#0284c7', '#0891b2', '#059669', '#d97706', '#e11d48', '#7c3aed', '#4f46e5'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+};
+
 const PaymentsDashboard = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
     const [processing, setProcessing] = useState(null); // stores paymentId being processed
     const [viewImage, setViewImage] = useState(null);
+    const [copiedId, setCopiedId] = useState(null);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -52,6 +66,13 @@ const PaymentsDashboard = () => {
         return () => unsub();
     }, [currentUser]);
 
+    const handleCopyRef = (text, id) => {
+        if (!text || text === 'N/A') return;
+        navigator.clipboard.writeText(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
     const handleApprove = async (payment) => {
         if (processing) return;
         setProcessing(payment.id);
@@ -59,9 +80,10 @@ const PaymentsDashboard = () => {
             const txData = {
                 customerId: payment.customerId,
                 amount: Number(payment.amount),
-                description: `Paid via Online Link (Ref: ${payment.transactionId || 'N/A'})`,
+                description: `Online Payment Received (Ref: ${payment.transactionId || 'N/A'})`,
                 date: new Date(payment.timestamp).toISOString().split('T')[0],
                 timestamp: payment.timestamp,
+                attachments: payment.screenshot ? [payment.screenshot] : [],
                 attachment: payment.screenshot || null
             };
 
@@ -72,7 +94,7 @@ const PaymentsDashboard = () => {
             });
         } catch (err) {
             console.error(err);
-            alert("Failed to approve payment.");
+            alert("Failed to approve payment: " + err.message);
         } finally {
             setProcessing(null);
         }
@@ -80,18 +102,21 @@ const PaymentsDashboard = () => {
 
     const handleReject = async (payment) => {
         if (processing) return;
-        if (!window.confirm("Are you sure you want to REJECT this payment?")) return;
+        if (!window.confirm(`Reject payment of ₹${Number(payment.amount).toLocaleString('en-IN')} from ${payment.customerName}?`)) return;
         
         setProcessing(payment.id);
         try {
-            // Queue notification
-            await set(ref(db, `services/email_queue/${push(ref(db, 'services/email_queue')).key}`), {
-                to_email: payment.customerEmail || '', 
-                to_name: payment.customerName,
-                merchant_name: currentUser?.displayName || 'Merchant',
-                type: 'PAYMENT_REJECTED',
-                timestamp: Date.now()
-            });
+            // Queue email notification
+            if (payment.customerEmail) {
+                await set(ref(db, `services/email_queue/${push(ref(db, 'services/email_queue')).key}`), {
+                    to_email: payment.customerEmail, 
+                    to_name: payment.customerName,
+                    merchant_name: currentUser?.displayName || 'Merchant',
+                    amount: payment.amount,
+                    type: 'PAYMENT_REJECTED',
+                    timestamp: Date.now()
+                });
+            }
 
             await update(ref(db, `pending_payments/${payment.id}`), {
                 status: 'rejected',
@@ -105,206 +130,400 @@ const PaymentsDashboard = () => {
         }
     };
 
-    const filteredPayments = payments.filter(p => 
-        p.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.transactionId && p.transactionId.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // Metrics calculations
+    const pendingList = payments.filter(p => p.status === 'pending');
+    const approvedList = payments.filter(p => p.status === 'approved');
+    const rejectedList = payments.filter(p => p.status === 'rejected');
+
+    const totalPendingAmount = pendingList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalApprovedAmount = approvedList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+
+    const filteredPayments = payments.filter(p => {
+        const matchesSearch = 
+            p.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.transactionId && p.transactionId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (p.customerEmail && p.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            p.amount?.toString().includes(searchTerm);
+        
+        if (!matchesSearch) return false;
+        if (statusFilter === 'all') return true;
+        return p.status === statusFilter;
+    });
+
+    const formatDateTime = (ts) => {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return d.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50" style={{ fontFamily: "'Noto Sans', sans-serif" }}>
+        <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
             <Sidebar />
 
             <div className="flex flex-1 ml-0 md:ml-[260px] flex-col overflow-hidden">
-                {/* Mobile Branded Header */}
+                {/* Mobile Header */}
                 <AppMobileHeader />
 
-                {/* Premium Page Header */}
-                <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-100 shrink-0">
-                            <CreditCard className="text-white w-4 h-4 md:w-5 md:h-5" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 md:gap-3">
-                                <h1 className="text-[15px] md:text-[19px] font-black text-gray-900 tracking-tight leading-none uppercase">Online Payments</h1>
-                                <span className="bg-blue-600 text-white text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-full">
-                                    {payments.filter(p => p.status === 'pending').length} Pending
+                {/* Desktop Top Header */}
+                <header className="hidden md:flex bg-white border-b border-slate-200/80 px-8 py-4 items-center justify-between flex-shrink-0">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+                            Online Payment Submissions
+                            {pendingList.length > 0 && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                    {pendingList.length} Action Needed
                                 </span>
-                            </div>
-                            <p className="text-[#8eacc0] text-[9px] md:text-[10px] mt-1 uppercase tracking-[0.2em] font-black leading-none">Verify & Approve Submissions</p>
-                        </div>
+                            )}
+                        </h1>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Review and verify UPI / bank transfer proofs submitted by your customers
+                        </p>
                     </div>
 
-                    <div className="relative group max-w-xs w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={14} />
-                        <input 
-                            type="text" 
-                            placeholder="Search by customer or ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 md:py-2.5 text-[12px] md:text-[13px] font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all placeholder:text-slate-400 placeholder:font-medium"
-                        />
-                    </div>
-                </div>
-
-                {/* Content Scroll Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pb-32">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : filteredPayments.length === 0 ? (
-                        <div className="bg-white rounded-[2.5rem] border border-slate-100 p-16 text-center shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
-                            <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Clock size={40} />
-                            </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2">No Pending Payments</h2>
-                            <p className="text-slate-400 font-medium max-w-xs mx-auto text-sm">
-                                When customers pay using your online link, their submissions will appear here for verification.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="max-w-6xl mx-auto grid grid-cols-1 gap-6">
-                            {filteredPayments.map((payment) => (
-                                <div 
-                                    key={payment.id}
-                                    className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden hover:border-blue-200 transition-all group"
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-72">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                            <input 
+                                type="text" 
+                                placeholder="Search by name, ref, amount..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 focus:bg-white rounded-lg pl-9 pr-8 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                            />
+                            {searchTerm && (
+                                <button 
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded"
                                 >
-                                    <div className="p-3 md:p-8 flex flex-row md:flex-row items-center md:items-center gap-4 md:gap-8">
-                                        {/* Thumbnail: Small on mobile, Large on desktop */}
-                                        <div className="relative shrink-0">
-                                            {payment.screenshot ? (
-                                                <div 
-                                                    onClick={() => setViewImage(payment.screenshot)}
-                                                    className="w-14 h-14 md:w-40 md:h-40 bg-slate-50 rounded-xl md:rounded-[2rem] overflow-hidden cursor-pointer relative group/img border border-slate-100 shadow-sm"
-                                                >
-                                                    <img src={payment.screenshot} alt="Proof" className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors hidden md:flex items-center justify-center">
-                                                        <Eye className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity" size={24} />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="w-14 h-14 md:w-40 md:h-40 bg-slate-50 rounded-xl md:rounded-[2rem] flex flex-col items-center justify-center text-slate-300 border border-slate-100 border-dashed">
-                                                    <AlertCircle className="w-5 h-5 md:w-8 md:h-8" />
-                                                    <span className="hidden md:block text-[9px] font-black uppercase tracking-widest mt-2">No Proof</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Info Section */}
-                                        <div className="flex-1 min-w-0 space-y-1 md:space-y-4">
-                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-1 md:gap-4">
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-0.5 md:mb-1">
-                                                        <User size={14} className="text-blue-600 hidden md:block" />
-                                                        <h3 className="font-black text-slate-900 text-sm md:text-xl uppercase tracking-tight truncate">{payment.customerName}</h3>
-                                                        {payment.status !== 'pending' && (
-                                                            <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                                                                payment.status === 'approved' 
-                                                                    ? 'bg-green-50 text-green-600 border-green-100' 
-                                                                    : 'bg-red-50 text-red-600 border-red-100'
-                                                            }`}>
-                                                                {payment.status}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-slate-400 text-[9px] md:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                                        <Clock size={12} className="hidden md:block" />
-                                                        <span className="truncate md:whitespace-normal">{new Date(payment.timestamp).toLocaleString()}</span>
-                                                    </p>
-                                                </div>
-                                                <div className="hidden md:block text-right">
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Transaction Ref</p>
-                                                    <p className="font-mono text-[11px] bg-slate-50 px-3 py-1 rounded-full text-slate-600 border border-slate-100">
-                                                        {payment.transactionId || 'NOT PROVIDED'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center md:items-end justify-between md:border-t md:border-slate-50 md:pt-4">
-                                                <div className="flex items-baseline gap-1">
-                                                    <span className="text-[9px] md:text-xs font-black text-slate-400 uppercase">Amount:</span>
-                                                    <span className="text-lg md:text-3xl font-black text-slate-900 leading-none">₹{Number(payment.amount).toLocaleString('en-IN')}</span>
-                                                </div>
-                                                
-                                                <button 
-                                                    onClick={() => navigate('/customers', { state: { selectedCustomerId: payment.customerId } })}
-                                                    className="hidden md:flex bg-blue-50 text-[#0057BB] text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl items-center gap-1 hover:bg-blue-100 transition-colors"
-                                                >
-                                                    View Ledger <ArrowUpRight size={14} />
-                                                </button>
-                                                
-                                                {/* Mobile Ledger Link */}
-                                                <button 
-                                                    onClick={() => navigate('/customers', { state: { selectedCustomerId: payment.customerId } })}
-                                                    className="md:hidden text-blue-600 text-[10px] font-black uppercase tracking-widest"
-                                                >
-                                                    Ledger →
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Action Section - Desktop Only or Floating on Mobile */}
-                                        <div className="flex flex-col md:w-48 gap-2 md:gap-3 md:border-l md:border-slate-100 md:pl-8">
-                                            {payment.status === 'pending' ? (
-                                                <>
-                                                    <button 
-                                                        onClick={() => handleApprove(payment)}
-                                                        disabled={processing === payment.id}
-                                                        className="w-10 h-10 md:w-full md:h-auto bg-green-600 hover:bg-green-700 text-white md:py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-green-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle2 size={16} />
-                                                        <span className="hidden md:inline">{processing === payment.id ? '...' : 'Approve'}</span>
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleReject(payment)}
-                                                        disabled={processing === payment.id}
-                                                        className="w-10 h-10 md:w-full md:h-auto bg-white hover:bg-red-50 text-red-600 border border-red-100 md:py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                                                    >
-                                                        <XCircle size={16} />
-                                                        <span className="hidden md:inline">Reject</span>
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <div className="hidden md:flex flex-col items-center justify-center text-center p-2">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                                                    <div className={`w-full py-2 rounded-lg font-black text-[10px] uppercase tracking-widest border ${
-                                                        payment.status === 'approved' 
-                                                            ? 'bg-green-50 text-green-600 border-green-100' 
-                                                            : 'bg-red-50 text-red-600 border-red-100'
-                                                    }`}>
-                                                        {payment.status}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    <X size={14} />
+                                </button>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                </header>
+
+                {/* Main Content Area */}
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pb-28 md:pb-12">
+                    <div className="max-w-6xl mx-auto space-y-6">
+
+                        {/* Top Metrics Cards */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                            {/* Pending Review Card */}
+                            <div 
+                                onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                                className={`cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'pending' 
+                                    ? 'bg-amber-50/80 border-amber-300 shadow-sm' 
+                                    : 'bg-white border-slate-200 hover:border-amber-200'}`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-500">Pending Review</span>
+                                    <span className={`w-2 h-2 rounded-full ${pendingList.length > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                                </div>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{pendingList.length}</p>
+                                    <p className="text-xs font-semibold text-amber-700">₹{totalPendingAmount.toLocaleString('en-IN')}</p>
+                                </div>
+                            </div>
+
+                            {/* Approved Card */}
+                            <div 
+                                onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
+                                className={`cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'approved' 
+                                    ? 'bg-emerald-50/80 border-emerald-300 shadow-sm' 
+                                    : 'bg-white border-slate-200 hover:border-emerald-200'}`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-500">Approved Payments</span>
+                                    <CheckCircle2 size={15} className="text-emerald-500" />
+                                </div>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{approvedList.length}</p>
+                                    <p className="text-xs font-semibold text-emerald-700">₹{totalApprovedAmount.toLocaleString('en-IN')}</p>
+                                </div>
+                            </div>
+
+                            {/* Rejected Card */}
+                            <div 
+                                onClick={() => setStatusFilter(statusFilter === 'rejected' ? 'all' : 'rejected')}
+                                className={`col-span-2 md:col-span-1 cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'rejected' 
+                                    ? 'bg-rose-50/80 border-rose-300 shadow-sm' 
+                                    : 'bg-white border-slate-200 hover:border-rose-200'}`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-500">Rejected</span>
+                                    <XCircle size={15} className="text-rose-400" />
+                                </div>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{rejectedList.length}</p>
+                                    <span className="text-xs text-slate-400 font-medium">Recorded</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Filter Tabs & Mobile Search */}
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                            {/* Filter Pills */}
+                            <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl overflow-x-auto custom-scrollbar">
+                                {[
+                                    { id: 'all', label: 'All Submissions', count: payments.length },
+                                    { id: 'pending', label: 'Pending Review', count: pendingList.length },
+                                    { id: 'approved', label: 'Approved', count: approvedList.length },
+                                    { id: 'rejected', label: 'Rejected', count: rejectedList.length }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setStatusFilter(tab.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                            statusFilter === tab.id
+                                                ? 'bg-white text-slate-900 shadow-sm font-bold'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                                        }`}
+                                    >
+                                        <span>{tab.label}</span>
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                                            statusFilter === tab.id ? 'bg-slate-100 text-slate-700' : 'bg-slate-300/60 text-slate-600'
+                                        }`}>
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Mobile Search Bar */}
+                            <div className="md:hidden relative">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by customer or ID..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                                {searchTerm && (
+                                    <button 
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 p-0.5"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* List Section */}
+                        {loading ? (
+                            <div className="bg-white rounded-xl border border-slate-200/80 p-16 flex flex-col items-center justify-center gap-3">
+                                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-xs font-semibold text-slate-500">Loading payment submissions...</p>
+                            </div>
+                        ) : filteredPayments.length === 0 ? (
+                            <div className="bg-white rounded-xl border border-slate-200/80 p-12 text-center">
+                                <div className="w-14 h-14 bg-slate-50 border border-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5 shadow-sm">
+                                    <ShieldCheck size={28} className="text-slate-400" />
+                                </div>
+                                <h3 className="text-base font-bold text-slate-800 mb-1">
+                                    {searchTerm ? 'No matching submissions' : 'No payments found'}
+                                </h3>
+                                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                    {searchTerm 
+                                        ? `No payment records matched "${searchTerm}". Try a different name or reference number.`
+                                        : 'When customers make payments using your shared payment link, their proof submissions will appear here for verification.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredPayments.map((payment) => {
+                                    const isPending = payment.status === 'pending';
+                                    const isApproved = payment.status === 'approved';
+                                    const isRejected = payment.status === 'rejected';
+
+                                    return (
+                                        <div 
+                                            key={payment.id}
+                                            className={`bg-white rounded-xl border transition-all ${
+                                                isPending 
+                                                    ? 'border-amber-200/80 shadow-sm hover:border-amber-300' 
+                                                    : 'border-slate-200/80 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                
+                                                {/* Left: Customer Info & Timestamp */}
+                                                <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                                                    {/* Avatar */}
+                                                    <div 
+                                                        className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm"
+                                                        style={{ backgroundColor: getInitialColor(payment.customerName) }}
+                                                    >
+                                                        {payment.customerName?.charAt(0).toUpperCase() || 'C'}
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="text-sm font-bold text-slate-900 truncate">
+                                                                {payment.customerName}
+                                                            </h3>
+                                                            {/* Status Badge */}
+                                                            {isPending && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                                                    <Clock size={12} /> Pending Review
+                                                                </span>
+                                                            )}
+                                                            {isApproved && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    <CheckCircle2 size={12} /> Approved
+                                                                </span>
+                                                            )}
+                                                            {isRejected && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                                                    <XCircle size={12} /> Rejected
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+                                                            <span>{formatDateTime(payment.timestamp)}</span>
+                                                            {payment.customerEmail && (
+                                                                <span className="text-slate-400 truncate">• {payment.customerEmail}</span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Ref ID & Copy */}
+                                                        <div className="flex items-center gap-1.5 mt-2">
+                                                            <span className="text-[11px] text-slate-400 font-medium">Ref / UTR:</span>
+                                                            {payment.transactionId ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleCopyRef(payment.transactionId, payment.id)}
+                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] font-semibold transition-colors group"
+                                                                    title="Click to copy Transaction ID"
+                                                                >
+                                                                    <span>{payment.transactionId}</span>
+                                                                    {copiedId === payment.id ? (
+                                                                        <Check size={12} className="text-emerald-600" />
+                                                                    ) : (
+                                                                        <Copy size={11} className="text-slate-400 group-hover:text-slate-600" />
+                                                                    )}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[11px] text-slate-400 italic">Not provided</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Center/Proof Thumbnail */}
+                                                <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
+                                                    {payment.screenshot ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setViewImage(payment.screenshot)}
+                                                            className="flex items-center gap-2 p-1.5 bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-xl transition-all group/proof"
+                                                        >
+                                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden bg-slate-200 relative shrink-0">
+                                                                <img 
+                                                                    src={payment.screenshot} 
+                                                                    alt="Payment Proof" 
+                                                                    className="w-full h-full object-cover group-hover/proof:scale-105 transition-transform duration-300"
+                                                                />
+                                                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/proof:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <Eye size={16} className="text-white drop-shadow" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-left pr-2">
+                                                                <p className="text-xs font-semibold text-slate-700 group-hover/proof:text-blue-700 leading-tight">View Receipt</p>
+                                                                <p className="text-[10px] text-slate-400">Payment Screenshot</p>
+                                                            </div>
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 p-2 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400">
+                                                            <AlertCircle size={16} />
+                                                            <span className="text-[11px] font-medium">No screenshot attached</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Right: Amount & Actions */}
+                                                <div className="flex items-center justify-between md:flex-col md:items-end md:justify-center gap-3 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                                                    <div>
+                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block md:text-right">Amount</span>
+                                                        <span className="text-lg md:text-2xl font-bold text-slate-900 tracking-tight">
+                                                            ₹{Number(payment.amount).toLocaleString('en-IN')}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Actions for Pending */}
+                                                    {isPending ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleReject(payment)}
+                                                                disabled={processing === payment.id}
+                                                                className="px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors active:scale-95 disabled:opacity-50"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleApprove(payment)}
+                                                                disabled={processing === payment.id}
+                                                                className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                                                            >
+                                                                <Check size={14} strokeWidth={2.5} />
+                                                                <span>{processing === payment.id ? 'Approving...' : 'Approve & Record'}</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => navigate('/customers', { state: { selectedCustomerId: payment.customerId } })}
+                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                                                        >
+                                                            <span>View in Ledger</span>
+                                                            <ArrowRight size={13} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </main>
             </div>
 
             <BottomNav />
 
-            {/* Image Modal */}
+            {/* Proof Preview Modal */}
             {viewImage && (
                 <div 
-                    className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
                     onClick={() => setViewImage(null)}
                 >
+                    <div className="absolute top-4 inset-x-4 max-w-4xl mx-auto flex items-center justify-between z-10">
+                        <span className="text-white text-xs md:text-sm font-semibold bg-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+                            Payment Proof Screenshot
+                        </span>
+                        <button 
+                            onClick={() => setViewImage(null)}
+                            className="text-white p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                        >
+                            <X size={22} />
+                        </button>
+                    </div>
+
                     <img 
                         src={viewImage} 
-                        alt="Payment Proof Full" 
-                        className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300" 
+                        alt="Payment Proof Fullscreen" 
+                        className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
                     />
-                    <button 
-                        className="absolute top-8 right-8 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors"
-                        onClick={() => setViewImage(null)}
-                    >
-                        <XCircle size={32} />
-                    </button>
                 </div>
             )}
         </div>

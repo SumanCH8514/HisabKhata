@@ -607,31 +607,31 @@ const Customers = () => {
 
                                     {/* Name, Time and Due Date */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <p className="text-[15px] font-semibold text-gray-900 truncate">
-                                                {customer.name}
-                                            </p>
+                                        <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
+                                            {customer.name}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-gray-400 overflow-hidden flex-nowrap">
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                                <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
+                                                    {customer.updatedAt
+                                                        ? formatTimeAgo(customer.updatedAt)
+                                                        : customer.createdAt
+                                                            ? formatTimeAgo(customer.createdAt)
+                                                            : 'Just now'
+                                                    }
+                                                </span>
+                                            </div>
                                             {customer.dueDate && (customer.balance || 0) < 0 && (() => {
                                                 const dueStatus = getDueDateStatus(customer.dueDate);
                                                 if (!dueStatus) return null;
                                                 return (
-                                                    <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${dueStatus.badgeColor}`}>
+                                                    <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 whitespace-nowrap ${dueStatus.badgeColor}`}>
                                                         <span className="material-symbols-outlined text-[10px]">timer</span>
                                                         {dueStatus.shortLabel}
                                                     </span>
                                                 );
                                             })()}
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-gray-400">
-                                            <span className="material-symbols-outlined text-[14px]">schedule</span>
-                                            <span className="text-[11px] font-medium uppercase tracking-wide">
-                                                {customer.updatedAt
-                                                    ? formatTimeAgo(customer.updatedAt)
-                                                    : customer.createdAt
-                                                        ? formatTimeAgo(customer.createdAt)
-                                                        : 'Just now'
-                                                }
-                                            </span>
                                         </div>
                                     </div>
 

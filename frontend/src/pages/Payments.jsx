@@ -222,85 +222,86 @@ const PaymentsDashboard = () => {
                 </header>
 
                 {/* Main Content Area */}
-                <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pb-28 md:pb-12">
-                    <div className="max-w-6xl mx-auto space-y-6">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-5 md:p-8 pb-28 md:pb-12">
+                    <div className="max-w-6xl mx-auto space-y-3.5 sm:space-y-4 md:space-y-6">
 
-                        {/* Top Metrics Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                        {/* Top Metrics Cards - 3 Equal Columns */}
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                             {/* Pending Review Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                                className={`cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'pending' 
-                                    ? 'bg-amber-50/80 border-amber-300 shadow-sm' 
+                                className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'pending' 
+                                    ? 'bg-amber-50/90 border-amber-300 ring-1 ring-amber-300 shadow-xs' 
                                     : 'bg-white border-slate-200 hover:border-amber-200'}`}
                             >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-500">Pending Review</span>
-                                    <span className={`w-2 h-2 rounded-full ${pendingList.length > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] sm:text-xs font-semibold text-slate-600 truncate">Pending</span>
+                                    <span className={`w-2 h-2 shrink-0 rounded-full ${pendingList.length > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></span>
                                 </div>
-                                <div className="mt-2 flex items-baseline justify-between">
-                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{pendingList.length}</p>
-                                    <p className="text-xs font-semibold text-amber-700">₹{totalPendingAmount.toLocaleString('en-IN')}</p>
+                                <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline justify-between gap-0.5">
+                                    <p className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-tight">{pendingList.length}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-amber-700 truncate">₹{totalPendingAmount.toLocaleString('en-IN')}</p>
                                 </div>
                             </div>
 
                             {/* Approved Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
-                                className={`cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'approved' 
-                                    ? 'bg-emerald-50/80 border-emerald-300 shadow-sm' 
+                                className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'approved' 
+                                    ? 'bg-emerald-50/90 border-emerald-300 ring-1 ring-emerald-300 shadow-xs' 
                                     : 'bg-white border-slate-200 hover:border-emerald-200'}`}
                             >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-500">Approved Payments</span>
-                                    <CheckCircle2 size={15} className="text-emerald-500" />
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] sm:text-xs font-semibold text-slate-600 truncate">Approved</span>
+                                    <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
                                 </div>
-                                <div className="mt-2 flex items-baseline justify-between">
-                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{approvedList.length}</p>
-                                    <p className="text-xs font-semibold text-emerald-700">₹{totalApprovedAmount.toLocaleString('en-IN')}</p>
+                                <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline justify-between gap-0.5">
+                                    <p className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-tight">{approvedList.length}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-emerald-700 truncate">₹{totalApprovedAmount.toLocaleString('en-IN')}</p>
                                 </div>
                             </div>
 
                             {/* Rejected Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'rejected' ? 'all' : 'rejected')}
-                                className={`col-span-2 md:col-span-1 cursor-pointer rounded-xl p-4 border transition-all ${statusFilter === 'rejected' 
-                                    ? 'bg-rose-50/80 border-rose-300 shadow-sm' 
+                                className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'rejected' 
+                                    ? 'bg-rose-50/90 border-rose-300 ring-1 ring-rose-300 shadow-xs' 
                                     : 'bg-white border-slate-200 hover:border-rose-200'}`}
                             >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-500">Rejected</span>
-                                    <XCircle size={15} className="text-rose-400" />
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] sm:text-xs font-semibold text-slate-600 truncate">Rejected</span>
+                                    <XCircle size={13} className="text-rose-400 shrink-0" />
                                 </div>
-                                <div className="mt-2 flex items-baseline justify-between">
-                                    <p className="text-xl md:text-2xl font-bold text-slate-900">{rejectedList.length}</p>
-                                    <span className="text-xs text-slate-400 font-medium">Recorded</span>
+                                <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline justify-between gap-0.5">
+                                    <p className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-tight">{rejectedList.length}</p>
+                                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Recorded</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Filter Tabs & Mobile Search */}
-                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
                             {/* Filter Pills */}
-                            <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl overflow-x-auto custom-scrollbar">
+                            <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl overflow-x-auto no-scrollbar scroll-smooth">
                                 {[
-                                    { id: 'all', label: 'All Submissions', count: payments.length },
-                                    { id: 'pending', label: 'Pending Review', count: pendingList.length },
-                                    { id: 'approved', label: 'Approved', count: approvedList.length },
-                                    { id: 'rejected', label: 'Rejected', count: rejectedList.length }
+                                    { id: 'all', label: 'All', fullLabel: 'All Submissions', count: payments.length },
+                                    { id: 'pending', label: 'Pending', fullLabel: 'Pending Review', count: pendingList.length },
+                                    { id: 'approved', label: 'Approved', fullLabel: 'Approved', count: approvedList.length },
+                                    { id: 'rejected', label: 'Rejected', fullLabel: 'Rejected', count: rejectedList.length }
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setStatusFilter(tab.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 flex-1 justify-center sm:flex-initial ${
                                             statusFilter === tab.id
-                                                ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                                                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
                                         }`}
                                     >
-                                        <span>{tab.label}</span>
-                                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                                            statusFilter === tab.id ? 'bg-slate-100 text-slate-700' : 'bg-slate-300/60 text-slate-600'
+                                        <span className="sm:hidden">{tab.label}</span>
+                                        <span className="hidden sm:inline">{tab.fullLabel}</span>
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                                            statusFilter === tab.id ? 'bg-slate-100 text-slate-800' : 'bg-slate-300/70 text-slate-600'
                                         }`}>
                                             {tab.count}
                                         </span>
@@ -310,13 +311,13 @@ const PaymentsDashboard = () => {
 
                             {/* Mobile Search Bar */}
                             <div className="md:hidden relative">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
                                 <input 
                                     type="text" 
-                                    placeholder="Search by customer or ID..."
+                                    placeholder="Search by customer or ref..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                    className="w-full bg-white border border-slate-200 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs"
                                 />
                                 {searchTerm && (
                                     <button 

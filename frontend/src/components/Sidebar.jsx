@@ -111,6 +111,21 @@ const Sidebar = () => {
                     <span>Reports - Parties</span>
                 </Link>
 
+                <a 
+                    href="https://pos.hisabkhata.sumanonline.com/signup?ref=HK-3-POS" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between px-3 py-2.5 rounded mb-0.5 text-sm font-medium text-[#b8cfe0] hover:bg-white/10 hover:text-white transition-all group"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[20px]">point_of_sale</span>
+                        <span>POS Billing</span>
+                    </div>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-black px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        NEW
+                    </span>
+                </a>
+
                 <Link to="/settings" className={navLinkClass('/settings')}>
                     <span className="material-symbols-outlined text-[20px]">settings</span>
                     <span>Settings</span>

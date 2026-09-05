@@ -14,7 +14,8 @@ import {
     Users,
     CalendarClock,
     ShieldCheck,
-    Wallet
+    Wallet,
+    Store
 } from 'lucide-react';
 import { calculateProfileStrength } from '../utils/profileUtils';
 
@@ -29,6 +30,15 @@ const More = () => {
     const strength = calculateProfileStrength(userData);
 
     const menuItems = [
+        { 
+            id: 'pos', 
+            label: 'POS', 
+            icon: <Store size={24} />, 
+            color: 'bg-emerald-50 text-emerald-600',
+            isExternal: true,
+            url: 'https://pos.hisabkhata.sumanonline.com/signup?ref=HK-3-POS',
+            badge: 'NEW'
+        },
         { id: 'loans', label: 'Loans', icon: <Banknote size={24} />, color: 'bg-green-50 text-green-600' },
         { id: 'cashbook', label: 'Cashbook', icon: <BookText size={24} />, color: 'bg-blue-50 text-blue-600' },
         { id: 'bills', label: 'Bills', icon: <FileText size={24} />, color: 'bg-red-50 text-red-600' },
@@ -41,6 +51,14 @@ const More = () => {
     if (isAdmin) {
         menuItems.push({ id: 'admin', label: 'Admin Panel', icon: <ShieldCheck size={24} />, color: 'bg-amber-50 text-amber-600' });
     }
+
+    const handleItemClick = (item) => {
+        if (item.isExternal && item.url) {
+            window.open(item.url, '_blank', 'noopener,noreferrer');
+        } else if (item.id === 'admin') {
+            navigate('/admin');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
@@ -96,18 +114,22 @@ const More = () => {
                         {menuItems.map((item) => (
                             <div
                                 key={item.id}
-                                onClick={() => item.id === 'admin' ? navigate('/admin') : null}
-                                className="bg-white p-4 py-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
+                                onClick={() => handleItemClick(item)}
+                                className="bg-white p-4 py-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 active:scale-95 transition-transform cursor-pointer relative overflow-hidden group hover:border-slate-300"
                             >
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color}`}>
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform`}>
                                     {item.icon}
                                 </div>
                                 <span className="text-[11px] font-black text-slate-700 text-center leading-tight">
                                     {item.label}
                                 </span>
 
-                                {/* Coming Soon Badge */}
-                                {item.id !== 'admin' && (
+                                {/* Dynamic Badge: NEW for POS, Soon for upcoming */}
+                                {item.badge ? (
+                                    <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-tighter shadow-xs">
+                                        {item.badge}
+                                    </div>
+                                ) : item.id !== 'admin' && (
                                     <div className="absolute top-0 right-0 bg-slate-100 text-slate-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-tighter">
                                         Soon
                                     </div>

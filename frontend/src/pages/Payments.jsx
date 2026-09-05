@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import AppMobileHeader from '../components/AppMobileHeader';
 
 const PaymentsDashboard = () => {
     const { currentUser } = useAuth();
@@ -114,28 +115,8 @@ const PaymentsDashboard = () => {
             <Sidebar />
 
             <div className="flex flex-1 ml-0 md:ml-[260px] flex-col overflow-hidden">
-                {/* Mobile Branded Header - Ultra Compact */}
-                <div className="md:hidden flex items-center justify-between px-4 py-1.5 bg-white border-b border-gray-100 sticky top-0 z-30">
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-[#0057BB] rounded-md flex items-center justify-center shadow-sm">
-                            <CreditCard className="text-white w-4 h-4" />
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-[#0057BB] font-black text-[15px] tracking-tight">Hisab Khata</span>
-                            <span className="text-[#FF6B00] font-black italic text-[10px]">PRO</span>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => {
-                            if(window.confirm('Are you sure you want to logout?')) {
-                                window.location.href = '/login'; 
-                            }
-                        }}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                        <LogOut size={18} />
-                    </button>
-                </div>
+                {/* Mobile Branded Header */}
+                <AppMobileHeader />
 
                 {/* Premium Page Header */}
                 <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 flex-shrink-0">

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import AppMobileHeader from '../components/AppMobileHeader';
 import {
     ChevronRight,
     Settings,
@@ -48,24 +49,7 @@ const More = () => {
 
             <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
                 {/* Mobile Header — Branding */}
-                <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
-                            <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
-                        </div>
-                        <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
-                    </div>
-                    <button
-                        onClick={async () => {
-                            const { authService } = await import('../services/firebase');
-                            await authService.logout();
-                            navigate('/login');
-                        }}
-                        className="p-1 rounded text-gray-500 active:bg-gray-100"
-                    >
-                        <span className="material-symbols-outlined">logout</span>
-                    </button>
-                </div>
+                <AppMobileHeader />
 
                 <main className="flex-1 max-w-2xl mx-auto w-full p-4 md:p-8 space-y-6">
                     {/* Profile Section */}

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { CheckCircle2, XCircle, Clock, Smartphone, User, ArrowLeft, LogOut } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import AppMobileHeader from '../components/AppMobileHeader';
 import { authService } from '../services/firebase';
 
 const PaymentVerification = () => {
@@ -145,17 +146,7 @@ const PaymentVerification = () => {
 
             <div className="flex flex-col flex-1 ml-0 md:ml-[260px] overflow-hidden relative">
                 {/* Branded Mobile Header */}
-                <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shrink-0">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
-                            <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
-                        </div>
-                        <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
-                    </div>
-                    <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 active:bg-slate-50">
-                        <LogOut size={20} />
-                    </button>
-                </div>
+                <AppMobileHeader />
 
                 {/* Main Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-10 p-4 md:p-10 flex flex-col items-center antialiased font-sans">

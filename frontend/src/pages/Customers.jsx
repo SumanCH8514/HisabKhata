@@ -5,6 +5,7 @@ import TransactionDrawer from '../components/TransactionDrawer';
 import EntryDetailsDrawer from '../components/EntryDetailsDrawer';
 import PartyProfileDrawer from '../components/PartyProfileDrawer';
 import ImportTransactionsModal from '../components/ImportTransactionsModal';
+import AppMobileHeader from '../components/AppMobileHeader';
 import BottomNav from '../components/BottomNav';
 import FilterDrawer from '../components/FilterDrawer';
 import { dbService, sendEmailNotification } from '../services/firebase';
@@ -415,14 +416,7 @@ const Customers = () => {
                 >
 
                     {/* Mobile Header — Branding */}
-                    <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
-                                <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
-                            </div>
-                            <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight">Hisab Khata <span className="text-orange-500 italic">PRO</span></h1>
-                        </div>
-                    </div>
+                    <AppMobileHeader />
 
                     {/* Tab bar — Desktop only */}
                     <div className="hidden md:flex border-b border-gray-200 bg-white">
@@ -591,11 +585,11 @@ const Customers = () => {
                                 <div
                                     key={customer.id}
                                     onClick={() => setSelectedCustomer(customer)}
-                                    className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
+                                    className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
                                 >
                                     {/* Avatar with dynamic initial or photo */}
                                     <div
-                                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0 shadow-sm overflow-hidden"
+                                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm overflow-hidden"
                                         style={{ backgroundColor: customer.photoURL ? 'transparent' : bgColor }}
                                     >
                                         {customer.photoURL ? (
@@ -606,14 +600,14 @@ const Customers = () => {
                                     </div>
 
                                     {/* Name, Time and Due Date */}
-                                    <div className="flex-1 min-w-0 pr-1">
-                                        <p className="text-[14px] sm:text-[15px] font-semibold text-gray-900 truncate mb-0.5">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
                                             {customer.name}
                                         </p>
-                                        <div className="flex items-center gap-1.5 text-gray-400 overflow-hidden flex-nowrap">
-                                            <div className="flex items-center gap-0.5 shrink-0">
-                                                <span className="material-symbols-outlined text-[12px]">schedule</span>
-                                                <span className="text-[10.5px] sm:text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
+                                        <div className="flex items-center gap-2 text-gray-400 overflow-hidden flex-nowrap">
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                                <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
                                                     {customer.updatedAt
                                                         ? formatTimeAgo(customer.updatedAt)
                                                         : customer.createdAt
@@ -626,8 +620,8 @@ const Customers = () => {
                                                 const dueStatus = getDueDateStatus(customer.dueDate);
                                                 if (!dueStatus) return null;
                                                 return (
-                                                    <span className={`inline-flex items-center gap-0.5 text-[8.5px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 whitespace-nowrap ${dueStatus.badgeColor}`}>
-                                                        <span className="material-symbols-outlined text-[9px] sm:text-[10px]">timer</span>
+                                                    <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 whitespace-nowrap ${dueStatus.badgeColor}`}>
+                                                        <span className="material-symbols-outlined text-[10px]">timer</span>
                                                         {dueStatus.shortLabel}
                                                     </span>
                                                 );
@@ -636,20 +630,20 @@ const Customers = () => {
                                     </div>
 
                                     {/* Amount and Status */}
-                                    <div className="text-right shrink-0">
+                                    <div className="text-right flex-shrink-0">
                                         {isZero ? (
-                                            <p className="text-xs sm:text-sm font-bold text-gray-400">₹0</p>
+                                            <p className="text-sm font-bold text-gray-400">₹0</p>
                                         ) : (
                                             <div className="flex flex-col items-end">
-                                                <div className="flex items-center gap-0.5">
-                                                    <span className={`text-[13.5px] sm:text-[15px] font-black tracking-tight ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[15px] font-black ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
                                                         ₹{balanceAbsolute}
                                                     </span>
-                                                    <span className={`material-symbols-outlined text-[13px] sm:text-[15px] ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
+                                                    <span className={`material-symbols-outlined text-[16px] ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
                                                         {isReceivable ? 'south_east' : 'north_east'}
                                                     </span>
                                                 </div>
-                                                <span className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight mt-0.5 px-1 py-0.2 rounded-sm ${isReceivable ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                                                <span className={`text-[9px] font-extrabold uppercase tracking-widest mt-0.5 px-1.5 py-0.5 rounded-sm ${isReceivable ? 'bg-red-50 text-red-400' : 'bg-green-50 text-green-500'}`}>
                                                     {isReceivable ? "You'll Get" : "You'll Give"}
                                                 </span>
                                             </div>

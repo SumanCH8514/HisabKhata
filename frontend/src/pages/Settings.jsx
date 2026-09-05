@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import AppMobileHeader from '../components/AppMobileHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { 
     Bell, 
@@ -62,28 +63,8 @@ const Settings = () => {
             <Sidebar />
             
             <main className="flex-1 ml-0 md:ml-[260px] pb-24 md:pb-0">
-                {/* Mobile Branded Header - Ultra Compact */}
-                <div className="md:hidden flex items-center justify-between px-4 py-1.5 bg-white border-b border-gray-100 sticky top-0 z-30">
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-[#0057BB] rounded-md flex items-center justify-center shadow-sm">
-                            <span className="material-symbols-outlined text-white text-[16px]">account_balance_wallet</span>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-[#0057BB] font-black text-[15px] tracking-tight">Hisab Khata</span>
-                            <span className="text-[#FF6B00] font-black italic text-[10px]">PRO</span>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => {
-                            if(window.confirm('Are you sure you want to logout?')) {
-                                window.location.href = '/login'; 
-                            }
-                        }}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-[20px]">logout</span>
-                    </button>
-                </div>
+                {/* Mobile Branded Header */}
+                <AppMobileHeader />
 
                 {/* Page Title — Compact High Fidelity Branding */}
                 <div className="bg-white border-b border-gray-200 px-6 py-2 md:py-3 flex items-center gap-3">

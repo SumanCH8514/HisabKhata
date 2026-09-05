@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { dbService } from '../services/firebase';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import AppMobileHeader from '../components/AppMobileHeader';
 import {
     Users,
     Receipt,
@@ -1218,25 +1219,18 @@ const AdminDashboard = () => {
             <Sidebar />
 
             <main className="flex-1 md:ml-[260px] flex flex-col min-w-0 relative h-screen overflow-y-auto">
-                {/* Mobile Branded Header - Ultra Compact */}
-                <div className="md:hidden flex items-center justify-between px-4 py-1.5 bg-white border-b border-gray-100 sticky top-0 z-30">
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-[#0057BB] rounded-md flex items-center justify-center shadow-sm">
-                            <span className="material-symbols-outlined text-white text-[16px]">account_balance_wallet</span>
+                {/* Mobile Branded Header */}
+                <AppMobileHeader 
+                    rightElement={
+                        <div className="w-8 h-8 rounded-full border border-blue-100 p-0.5 overflow-hidden">
+                            {userData?.photoURL ? (
+                                <img src={userData.photoURL} alt="" className="w-full h-full object-cover rounded-full" />
+                            ) : (
+                                <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-[10px]">{initial}</div>
+                            )}
                         </div>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-[#0057BB] font-black text-[15px] tracking-tight">Hisab Khata</span>
-                            <span className="text-[#FF6B00] font-black italic text-[10px]">PRO</span>
-                        </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full border border-blue-100 p-0.5 overflow-hidden">
-                        {userData?.photoURL ? (
-                            <img src={userData.photoURL} alt="" className="w-full h-full object-cover rounded-full" />
-                        ) : (
-                            <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-[10px]">{initial}</div>
-                        )}
-                    </div>
-                </div>
+                    }
+                />
                 {/* Page Title — Compact High Fidelity Branding */}
                 <div className="bg-white border-b border-gray-200 px-6 py-2 md:py-3 flex items-center justify-between sticky top-0 md:static z-20">
                     <div className="flex items-center gap-3">

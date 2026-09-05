@@ -332,20 +332,28 @@ const LandingPage = () => {
             <div className="faq-grid accordion">
               {[
                 {
-                  q: "Is my business data shared with third parties?",
-                  a: "Absolutely not. Your data belongs to you. We use bank-grade AES-256 encryption to ensure that only you can access your business records."
+                  q: "What is HisabKhata?",
+                  a: "HisabKhata is India's leading free digital billing software and udhaar book (bahi khata) web app. It empowers shopkeepers, merchants, and small businesses to record customer credit & debit entries, generate GST-ready PDF ledger statements, collect payments via UPI apps, and send automated WhatsApp reminders."
                 },
                 {
-                  q: "What happens if I lose my mobile phone?",
-                  a: "Since HisabKhata is cloud-synced, all your data is safe. Simply log in with your verified mobile number on any new device to instantly restore your entire ledger."
+                  q: "Is HisabKhata completely free to use?",
+                  a: "Yes, HisabKhata is 100% free for lifetime with zero subscription charges, zero commissions, and unlimited transaction tracking for all shopkeepers and retail merchants."
+                },
+                {
+                  q: "Can I accept online UPI payments from customers using HisabKhata?",
+                  a: "Yes! HisabKhata generates secure, dynamic amount QR codes and 1-tap payment launchers supporting PhonePe, Google Pay, Paytm, and BHIM UPI with instant payment proof upload and ledger reconciliation."
+                },
+                {
+                  q: "Does HisabKhata work offline?",
+                  a: "Yes. HisabKhata is a full Progressive Web App (PWA) that allows you to view ledgers and record entries without an active internet connection. All entries automatically sync to the cloud once your connection is restored."
+                },
+                {
+                  q: "How is my business data secured in HisabKhata?",
+                  a: "HisabKhata uses bank-grade AES-256 encryption, private tokenized statement URLs, Cloudflare enterprise security, and automated multi-region cloud backups to ensure your financial data remains completely confidential."
                 },
                 {
                   q: "Can I use HisabKhata for GST and tax audits?",
                   a: "Yes. The app allows you to export professional PDF and Excel reports that are widely accepted for accounting, tax filing, and business audits."
-                },
-                {
-                  q: "Do I need an active internet connection to record entries?",
-                  a: "You can record entries offline, and they will automatically sync to the cloud as soon as your device connects to the internet."
                 }
               ].map((item, index) => (
                 <div

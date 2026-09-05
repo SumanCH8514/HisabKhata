@@ -1,4 +1,62 @@
+# Robots.txt for HisabKhata (https://hisabkhata.sumanonline.com/)
+# Optimized for Google, Bing, and AI Crawlers (Google AI Overview, ChatGPT, Claude, Perplexity)
+
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /api/
 
+# Google Search & Google AI Overview Crawler
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-Mobile
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# OpenAI / ChatGPT Search
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Perplexity AI Search
+User-agent: PerplexityBot
+Allow: /
+
+# Bing / Microsoft Copilot
+User-agent: Bingbot
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Common Crawl & Meta
+User-agent: CCBot
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# XML Sitemap
 Sitemap: https://hisabkhata.sumanonline.com/sitemap.xml

@@ -409,6 +409,62 @@ export const dbService = {
     }
   },
 
+  importCustomerTransactions: async (userId, customerId, transactionsList, options = {}) => {
+    if (!transactionsList || transactionsList.length === 0) return { success: true, count: 0 };
+    
+    const customerSnapshot = await get(ref(db, `customers/${customerId}`));
+    if (!customerSnapshot.exists()) {
+      throw new Error("Customer not found");
+    }
+
+    const customer = customerSnapshot.val();
+    let currentBalance = Number(customer.balance || 0);
+
+    if (options.resetExistingBalance && options.openingBalance !== undefined) {
+      currentBalance = Number(options.openingBalance || 0);
+    }
+
+    // Sort chronologically ascending
+    const sorted = [...transactionsList].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const updates = {};
+    const createdKeys = [];
+    let runningBal = currentBalance;
+    const baseTimestamp = Date.now();
+
+    sorted.forEach((tx, index) => {
+      const isGot = tx.type === 'GOT';
+      const finalAmount = isGot ? Math.abs(Number(tx.amount)) : -Math.abs(Number(tx.amount));
+      runningBal = runningBal + finalAmount;
+
+      const txDateObj = new Date(tx.date || new Date().toISOString().split('T')[0]);
+      txDateObj.setHours(12, 0, index % 60);
+      const timestamp = txDateObj.getTime() || (baseTimestamp + index * 1000);
+
+      const txRef = push(ref(db, 'transactions'));
+      const txKey = txRef.key;
+      createdKeys.push(txKey);
+
+      updates[`transactions/${txKey}`] = {
+        userId,
+        customerId,
+        amount: finalAmount,
+        type: isGot ? 'GOT' : 'GAVE',
+        description: (tx.description || 'Imported Transaction').trim(),
+        date: tx.date || new Date().toISOString().split('T')[0],
+        timestamp,
+        balance: runningBal,
+        importedAt: baseTimestamp
+      };
+    });
+
+    updates[`customers/${customerId}/balance`] = runningBal;
+    updates[`customers/${customerId}/updatedAt`] = baseTimestamp;
+
+    await update(ref(db), updates);
+    return { success: true, count: createdKeys.length, finalBalance: runningBal };
+  },
+
   listenCustomerTransactions: (customerId, callback) => {
     const transactionsQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(customerId));
     return onValue(transactionsQuery, (snapshot) => {

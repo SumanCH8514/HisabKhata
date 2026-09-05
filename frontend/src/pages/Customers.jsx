@@ -4,6 +4,7 @@ import CustomerDrawer from '../components/CustomerDrawer';
 import TransactionDrawer from '../components/TransactionDrawer';
 import EntryDetailsDrawer from '../components/EntryDetailsDrawer';
 import PartyProfileDrawer from '../components/PartyProfileDrawer';
+import ImportTransactionsModal from '../components/ImportTransactionsModal';
 import BottomNav from '../components/BottomNav';
 import FilterDrawer from '../components/FilterDrawer';
 import { dbService, sendEmailNotification } from '../services/firebase';
@@ -30,6 +31,7 @@ const Customers = () => {
     const [totalGet, setTotalGet] = useState(0);
     const [totalGive, setTotalGive] = useState(0);
     const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [transactionType, setTransactionType] = useState('gave');
     const [activeTab, setActiveTab] = useState('customers'); // 'customers' | 'suppliers'
     const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -801,6 +803,13 @@ const Customers = () => {
                                 </div>
                                 <div className="flex items-center gap-2.5">
                                     <button 
+                                        onClick={() => setIsImportModalOpen(true)}
+                                        className="w-9 h-9 flex items-center justify-center rounded-full border border-blue-200 bg-blue-50/60 text-[#0057BB] hover:bg-blue-100 hover:border-blue-300 transition-all shadow-sm group"
+                                        title="Import Khatabook / Excel Statement"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">upload_file</span>
+                                    </button>
+                                    <button 
                                         onClick={() => { if(selectedCustomer.phone) window.location.href = `tel:+91${selectedCustomer.phone}`; }}
                                         className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm group"
                                         title="Call Customer"
@@ -1474,6 +1483,31 @@ const Customers = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Party Profile Drawer */}
+            {selectedCustomer && (
+                <PartyProfileDrawer
+                    isOpen={isPartyProfileOpen}
+                    onClose={() => setIsPartyProfileOpen(false)}
+                    customer={selectedCustomer}
+                    onDeleteSuccess={() => {
+                        setSelectedCustomer(null);
+                        setIsPartyProfileOpen(false);
+                    }}
+                />
+            )}
+
+            {/* Import Transactions Modal */}
+            {selectedCustomer && (
+                <ImportTransactionsModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    customer={selectedCustomer}
+                    onSuccess={() => {
+                        // DB updates automatically sync via realtime listener
+                    }}
+                />
             )}
         </div>
     );

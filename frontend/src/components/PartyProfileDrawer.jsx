@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/firebase';
 import { compressImage } from '../utils/imageUtils';
 import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
+import ImportTransactionsModal from './ImportTransactionsModal';
 
-const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
+const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImportSuccess }) => {
     const [isEditing, setIsEditing] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
     const [editEmail, setEditEmail] = useState('');
@@ -133,13 +135,22 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={() => setIsEditing(true)}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors mb-8"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                                Edit Profile
-                            </button>
+                            <div className="grid grid-cols-2 gap-2.5 mb-6">
+                                <button 
+                                    onClick={() => setIsEditing(true)}
+                                    className="flex items-center justify-center gap-2 py-2.5 px-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-[18px] text-gray-500">edit_note</span>
+                                    Edit Profile
+                                </button>
+                                <button 
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    className="flex items-center justify-center gap-2 py-2.5 px-3 border border-blue-200 rounded-xl text-xs font-bold text-[#0057BB] bg-blue-50/70 hover:bg-blue-100 transition-colors shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                                    Import History
+                                </button>
+                            </div>
 
                             <div className="space-y-0 border-t border-gray-100">
                                 <div className="flex items-start gap-4 py-6 border-b border-gray-100">
@@ -284,6 +295,15 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
                     </div>
                 )}
             </div>
+
+            <ImportTransactionsModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                customer={customer}
+                onSuccess={() => {
+                    if (onImportSuccess) onImportSuccess();
+                }}
+            />
         </div>
     );
 };

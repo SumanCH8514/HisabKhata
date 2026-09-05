@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import TransactionDrawer from '../components/TransactionDrawer';
 import EntryDetailsDrawer from '../components/EntryDetailsDrawer';
+import ImportTransactionsModal from '../components/ImportTransactionsModal';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFutureDateString, formatDueDate, getDueDateStatus } from '../utils/dueDateUtils';
@@ -16,6 +17,7 @@ const CustomerLedgerDetail = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [transactionType, setTransactionType] = useState('gave');
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [isEntryDetailsOpen, setIsEntryDetailsOpen] = useState(false);
@@ -211,8 +213,16 @@ const CustomerLedgerDetail = () => {
 
                     <div className="flex gap-2">
                          <button 
+                             onClick={() => setIsImportModalOpen(true)}
+                             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-[#0b5cba] rounded-lg font-bold text-[12px] border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm"
+                             title="Import Khatabook or Excel Statement"
+                         >
+                             <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                             Import
+                         </button>
+                         <button 
                              onClick={() => navigate(`/reports/customer/${customer.id}`)}
-                             className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-[#0b5cba] rounded-lg font-bold text-[12px] border border-blue-100 hover:bg-blue-100 transition-colors"
+                             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg font-bold text-[12px] border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm"
                          >
                              <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
                              Report
@@ -303,6 +313,15 @@ const CustomerLedgerDetail = () => {
                 userData={userData}
                 onEdit={handleEditEntry}
                 onViewImage={setPreviewImage}
+            />
+
+            <ImportTransactionsModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                customer={customer}
+                onSuccess={() => {
+                    // Realtime updates will automatically refresh ledger transactions
+                }}
             />
 
             {/* Image Preview Modal */}

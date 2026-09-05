@@ -591,7 +591,7 @@ const Customers = () => {
                                 <div
                                     key={customer.id}
                                     onClick={() => setSelectedCustomer(customer)}
-                                    className={`flex items-center gap-2.5 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
+                                    className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
                                 >
                                     {/* Avatar with dynamic initial or photo */}
                                     <div
@@ -613,7 +613,7 @@ const Customers = () => {
                                         <div className="flex items-center gap-1.5 text-gray-400 overflow-hidden flex-nowrap">
                                             <div className="flex items-center gap-0.5 shrink-0">
                                                 <span className="material-symbols-outlined text-[12px]">schedule</span>
-                                                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
+                                                <span className="text-[10.5px] sm:text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
                                                     {customer.updatedAt
                                                         ? formatTimeAgo(customer.updatedAt)
                                                         : customer.createdAt
@@ -642,7 +642,7 @@ const Customers = () => {
                                         ) : (
                                             <div className="flex flex-col items-end">
                                                 <div className="flex items-center gap-0.5">
-                                                    <span className={`text-[13px] sm:text-[15px] font-black tracking-tight ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
+                                                    <span className={`text-[13.5px] sm:text-[15px] font-black tracking-tight ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
                                                         ₹{balanceAbsolute}
                                                     </span>
                                                     <span className={`material-symbols-outlined text-[13px] sm:text-[15px] ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>

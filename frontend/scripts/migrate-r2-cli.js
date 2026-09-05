@@ -1,10 +1,14 @@
 /**
  * Standalone CLI Script to Migrate Base64 Images in Firebase to Cloudflare R2
- * Usage: node scripts/migrate-r2-cli.js
+ * 
+ * Usage:
+ *   node scripts/migrate-r2-cli.js --email your-email@domain.com --password yourpassword
+ *   or set FIREBASE_EMAIL and FIREBASE_PASSWORD in .env
  */
 
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, update } from 'firebase/database';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -27,6 +31,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+
+const BACKEND_WORKER_URL = process.env.VITE_BACKEND_WORKER_URL || 'https://backend.hisabkhata.sumanonline.com';
 
 const R2_CONFIG = {
     accountId: process.env.VITE_R2_ACCOUNT_ID,
@@ -56,7 +63,33 @@ const base64ToBinary = (base64String) => {
     return { buffer, contentType };
 };
 
-const uploadToR2 = async (s3, base64Data, folder, filename) => {
+const uploadViaWorker = async (base64Data, folder, filename) => {
+    const backendUrl = BACKEND_WORKER_URL.replace(/\/+$/, '');
+    const res = await fetch(`${backendUrl}/api/upload`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            image: base64Data,
+            folder: folder,
+            filename: filename
+        })
+    });
+
+    if (!res.ok) {
+        throw new Error(`Worker HTTP ${res.status}: ${await res.text()}`);
+    }
+
+    const data = await res.json();
+    if (!data.success || !data.url) {
+        throw new Error(data.error || 'Worker upload returned failure');
+    }
+
+    return data.url;
+};
+
+const uploadViaS3 = async (s3, base64Data, folder, filename) => {
     const { buffer, contentType } = base64ToBinary(base64Data);
 
     let ext = 'jpg';
@@ -77,29 +110,64 @@ const uploadToR2 = async (s3, base64Data, folder, filename) => {
     return `${baseUrl}/${key}`;
 };
 
+const uploadImage = async (s3, base64Data, folder, filename) => {
+    try {
+        return await uploadViaWorker(base64Data, folder, filename);
+    } catch (workerErr) {
+        if (s3) {
+            return await uploadViaS3(s3, base64Data, folder, filename);
+        }
+        throw workerErr;
+    }
+};
+
 async function runMigration() {
-    console.log('🚀 Starting Cloudflare R2 Image Migration...\n');
+    console.log('🚀 Starting Cloudflare R2 Base64 Image Migration...\n');
+    console.log(`Backend API: ${BACKEND_WORKER_URL}`);
     console.log(`Bucket: ${R2_CONFIG.bucketName}`);
     console.log(`Public CDN: ${R2_CONFIG.publicUrl}`);
 
-    if (!R2_CONFIG.accountId || !R2_CONFIG.accessKeyId || !R2_CONFIG.secretAccessKey) {
-        console.error('❌ Missing R2 credentials in .env! Please set VITE_R2_ACCOUNT_ID, VITE_R2_ACCESS_KEY_ID, and VITE_R2_SECRET_ACCESS_KEY.');
-        process.exit(1);
+    // Parse CLI credentials if provided
+    const args = process.argv.slice(2);
+    let email = process.env.FIREBASE_EMAIL || process.env.VITE_ADMIN_EMAIL || '';
+    let password = process.env.FIREBASE_PASSWORD || process.env.VITE_ADMIN_PASSWORD || '';
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--email' && args[i + 1]) email = args[i + 1];
+        if (args[i] === '--password' && args[i + 1]) password = args[i + 1];
     }
 
-    const s3 = new S3Client({
-        region: 'auto',
-        endpoint: `https://${R2_CONFIG.accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-            accessKeyId: R2_CONFIG.accessKeyId,
-            secretAccessKey: R2_CONFIG.secretAccessKey
+    if (email && password) {
+        try {
+            console.log(`🔐 Authenticating as ${email}...`);
+            await signInWithEmailAndPassword(auth, email, password);
+            console.log('✅ Firebase Authentication Successful!');
+        } catch (authErr) {
+            console.error(`❌ Authentication failed: ${authErr.message}`);
+            process.exit(1);
         }
-    });
+    } else {
+        console.log('ℹ️ Running without explicit credentials. (Tip: pass --email and --password if DB rules require auth)');
+    }
 
-    const isBase64 = (str) => typeof str === 'string' && str.startsWith('data:image/');
+    let s3 = null;
+    if (R2_CONFIG.accountId && R2_CONFIG.accessKeyId && R2_CONFIG.secretAccessKey) {
+        s3 = new S3Client({
+            region: 'auto',
+            endpoint: `https://${R2_CONFIG.accountId}.r2.cloudflarestorage.com`,
+            credentials: {
+                accessKeyId: R2_CONFIG.accessKeyId,
+                secretAccessKey: R2_CONFIG.secretAccessKey
+            }
+        });
+        console.log('Direct S3 client: Configured ✅');
+    } else {
+        console.log('Direct S3 credentials not in .env; using Cloudflare Worker API ✅');
+    }
+
+    const isBase64 = (str) => typeof str === 'string' && (str.startsWith('data:image/') || str.startsWith('data:application/'));
 
     try {
-        console.log('📦 Fetching data from Firebase RTDB...');
+        console.log('\n📦 Fetching all collections from Firebase Realtime Database...');
         const [usersSnap, custSnap, txSnap, paySnap] = await Promise.all([
             get(ref(db, 'users')),
             get(ref(db, 'customers')),
@@ -112,60 +180,97 @@ async function runMigration() {
         const transactions = txSnap.exists() ? txSnap.val() : {};
         const payments = paySnap.exists() ? paySnap.val() : {};
 
+        let totalBase64Found = 0;
         let migratedCount = 0;
+        let failedCount = 0;
 
         // 1. Users
-        console.log('\n👤 Migrating User Profile Photos...');
+        console.log('\n👤 1. Checking User Profile Photos...');
         for (const [uid, u] of Object.entries(users)) {
             if (isBase64(u.photoURL)) {
-                process.stdout.write(`  -> Uploading user ${uid}... `);
-                const url = await uploadToR2(s3, u.photoURL, R2_FOLDERS.PROFILE, `user_${uid}_${Date.now()}`);
-                await update(ref(db, `users/${uid}`), { photoURL: url, migratedAt: Date.now() });
-                console.log(`✅ ${url}`);
-                migratedCount++;
+                totalBase64Found++;
+                process.stdout.write(`  -> Migrating user ${u.name || uid}... `);
+                try {
+                    const url = await uploadImage(s3, u.photoURL, R2_FOLDERS.PROFILE, `user_${uid}_${Date.now()}`);
+                    await update(ref(db, `users/${uid}`), { photoURL: url, migratedAt: Date.now() });
+                    console.log(`✅ ${url}`);
+                    migratedCount++;
+                } catch (err) {
+                    console.log(`❌ Error: ${err.message}`);
+                    failedCount++;
+                }
             }
         }
 
         // 2. Customers
-        console.log('\n👥 Migrating Customer Profile Photos...');
+        console.log('\n👥 2. Checking Customer Profile Photos...');
         for (const [cid, c] of Object.entries(customers)) {
             if (isBase64(c.photoURL)) {
-                process.stdout.write(`  -> Uploading customer ${c.name || cid}... `);
-                const url = await uploadToR2(s3, c.photoURL, R2_FOLDERS.PROFILE, `cust_${cid}_${Date.now()}`);
-                await update(ref(db, `customers/${cid}`), { photoURL: url, migratedAt: Date.now() });
-                console.log(`✅ ${url}`);
-                migratedCount++;
+                totalBase64Found++;
+                process.stdout.write(`  -> Migrating customer ${c.name || cid}... `);
+                try {
+                    const url = await uploadImage(s3, c.photoURL, R2_FOLDERS.PROFILE, `cust_${cid}_${Date.now()}`);
+                    await update(ref(db, `customers/${cid}`), { photoURL: url, migratedAt: Date.now() });
+                    console.log(`✅ ${url}`);
+                    migratedCount++;
+                } catch (err) {
+                    console.log(`❌ Error: ${err.message}`);
+                    failedCount++;
+                }
             }
         }
 
         // 3. Transactions
-        console.log('\n🧾 Migrating Transaction Attachments...');
+        console.log('\n🧾 3. Checking Transaction Attachments (Bills/Receipts)...');
         for (const [txid, t] of Object.entries(transactions)) {
             if (isBase64(t.attachment)) {
-                process.stdout.write(`  -> Uploading tx ${txid}... `);
-                const url = await uploadToR2(s3, t.attachment, R2_FOLDERS.TRANSACTION, `tx_${txid}_${Date.now()}`);
-                await update(ref(db, `transactions/${txid}`), { attachment: url, migratedAt: Date.now() });
-                console.log(`✅ ${url}`);
-                migratedCount++;
+                totalBase64Found++;
+                process.stdout.write(`  -> Migrating tx attachment ${txid}... `);
+                try {
+                    const url = await uploadImage(s3, t.attachment, R2_FOLDERS.TRANSACTION, `tx_${txid}_${Date.now()}`);
+                    await update(ref(db, `transactions/${txid}`), { attachment: url, migratedAt: Date.now() });
+                    console.log(`✅ ${url}`);
+                    migratedCount++;
+                } catch (err) {
+                    console.log(`❌ Error: ${err.message}`);
+                    failedCount++;
+                }
             }
         }
 
         // 4. Pending Payments
-        console.log('\n💳 Migrating Payment Proof Screenshots...');
+        console.log('\n💳 4. Checking Payment Proof Screenshots...');
         for (const [pid, p] of Object.entries(payments)) {
             if (isBase64(p.screenshot)) {
-                process.stdout.write(`  -> Uploading payment proof ${pid}... `);
-                const url = await uploadToR2(s3, p.screenshot, R2_FOLDERS.PAYMENT_PROOF, `proof_${pid}_${Date.now()}`);
-                await update(ref(db, `pending_payments/${pid}`), { screenshot: url, migratedAt: Date.now() });
-                console.log(`✅ ${url}`);
-                migratedCount++;
+                totalBase64Found++;
+                process.stdout.write(`  -> Migrating payment proof ${pid}... `);
+                try {
+                    const url = await uploadImage(s3, p.screenshot, R2_FOLDERS.PAYMENT_PROOF, `proof_${pid}_${Date.now()}`);
+                    await update(ref(db, `pending_payments/${pid}`), { screenshot: url, migratedAt: Date.now() });
+                    console.log(`✅ ${url}`);
+                    migratedCount++;
+                } catch (err) {
+                    console.log(`❌ Error: ${err.message}`);
+                    failedCount++;
+                }
             }
         }
 
-        console.log(`\n🎉 Migration Complete! Total migrated items: ${migratedCount}`);
+        console.log('\n' + '='.repeat(50));
+        if (totalBase64Found === 0) {
+            console.log('✨ All images in Firebase Database are already on Cloudflare R2 / CDN!');
+        } else {
+            console.log(`🎉 Migration Completed!`);
+            console.log(`   - Base64 items found: ${totalBase64Found}`);
+            console.log(`   - Successfully migrated to R2: ${migratedCount}`);
+            if (failedCount > 0) {
+                console.log(`   - Failed: ${failedCount}`);
+            }
+        }
+        console.log('='.repeat(50) + '\n');
         process.exit(0);
     } catch (err) {
-        console.error('\n❌ Migration failed:', err);
+        console.error('\n❌ Fatal migration error:', err);
         process.exit(1);
     }
 }

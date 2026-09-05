@@ -1260,19 +1260,19 @@ const CustomerShareableView = () => {
                         <table className="w-full text-left table-fixed">
                             <thead className="bg-[#F8FAFC] border-b border-slate-200">
                                 <tr>
-                                    <th className="px-1.5 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-slate-600 uppercase tracking-wider w-[32%] md:w-[40%]">Date & Details</th>
-                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-rose-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Debit (-)</th>
-                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-emerald-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Credit (+)</th>
-                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-slate-600 uppercase tracking-wider text-right w-[26%] md:w-[20%]">Balance</th>
+                                    <th className="px-2 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-slate-600 uppercase tracking-wider w-[36%] md:w-[40%]">Date & Details</th>
+                                    <th className="px-1 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-rose-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Debit (-)</th>
+                                    <th className="px-1 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-emerald-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Credit (+)</th>
+                                    <th className="px-2 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-slate-600 uppercase tracking-wider text-right w-[22%] md:w-[20%]">Balance</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 md:divide-slate-200/70">
                                 {transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-20 text-center">
+                                        <td colSpan="4" className="px-6 py-16 md:py-20 text-center">
                                             <div className="flex flex-col items-center justify-center gap-2">
-                                                <span className="material-symbols-outlined text-slate-300 text-[40px]">description</span>
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No transactions recorded yet</p>
+                                                <span className="material-symbols-outlined text-slate-300 text-[36px] md:text-[40px]">description</span>
+                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-[11px] md:text-xs">No transactions recorded yet</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -1285,33 +1285,39 @@ const CustomerShareableView = () => {
 
                                     return (
                                         <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors group">
-                                            {/* Date Column */}
-                                            <td className="px-1.5 md:px-6 py-3 md:py-4 align-top">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <p className="text-[11px] md:text-sm font-bold text-slate-800 leading-tight">
-                                                        {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                                    </p>
+                                            {/* Date & Details Column */}
+                                            <td className="px-2 md:px-6 py-2.5 md:py-4 align-top">
+                                                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                                    <span className="text-[11px] md:text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">
+                                                        {date ? (
+                                                            <>
+                                                                <span className="md:hidden">{date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                                                                <span className="hidden md:inline">{date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                            </>
+                                                        ) : '—'}
+                                                    </span>
                                                     {index === 0 && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] md:text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[8px] md:text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80 leading-none">
                                                             Latest
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-[9px] md:text-xs text-slate-500 font-normal mt-0.5 line-clamp-2 md:line-clamp-none break-words leading-relaxed">
+                                                <p className="text-[9px] md:text-xs text-slate-500 font-normal line-clamp-2 md:line-clamp-none break-words leading-tight">
                                                     {tx.description || 'General Entry'}
                                                 </p>
                                                 {(() => {
                                                     const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
                                                     if (atts.length === 0) return null;
                                                     return (
-                                                        <div className="mt-1.5 no-print">
+                                                        <div className="mt-1 no-print">
                                                             <button
                                                                 onClick={() => handleOpenView(atts, 0)}
-                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-[10px] md:text-xs font-semibold transition-colors cursor-pointer border border-blue-100"
+                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-[10px] font-semibold transition-colors cursor-pointer border border-blue-100"
                                                                 title={`${atts.length} bill attachment(s)`}
                                                             >
-                                                                <span className="material-symbols-outlined text-[14px] md:text-[16px]">receipt</span>
-                                                                <span>{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
+                                                                <span className="material-symbols-outlined text-[13px] md:text-[15px]">receipt_long</span>
+                                                                <span className="hidden md:inline text-xs">{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
+                                                                <span className="md:hidden text-[9px] font-bold">{atts.length > 1 ? `${atts.length} Bills` : 'Bill'}</span>
                                                             </button>
                                                         </div>
                                                     );
@@ -1319,9 +1325,9 @@ const CustomerShareableView = () => {
                                             </td>
 
                                             {/* Debit Column */}
-                                            <td className={`px-1 md:px-6 py-3 md:py-4 text-center md:text-right align-top ${isGave ? 'bg-rose-50/20 md:bg-transparent' : ''}`}>
+                                            <td className={`px-1 md:px-6 py-2.5 md:py-4 text-center md:text-right align-top ${isGave ? 'bg-rose-50/20 md:bg-transparent' : ''}`}>
                                                 {isGave ? (
-                                                    <span className="text-[11px] md:text-sm font-extrabold text-rose-600">
+                                                    <span className="text-[11px] md:text-sm font-extrabold text-rose-600 whitespace-nowrap">
                                                         ₹{absAmount}
                                                     </span>
                                                 ) : (
@@ -1330,9 +1336,9 @@ const CustomerShareableView = () => {
                                             </td>
 
                                             {/* Credit Column */}
-                                            <td className={`px-1 md:px-6 py-3 md:py-4 text-center md:text-right align-top ${!isGave ? 'bg-emerald-50/20 md:bg-transparent' : ''}`}>
+                                            <td className={`px-1 md:px-6 py-2.5 md:py-4 text-center md:text-right align-top ${!isGave ? 'bg-emerald-50/20 md:bg-transparent' : ''}`}>
                                                 {!isGave ? (
-                                                    <span className="text-[11px] md:text-sm font-extrabold text-emerald-600">
+                                                    <span className="text-[11px] md:text-sm font-extrabold text-emerald-600 whitespace-nowrap">
                                                         ₹{absAmount}
                                                     </span>
                                                 ) : (
@@ -1341,13 +1347,13 @@ const CustomerShareableView = () => {
                                             </td>
 
                                             {/* Balance Column */}
-                                            <td className="px-1 md:px-6 py-3 md:py-4 text-right align-top">
-                                                <div className="inline-flex items-center justify-end gap-1 font-black">
-                                                    <span className={`text-[11px] md:text-sm ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
+                                            <td className="px-2 md:px-6 py-2.5 md:py-4 text-right align-top">
+                                                <div className="flex flex-col md:flex-row items-end justify-end md:gap-1 font-bold">
+                                                    <span className={`text-[11px] md:text-sm whitespace-nowrap ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
                                                         ₹{Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')}
                                                     </span>
-                                                    <span className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                                        isBalanceDebit ? 'bg-rose-100/70 text-rose-700' : 'bg-emerald-100/70 text-emerald-700'
+                                                    <span className={`text-[8px] md:text-[9px] font-bold ${
+                                                        isBalanceDebit ? 'text-rose-500' : 'text-emerald-600'
                                                     }`}>
                                                         {isBalanceDebit ? 'Dr' : 'Cr'}
                                                     </span>

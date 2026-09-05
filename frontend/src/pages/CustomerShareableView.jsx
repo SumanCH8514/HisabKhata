@@ -17,6 +17,7 @@ const CustomerShareableView = () => {
     const [globalSettings, setGlobalSettings] = useState(null);
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
+    const [loading, setLoading] = useState(true);
 
     const handleOpenView = (imgs, idx = 0) => {
         if (!imgs) return;

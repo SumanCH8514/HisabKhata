@@ -551,15 +551,8 @@ const CustomerShareableView = () => {
                     .print-container { padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
                     .print-rounded { border-radius: 0 !important; }
                     main { padding: 0 !important; max-width: 100% !important; }
-                }
-
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                }
-
-                th, td {
-                    border: 1px solid #E2E8F0;
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #E2E8F0; }
                 }
                 `}
             </style>
@@ -881,21 +874,40 @@ const CustomerShareableView = () => {
             )}
 
             {/* Desktop Header */}
-            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-16 items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center shadow-md">
-                        <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
-                    </div>
-                    <div>
-                        <p className="font-black text-slate-900 text-lg leading-tight uppercase tracking-tight">Hisab Khata</p>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Verified Digital Ledger</p>
+            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 px-8 h-16 items-center justify-between shadow-xs">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-linear-to-br from-[#0057BB] to-[#003C82] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 text-white shrink-0">
+                            <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-slate-900 text-base leading-tight tracking-tight">Hisab Khata</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-100">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0057BB]"></span> Verified Ledger
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs">
+                                Statement for <span className="font-semibold text-slate-700">{customer.name}</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    {owner?.phone && (
+                        <a
+                            href={`tel:${owner.phone}`}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+                            title={`Call ${owner.name || 'Merchant'}`}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">call</span>
+                            <span>{owner.phone}</span>
+                        </a>
+                    )}
                     {isReceivable && (
                         <button
                             onClick={handlePayOnlineClick}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-[#2E7D32] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#1B5E20] transition-all active:scale-95 shadow-lg"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold tracking-wide shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
                         >
                             <span className="material-symbols-outlined text-[18px]">payments</span>
                             Pay Online
@@ -903,7 +915,7 @@ const CustomerShareableView = () => {
                     )}
                     <button
                         onClick={handleDownloadStatement}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wide shadow-md shadow-slate-900/10 transition-all active:scale-95 cursor-pointer"
                     >
                         <span className="material-symbols-outlined text-[18px]">download</span>
                         Download Statement
@@ -943,7 +955,7 @@ const CustomerShareableView = () => {
                 </div>
             </header>
 
-            <main className="flex-1 w-full max-w-4xl mx-auto p-0 md:p-6 space-y-4 md:space-y-6 print-container">
+            <main className="flex-1 w-full max-w-5xl mx-auto p-0 md:p-8 space-y-4 md:space-y-6 print-container">
 
                 {/* Mobile Identity / Balance Card */}
                 <div className="md:hidden bg-[#0057BB] text-white px-4 pb-12 pt-4">
@@ -972,31 +984,65 @@ const CustomerShareableView = () => {
                 </div>
 
                 {/* Identity Card (Desktop Only) */}
-                <div className="hidden md:block bg-white rounded-2xl border border-slate-200 p-8 shadow-sm relative overflow-hidden print-rounded">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-[#0057BB]"></div>
+                <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 p-7 shadow-xs relative overflow-hidden print-rounded">
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-[#0057BB] via-blue-500 to-indigo-600"></div>
                     <div className="flex items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[#0057BB] text-2xl border border-slate-200 uppercase overflow-hidden shrink-0">
+                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center font-black text-[#0057BB] text-2xl border border-slate-200/80 shadow-xs uppercase overflow-hidden shrink-0">
                                 {customer.photoURL ? (
                                     <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
                                 ) : (
                                     initials
                                 )}
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Account Statement For</p>
-                                <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">{customer.name}</h1>
-                                <p className="text-xs font-medium text-slate-600 mt-0.5 uppercase tracking-wider">{customer.phone || 'No Phone Linked'}</p>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account Statement</span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-[11px] font-semibold text-slate-500">{transactions.length} Entries</span>
+                                </div>
+                                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{customer.name}</h1>
+                                <div className="flex items-center gap-2 pt-0.5">
+                                    {customer.phone ? (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200/60">
+                                            <span className="material-symbols-outlined text-[14px] text-slate-500">call</span>
+                                            +91 {customer.phone}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-slate-400 italic">No phone linked</span>
+                                    )}
+                                    {customer.address && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200/60 truncate max-w-xs">
+                                            <span className="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
+                                            {customer.address}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 min-w-[200px] print:bg-white print:border-slate-200 text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Balance</p>
-                            <h3 className={`text-3xl font-bold ${isReceivable ? 'text-red-500' : 'text-green-600'}`}>
+
+                        {/* Net Balance Panel */}
+                        <div className={`p-5 rounded-2xl border min-w-[240px] text-right transition-all print:bg-white print:border-slate-200 ${
+                            isReceivable 
+                                ? 'bg-rose-50/70 border-rose-200/70' 
+                                : 'bg-emerald-50/70 border-emerald-200/70'
+                        }`}>
+                            <div className="flex items-center justify-end gap-1.5 mb-1">
+                                <span className={`w-2 h-2 rounded-full ${isReceivable ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Net Balance</p>
+                            </div>
+                            <h3 className={`text-3xl font-extrabold tracking-tight ${isReceivable ? 'text-rose-600' : 'text-emerald-700'}`}>
                                 ₹{balanceAbsolute}
                             </h3>
-                            <p className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide ${isReceivable ? 'text-red-400' : 'text-green-500'}`}>
-                                {isReceivable ? 'Pending Due Payment' : 'Settled / Credit Available'}
-                            </p>
+                            <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                                <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                    isReceivable 
+                                        ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                }`}>
+                                    {isReceivable ? 'Pending Due' : 'Settled / Advance'}
+                                </span>
+                            </div>
                             {customer.dueDate && isReceivable && (() => {
                                 const status = getDueDateStatus(customer.dueDate);
                                 if (!status) return null;
@@ -1007,6 +1053,52 @@ const CustomerShareableView = () => {
                                     </div>
                                 );
                             })()}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop 3-Card Summary Grid */}
+                <div className="hidden md:grid grid-cols-3 gap-4 no-print">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Purchases</p>
+                            <p className="text-2xl font-black text-rose-600">₹{totalGave}</p>
+                            <p className="text-[11px] text-slate-500 mt-1 font-medium">Debit / You Gave</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                            <span className="material-symbols-outlined text-[24px]">trending_down</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Payments</p>
+                            <p className="text-2xl font-black text-emerald-600">₹{totalGot}</p>
+                            <p className="text-[11px] text-slate-500 mt-1 font-medium">Credit / You Got</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                            <span className="material-symbols-outlined text-[24px]">trending_up</span>
+                        </div>
+                    </div>
+
+                    <div className={`p-5 rounded-2xl border shadow-2xs transition-all flex items-center justify-between ${
+                        isReceivable ? 'bg-rose-50/40 border-rose-200/60' : 'bg-emerald-50/40 border-emerald-200/60'
+                    }`}>
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Closing Balance</p>
+                            <p className={`text-2xl font-black ${isReceivable ? 'text-rose-600' : 'text-emerald-700'}`}>
+                                ₹{balanceAbsolute}
+                            </p>
+                            <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                                {isReceivable ? 'Amount to be paid' : 'Account in clear'}
+                            </p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${
+                            isReceivable 
+                                ? 'bg-rose-100/80 border-rose-200 text-rose-700' 
+                                : 'bg-emerald-100/80 border-emerald-200 text-emerald-700'
+                        }`}>
+                            <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
                         </div>
                     </div>
                 </div>
@@ -1025,22 +1117,37 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                <div className="bg-white md:rounded-xl md:border border-slate-200 md:shadow-sm overflow-hidden print-rounded">
+                {/* Ledger Transactions Table Container */}
+                <div className="bg-white md:rounded-2xl md:border border-slate-200/90 md:shadow-xs overflow-hidden print-rounded">
+                    {/* Desktop table title header */}
+                    <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-slate-50/50">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-slate-600 text-[20px]">receipt_long</span>
+                            <h2 className="font-bold text-sm text-slate-800 uppercase tracking-wide">Transaction History</h2>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500">
+                            Showing {transactions.length} record{transactions.length === 1 ? '' : 's'}
+                        </span>
+                    </div>
+
                     <div className="overflow-x-auto md:overflow-x-visible">
                         <table className="w-full text-left table-fixed">
                             <thead className="bg-[#F8FAFC] border-b border-slate-200">
                                 <tr>
-                                    <th className="px-1.5 md:px-4 py-3 text-[11px] md:text-sm font-bold text-slate-700 w-[32%] md:w-[35%]">Date</th>
-                                    <th className="px-1 md:px-4 py-3 text-[11px] md:text-sm font-bold text-slate-700 text-center w-[21%] md:w-[20%]">Debit(-)</th>
-                                    <th className="px-1 md:px-4 py-3 text-[11px] md:text-sm font-bold text-slate-700 text-center w-[21%] md:w-[20%]">Credit(+)</th>
-                                    <th className="px-1 md:px-4 py-3 text-[11px] md:text-sm font-bold text-slate-700 text-right w-[26%] md:w-[25%]">Balance</th>
+                                    <th className="px-1.5 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-slate-600 uppercase tracking-wider w-[32%] md:w-[40%]">Date & Details</th>
+                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-rose-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Debit (-)</th>
+                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-emerald-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Credit (+)</th>
+                                    <th className="px-1 md:px-6 py-3 md:py-3.5 text-[11px] md:text-xs font-bold text-slate-600 uppercase tracking-wider text-right w-[26%] md:w-[20%]">Balance</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="divide-y divide-slate-100 md:divide-slate-200/70">
                                 {transactions.length === 0 ? (
                                     <tr>
                                         <td colSpan="4" className="px-6 py-20 text-center">
-                                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No transactions recorded yet</p>
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <span className="material-symbols-outlined text-slate-300 text-[40px]">description</span>
+                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No transactions recorded yet</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : transactions.map((tx, index) => {
@@ -1048,31 +1155,37 @@ const CustomerShareableView = () => {
                                     const isGave = amount < 0;
                                     const absAmount = Math.abs(amount).toLocaleString('en-IN');
                                     const date = tx.timestamp ? new Date(tx.timestamp) : null;
-                                    const runningBalance = Math.abs(tx.runningBalance || 0).toLocaleString('en-IN');
+                                    const isBalanceDebit = (tx.runningBalance || 0) < 0;
 
                                     return (
-                                        <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                                        <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors group">
                                             {/* Date Column */}
-                                            <td className="px-1.5 md:px-4 py-3">
-                                                {index === 0 && (
-                                                    <p className="text-[10px] md:text-xs font-medium text-red-500 mb-0.5">Latest</p>
-                                                )}
-                                                <p className="text-[11px] md:text-sm font-bold text-slate-600 leading-tight">
-                                                    {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                                            <td className="px-1.5 md:px-6 py-3 md:py-4 align-top">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <p className="text-[11px] md:text-sm font-bold text-slate-800 leading-tight">
+                                                        {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                                                    </p>
+                                                    {index === 0 && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] md:text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                            Latest
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[9px] md:text-xs text-slate-500 font-normal mt-0.5 line-clamp-2 md:line-clamp-none break-words leading-relaxed">
+                                                    {tx.description || 'General Entry'}
                                                 </p>
-                                                <p className="text-[9px] md:text-xs text-slate-500 mt-0.5 line-clamp-2 md:line-clamp-none break-words leading-tight">{tx.description || 'General Entry'}</p>
                                                 {(() => {
                                                     const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
                                                     if (atts.length === 0) return null;
                                                     return (
-                                                        <div className="mt-1 no-print">
+                                                        <div className="mt-1.5 no-print">
                                                             <button
                                                                 onClick={() => handleOpenView(atts, 0)}
-                                                                className="text-blue-600 hover:text-blue-700 flex items-center gap-0.5 text-xs font-bold"
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-[10px] md:text-xs font-semibold transition-colors cursor-pointer border border-blue-100"
                                                                 title={`${atts.length} bill attachment(s)`}
                                                             >
-                                                                <span className="material-symbols-outlined text-[16px] md:text-[18px]">image</span>
-                                                                {atts.length > 1 && <span>{atts.length}</span>}
+                                                                <span className="material-symbols-outlined text-[14px] md:text-[16px]">receipt</span>
+                                                                <span>{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
                                                             </button>
                                                         </div>
                                                     );
@@ -1080,20 +1193,39 @@ const CustomerShareableView = () => {
                                             </td>
 
                                             {/* Debit Column */}
-                                            <td className={`px-1 md:px-4 py-3 text-center ${isGave ? 'bg-red-50/30' : ''}`}>
-                                                {isGave && <span className="text-[11px] md:text-sm font-bold text-slate-700">{absAmount}</span>}
+                                            <td className={`px-1 md:px-6 py-3 md:py-4 text-center md:text-right align-top ${isGave ? 'bg-rose-50/20 md:bg-transparent' : ''}`}>
+                                                {isGave ? (
+                                                    <span className="text-[11px] md:text-sm font-extrabold text-rose-600">
+                                                        ₹{absAmount}
+                                                    </span>
+                                                ) : (
+                                                    <span className="hidden md:inline text-slate-300 text-xs">—</span>
+                                                )}
                                             </td>
 
                                             {/* Credit Column */}
-                                            <td className={`px-1 md:px-4 py-3 text-center ${!isGave ? 'bg-green-50/30' : ''}`}>
-                                                {!isGave && <span className="text-[11px] md:text-sm font-bold text-slate-700">{absAmount}</span>}
+                                            <td className={`px-1 md:px-6 py-3 md:py-4 text-center md:text-right align-top ${!isGave ? 'bg-emerald-50/20 md:bg-transparent' : ''}`}>
+                                                {!isGave ? (
+                                                    <span className="text-[11px] md:text-sm font-extrabold text-emerald-600">
+                                                        ₹{absAmount}
+                                                    </span>
+                                                ) : (
+                                                    <span className="hidden md:inline text-slate-300 text-xs">—</span>
+                                                )}
                                             </td>
 
                                             {/* Balance Column */}
-                                            <td className="px-1 md:px-4 py-3 text-right">
-                                                <span className={`text-[11px] md:text-sm font-black ${(tx.runningBalance || 0) < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                                                    {Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')}<span className="text-[9px] md:text-[10px] ml-0.5">{(tx.runningBalance || 0) < 0 ? 'Dr' : 'Cr'}</span>
-                                                </span>
+                                            <td className="px-1 md:px-6 py-3 md:py-4 text-right align-top">
+                                                <div className="inline-flex items-center justify-end gap-1 font-black">
+                                                    <span className={`text-[11px] md:text-sm ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
+                                                        ₹{Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')}
+                                                    </span>
+                                                    <span className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                                        isBalanceDebit ? 'bg-rose-100/70 text-rose-700' : 'bg-emerald-100/70 text-emerald-700'
+                                                    }`}>
+                                                        {isBalanceDebit ? 'Dr' : 'Cr'}
+                                                    </span>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -1106,14 +1238,14 @@ const CustomerShareableView = () => {
                 {/* Secure Footer */}
                 <footer className="text-center space-y-3 py-10 px-4">
                     <div className="flex items-center justify-center gap-2 text-slate-500">
-                        <span className="material-symbols-outlined text-[16px]">verified_user</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Verified Digital Statement</span>
+                        <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Verified Digital Statement</span>
                     </div>
-                    <p className="text-[11px] text-slate-600 font-medium leading-relaxed max-w-md mx-auto">
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
                         This digital ledger is provided for account transparency.
                         Generated on {new Date().toLocaleString()}
                         <br className="hidden md:block" />
-                        Platform by <a href="https://SumanOnline.Com" className="text-[#0057BB] font-bold no-print">SumanOnline.Com</a>
+                        Platform by <a href="https://SumanOnline.Com" target="_blank" rel="noreferrer" className="text-[#0057BB] font-bold hover:underline no-print">SumanOnline.Com</a>
                     </p>
                 </footer>
             </main>

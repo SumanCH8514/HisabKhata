@@ -116,7 +116,7 @@ export const getDueDateStatus = (dateVal) => {
             isOverdue: false,
             isToday: false,
             isUpcoming: true,
-            daysDiff,
+            daysDiff: diffDays,
             label: `Due in ${diffDays} days (${formatDueDate(norm)})`,
             shortLabel: `Due: ${formatDueDate(norm, false)}`,
             formatted: formatDueDate(norm),

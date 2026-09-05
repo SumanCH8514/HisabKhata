@@ -52,8 +52,8 @@ const PWAInstallBanner = () => {
     <div className="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:max-w-sm z-[95] animate-in fade-in slide-in-from-bottom-4 duration-300 no-print">
       <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/60 flex items-center gap-3.5">
         {/* App Icon */}
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0057BB] to-[#003C82] flex items-center justify-center p-2 shrink-0 shadow-md">
-          <img src="/icons/icon-192x192.png" alt="HisabKhata" className="w-full h-full object-contain" />
+        <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-blue-500/20 border border-white/20 shrink-0 flex items-center justify-center bg-[#0057BB]">
+          <img src="/icons/icon.svg" alt="HisabKhata" className="w-full h-full object-cover" />
         </div>
 
         {/* Content */}

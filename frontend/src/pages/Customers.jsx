@@ -610,10 +610,10 @@ const Customers = () => {
                                         <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
                                             {customer.name}
                                         </p>
-                                        <div className="flex items-center gap-2 text-gray-400 overflow-hidden flex-nowrap">
+                                        <div className="flex items-center gap-1.5 text-gray-400 overflow-hidden flex-nowrap">
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <span className="material-symbols-outlined text-[13px]">schedule</span>
-                                                <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
+                                                <span className="material-symbols-outlined text-[12px]">schedule</span>
+                                                <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
                                                     {customer.updatedAt
                                                         ? formatTimeAgo(customer.updatedAt)
                                                         : customer.createdAt
@@ -1513,7 +1513,7 @@ const Customers = () => {
     );
 };
 
-// Helper: format time ago
+// Helper: format time ago (compact for clean mobile fit)
 function formatTimeAgo(timestamp) {
     const now = Date.now();
     const diff = now - timestamp;
@@ -1522,11 +1522,11 @@ function formatTimeAgo(timestamp) {
     const days = Math.floor(diff / 86400000);
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
-    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
-    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (mins > 0) return `${mins} minute${mins > 1 ? 's' : ''} ago`;
+    if (years > 0) return `${years}y ago`;
+    if (months > 0) return `${months}mo ago`;
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (mins > 0) return `${mins}m ago`;
     return 'Just now';
 }
 

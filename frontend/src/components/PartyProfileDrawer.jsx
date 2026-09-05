@@ -25,8 +25,6 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImpo
         }
     }, [customer, isOpen]);
 
-    if (!isOpen || !customer) return null;
-
     const processImageFile = async (file) => {
         if (!file || !file.type?.startsWith('image/')) return;
         setIsUploading(true);
@@ -159,6 +157,8 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImpo
             }
         }
     };
+
+    if (!isOpen || !customer) return null;
 
     return (
         <div className="fixed inset-0 z-[120] flex justify-end" style={{ fontFamily: "'Noto Sans', sans-serif" }}>

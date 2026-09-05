@@ -947,8 +947,11 @@ const CustomerShareableView = () => {
                                                     className="p-3 bg-white hover:bg-purple-50/60 border border-slate-200 hover:border-purple-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
                                                     <div className="w-10 h-10 rounded-2xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/20">
-                                                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="white">
-                                                            <path d="M19.2 3.8l-5.6 3.2v-2c0-.6-.4-1-1-1h-2.1c-.6 0-1 .4-1 1v2.5H7.8c-.6 0-1 .4-1 1v1.6c0 .6.4 1 1 1h1.7v5.5c0 2.8 2.2 5 5 5h1.6c.6 0 1-.4 1-1v-1.6c0-.6-.4-1-1-1h-1.6c-1.1 0-2-.9-2-2v-5.9h3.8c2.2 0 4-1.8 4-4 0-1.2-.5-2.2-1.3-2.9l2.8-1.6c.5-.3.7-.9.4-1.4s-.9-.7-1.4-.4zM16.1 11.2h-3.8V8.6h3.8c.8 0 1.4.6 1.4 1.3 0 .7-.6 1.3-1.4 1.3z" />
+                                                        <svg viewBox="0 0 100 100" className="w-6 h-6" fill="white">
+                                                            <rect x="52" y="10" width="10" height="28" rx="5" transform="rotate(38 52 10)"/>
+                                                            <rect x="14" y="24" width="20" height="10" rx="4"/>
+                                                            <rect x="28" y="24" width="11" height="58" rx="5"/>
+                                                            <path d="M38 24H60C72 24 80 32 80 43C80 54 72 62 60 62H38V24ZM58 52C64 52 69 48 69 43C69 38 64 34 58 34H38V52H58Z" fill="white"/>
                                                         </svg>
                                                     </div>
                                                     <div className="min-w-0">
@@ -962,7 +965,7 @@ const CustomerShareableView = () => {
                                                     onClick={() => handleLaunchUpiApp('gpay')}
                                                     className="p-3 bg-white hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-2">
                                                         <svg viewBox="0 0 24 24" className="w-full h-full">
                                                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                                             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -981,11 +984,11 @@ const CustomerShareableView = () => {
                                                     onClick={() => handleLaunchUpiApp('paytm')}
                                                     className="p-3 bg-white hover:bg-sky-50/60 border border-slate-200 hover:border-sky-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
-                                                        <svg viewBox="0 0 60 22" className="w-full h-auto">
-                                                            <path fill="#002970" d="M0 2.2C0 1 1 0 2.2 0h8.3c3.5 0 6.3 2.8 6.3 6.3 0 3.5-2.8 6.3-6.3 6.3H4.5v8.6H0V2.2zm4.5 8.4h5.6c1.3 0 2.4-1.1 2.4-2.4 0-1.3-1.1-2.4-2.4-2.4H4.5v4.8z"/>
-                                                            <path fill="#00BAF2" d="M20.5 7.8h4.5v13.4h-4.5V7.8zm0-5.8h4.5v3.8h-4.5V2zm7.5 5.8h4.2v2.6h-4.2v6.8c0 .9.5 1.2 1.3 1.2h2.9v2.8h-3.8c-3 0-4.9-1.6-4.9-4.5V10.4h-2.2V7.8h2.2V3.8l4.5-1.4v5.4zm9.8 0h4.5v2.4c.9-1.6 2.7-2.6 4.6-2.6 3 0 5.1 2 5.1 5.4v8.2h-4.5v-7.3c0-1.7-1-2.6-2.4-2.6s-2.8 1.1-2.8 2.9v7H37.8V7.8z"/>
-                                                        </svg>
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm">
+                                                        <div className="flex items-center font-black tracking-tighter text-[13px] leading-none select-none">
+                                                            <span className="text-[#002970]">Pay</span>
+                                                            <span className="text-[#00BAF2]">tm</span>
+                                                        </div>
                                                     </div>
                                                     <div className="min-w-0">
                                                         <span className="block text-xs font-bold text-slate-900 truncate">Paytm</span>
@@ -998,11 +1001,14 @@ const CustomerShareableView = () => {
                                                     onClick={() => handleLaunchUpiApp('upi')}
                                                     className="p-3 bg-white hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-sm p-1.5">
-                                                        <svg viewBox="0 0 36 24" className="w-7 h-5">
-                                                            <polygon points="12,2 2,22 14,22 24,2" fill="#097939" />
-                                                            <polygon points="22,2 12,22 20,22 30,2" fill="#ED752E" />
-                                                        </svg>
+                                                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-sm p-1">
+                                                        <div className="flex items-center gap-0.5">
+                                                            <svg viewBox="0 0 28 18" className="w-5 h-3.5">
+                                                                <polygon points="10,1 2,17 10,17 18,1" fill="#097939" />
+                                                                <polygon points="17,1 9,17 15,17 23,1" fill="#ED752E" />
+                                                            </svg>
+                                                            <span className="font-black text-[9px] text-[#097939] tracking-tighter leading-none">UPI</span>
+                                                        </div>
                                                     </div>
                                                     <div className="min-w-0">
                                                         <span className="block text-xs font-bold text-slate-900 truncate">Any UPI App</span>

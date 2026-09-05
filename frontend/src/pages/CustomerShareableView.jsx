@@ -18,6 +18,8 @@ const CustomerShareableView = () => {
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [copiedUpi, setCopiedUpi] = useState(false);
+    const [activeMethodTab, setActiveMethodTab] = useState('upi'); // 'upi' | 'qr' | 'bank' | 'copy'
+    const [copiedField, setCopiedField] = useState(''); // track which field was copied
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -433,9 +435,6 @@ const CustomerShareableView = () => {
 
         doc.save(`${customer.name}_Statement_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
     };
-
-    const [activeMethodTab, setActiveMethodTab] = useState('upi'); // 'upi' | 'qr' | 'bank' | 'copy'
-    const [copiedField, setCopiedField] = useState(''); // track which field was copied
 
     const handlePayOnlineClick = () => {
         const fullBal = Math.abs(balance || 0);

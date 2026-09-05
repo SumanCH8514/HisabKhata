@@ -355,166 +355,162 @@ const PaymentsDashboard = () => {
                                     const isPending = payment.status === 'pending';
                                     const isApproved = payment.status === 'approved';
                                     const isRejected = payment.status === 'rejected';
+                                    const customer = customersMap[payment.customerId];
+                                    const photo = customer?.photoURL || payment.customerPhoto || payment.photoURL;
 
                                     return (
                                         <div 
                                             key={payment.id}
-                                            className={`bg-white rounded-xl border transition-all ${
+                                            className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
                                                 isPending 
-                                                    ? 'border-amber-200/80 shadow-sm hover:border-amber-300' 
-                                                    : 'border-slate-200/80 hover:border-slate-300'
+                                                    ? 'border-amber-200/90 shadow-sm hover:border-amber-300' 
+                                                    : 'border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm'
                                             }`}
                                         >
-                                            <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div className="p-3.5 sm:p-4 md:p-5 flex flex-col gap-3">
                                                 
-                                                {/* Left: Customer Info & Timestamp */}
-                                                <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                                                    {/* Avatar */}
-                                                    {(() => {
-                                                        const customer = customersMap[payment.customerId];
-                                                        const photo = customer?.photoURL || payment.customerPhoto || payment.photoURL;
-                                                        return (
-                                                            <div 
-                                                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm overflow-hidden border border-slate-100"
-                                                                style={{ backgroundColor: !photo ? getInitialColor(payment.customerName) : '#f1f5f9' }}
-                                                            >
-                                                                {photo ? (
-                                                                    <img 
-                                                                        src={photo} 
-                                                                        alt={payment.customerName} 
-                                                                        className="w-full h-full object-cover" 
-                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                                    />
-                                                                ) : (
-                                                                    <span>{payment.customerName?.charAt(0).toUpperCase() || 'C'}</span>
+                                                {/* Top Row: Avatar + Info + Amount & Status */}
+                                                <div className="flex items-center justify-between gap-3">
+                                                    
+                                                    {/* Avatar & Customer Details */}
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                        <div 
+                                                            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs overflow-hidden border border-slate-100"
+                                                            style={{ backgroundColor: !photo ? getInitialColor(payment.customerName) : '#f8fafc' }}
+                                                        >
+                                                            {photo ? (
+                                                                <img 
+                                                                    src={photo} 
+                                                                    alt={payment.customerName} 
+                                                                    className="w-full h-full object-cover" 
+                                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                />
+                                                            ) : (
+                                                                <span>{payment.customerName?.charAt(0).toUpperCase() || 'C'}</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-sm sm:text-[15px] font-bold text-slate-900 truncate leading-snug">
+                                                                    {payment.customerName}
+                                                                </h3>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                                                                <span className="whitespace-nowrap">{formatDateTime(payment.timestamp)}</span>
+                                                                {payment.customerEmail && (
+                                                                    <span className="hidden sm:inline text-slate-400 truncate">• {payment.customerEmail}</span>
                                                                 )}
                                                             </div>
-                                                        );
-                                                    })()}
+                                                        </div>
+                                                    </div>
 
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <h3 className="text-sm font-bold text-slate-900 truncate">
-                                                                {payment.customerName}
-                                                            </h3>
-                                                            {/* Status Badge */}
+                                                    {/* Amount & Status Badge */}
+                                                    <div className="flex flex-col items-end shrink-0 pl-1">
+                                                        <span className="text-base sm:text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight">
+                                                            ₹{Number(payment.amount).toLocaleString('en-IN')}
+                                                        </span>
+                                                        
+                                                        <div className="mt-1">
                                                             {isPending && (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                                                    <Clock size={12} /> Pending Review
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                                    Pending
                                                                 </span>
                                                             )}
                                                             {isApproved && (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                                    <CheckCircle2 size={12} /> Approved
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                                                    <CheckCircle2 size={11} className="text-emerald-600" />
+                                                                    Approved
                                                                 </span>
                                                             )}
                                                             {isRejected && (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                                                    <XCircle size={12} /> Rejected
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+                                                                    <XCircle size={11} className="text-rose-500" />
+                                                                    Rejected
                                                                 </span>
                                                             )}
                                                         </div>
-
-                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
-                                                            <span>{formatDateTime(payment.timestamp)}</span>
-                                                            {payment.customerEmail && (
-                                                                <span className="text-slate-400 truncate">• {payment.customerEmail}</span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Ref ID & Copy */}
-                                                        <div className="flex items-center gap-1.5 mt-2">
-                                                            <span className="text-[11px] text-slate-400 font-medium">Ref / UTR:</span>
-                                                            {payment.transactionId ? (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleCopyRef(payment.transactionId, payment.id)}
-                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] font-semibold transition-colors group"
-                                                                    title="Click to copy Transaction ID"
-                                                                >
-                                                                    <span>{payment.transactionId}</span>
-                                                                    {copiedId === payment.id ? (
-                                                                        <Check size={12} className="text-emerald-600" />
-                                                                    ) : (
-                                                                        <Copy size={11} className="text-slate-400 group-hover:text-slate-600" />
-                                                                    )}
-                                                                </button>
-                                                            ) : (
-                                                                <span className="text-[11px] text-slate-400 italic">Not provided</span>
-                                                            )}
-                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Center/Proof Thumbnail */}
-                                                <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
-                                                    {payment.screenshot ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setViewImage(payment.screenshot)}
-                                                            className="flex items-center gap-2 p-1.5 bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-xl transition-all group/proof"
-                                                        >
-                                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden bg-slate-200 relative shrink-0">
-                                                                <img 
-                                                                    src={payment.screenshot} 
-                                                                    alt="Payment Proof" 
-                                                                    className="w-full h-full object-cover group-hover/proof:scale-105 transition-transform duration-300"
-                                                                />
-                                                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/proof:opacity-100 transition-opacity flex items-center justify-center">
-                                                                    <Eye size={16} className="text-white drop-shadow" />
+                                                {/* Middle Row: Ref ID Chip & Receipt Preview */}
+                                                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100 bg-slate-50/60 -mx-3.5 -mb-3.5 p-3 sm:-mx-4 sm:-mb-4 sm:p-3 md:-mx-5 md:-mb-5 md:p-3.5 rounded-b-2xl">
+                                                    {/* Ref / UTR */}
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Ref:</span>
+                                                        {payment.transactionId && payment.transactionId !== 'NOT_PROVIDED' ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCopyRef(payment.transactionId, payment.id)}
+                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200/70 text-slate-700 font-mono text-[11px] font-semibold transition-colors active:scale-95 group max-w-[150px] sm:max-w-[200px]"
+                                                                title="Click to copy Transaction ID"
+                                                            >
+                                                                <span className="truncate">{payment.transactionId}</span>
+                                                                {copiedId === payment.id ? (
+                                                                    <Check size={11} className="text-emerald-600 shrink-0" />
+                                                                ) : (
+                                                                    <Copy size={10} className="text-slate-400 group-hover:text-slate-600 shrink-0" />
+                                                                )}
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-[11px] text-slate-400 italic">None</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Screenshot / Ledger Link / Actions */}
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {payment.screenshot ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setViewImage(payment.screenshot)}
+                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200/80 hover:border-blue-300 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-semibold transition-all shadow-xs group"
+                                                            >
+                                                                <div className="w-4 h-4 rounded overflow-hidden bg-slate-100 shrink-0">
+                                                                    <img 
+                                                                        src={payment.screenshot} 
+                                                                        alt="" 
+                                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                                                                    />
                                                                 </div>
-                                                            </div>
-                                                            <div className="text-left pr-2">
-                                                                <p className="text-xs font-semibold text-slate-700 group-hover/proof:text-blue-700 leading-tight">View Receipt</p>
-                                                                <p className="text-[10px] text-slate-400">Payment Screenshot</p>
-                                                            </div>
-                                                        </button>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 p-2 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400">
-                                                            <AlertCircle size={16} />
-                                                            <span className="text-[11px] font-medium">No screenshot attached</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                                <span>View Proof</span>
+                                                                <Eye size={12} className="text-slate-400 group-hover:text-blue-600" />
+                                                            </button>
+                                                        ) : null}
 
-                                                {/* Right: Amount & Actions */}
-                                                <div className="flex items-center justify-between md:flex-col md:items-end md:justify-center gap-3 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block md:text-right">Amount</span>
-                                                        <span className="text-lg md:text-2xl font-bold text-slate-900 tracking-tight">
-                                                            ₹{Number(payment.amount).toLocaleString('en-IN')}
-                                                        </span>
+                                                        {!isPending && (
+                                                            <button 
+                                                                onClick={() => navigate('/customers', { state: { selectedCustomerId: payment.customerId } })}
+                                                                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-2.5 py-1 rounded-lg transition-colors"
+                                                            >
+                                                                <span>Ledger</span>
+                                                                <ArrowRight size={12} />
+                                                            </button>
+                                                        )}
                                                     </div>
-
-                                                    {/* Actions for Pending */}
-                                                    {isPending ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleReject(payment)}
-                                                                disabled={processing === payment.id}
-                                                                className="px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors active:scale-95 disabled:opacity-50"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleApprove(payment)}
-                                                                disabled={processing === payment.id}
-                                                                className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                                                            >
-                                                                <Check size={14} strokeWidth={2.5} />
-                                                                <span>{processing === payment.id ? 'Approving...' : 'Approve & Record'}</span>
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <button 
-                                                            onClick={() => navigate('/customers', { state: { selectedCustomerId: payment.customerId } })}
-                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                                                        >
-                                                            <span>View in Ledger</span>
-                                                            <ArrowRight size={13} />
-                                                        </button>
-                                                    )}
                                                 </div>
+
+                                                {/* Bottom Actions if Pending */}
+                                                {isPending && (
+                                                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 mt-1">
+                                                        <button
+                                                            onClick={() => handleReject(payment)}
+                                                            disabled={processing === payment.id}
+                                                            className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors active:scale-95 disabled:opacity-50 text-center"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleApprove(payment)}
+                                                            disabled={processing === payment.id}
+                                                            className="flex-[2] py-2 px-3 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                                        >
+                                                            <Check size={14} strokeWidth={2.5} />
+                                                            <span>{processing === payment.id ? 'Approving...' : 'Approve & Record Entry'}</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                             </div>
                                         </div>
                                     );

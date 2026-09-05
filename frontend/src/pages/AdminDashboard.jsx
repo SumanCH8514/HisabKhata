@@ -19,8 +19,19 @@ import {
     Database,
     Download,
     Upload,
-    RefreshCw
+    RefreshCw,
+    Cloud,
+    HardDrive,
+    ArrowUpRight,
+    FolderTree,
+    AlertCircle,
+    Play,
+    CheckCircle,
+    ExternalLink,
+    Sparkles
 } from 'lucide-react';
+import { testR2Connection, migrateAllBase64ToR2, R2_FOLDERS } from '../services/r2Storage';
+
 import {
     XAxis,
     YAxis,
@@ -40,6 +51,23 @@ const AdminDashboard = () => {
     const [globalSettings, setGlobalSettings] = useState({});
     const [emailJSConfig, setEmailJSConfig] = useState({ serviceId: '', templateId: '', publicKey: '' });
     const [paymentEmailJS, setPaymentEmailJS] = useState({ serviceId: '', templateId: '', publicKey: '' });
+    const [r2Config, setR2Config] = useState({
+        accountId: '',
+        accessKeyId: '',
+        secretAccessKey: '',
+        bucketName: 'hisabkhata',
+        publicUrl: 'http://cdn.backend.hisabkhata.sumanonline.com'
+    });
+    const [r2Testing, setR2Testing] = useState(false);
+    const [r2TestResult, setR2TestResult] = useState(null);
+    const [migrationState, setMigrationState] = useState({
+        isRunning: false,
+        progress: 0,
+        status: '',
+        message: '',
+        stats: null,
+        logs: []
+    });
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +93,14 @@ const AdminDashboard = () => {
             if (data.paymentEmailjs) {
                 setPaymentEmailJS(data.paymentEmailjs);
             }
+            if (data.r2) {
+                setR2Config(prev => ({
+                    ...prev,
+                    ...data.r2,
+                    bucketName: data.r2.bucketName || 'hisabkhata',
+                    publicUrl: data.r2.publicUrl || 'http://cdn.backend.hisabkhata.sumanonline.com'
+                }));
+            }
         });
 
         return () => {
@@ -74,6 +110,82 @@ const AdminDashboard = () => {
             if (typeof unsubSettings === 'function') unsubSettings();
         };
     }, []);
+
+    const handleSaveR2Config = async () => {
+        try {
+            await dbService.updateGlobalSettings({ r2: r2Config });
+            alert("Cloudflare R2 configuration saved successfully!");
+        } catch (err) {
+            console.error("Save R2 config failed:", err);
+            alert("Failed to save R2 configuration: " + err.message);
+        }
+    };
+
+    const handleTestR2 = async () => {
+        setR2Testing(true);
+        setR2TestResult(null);
+        try {
+            const res = await testR2Connection(r2Config);
+            setR2TestResult(res);
+        } catch (err) {
+            setR2TestResult({ success: false, message: err.message });
+        } finally {
+            setR2Testing(false);
+        }
+    };
+
+    const handleStartMigration = async () => {
+        if (!r2Config.accountId || !r2Config.accessKeyId || !r2Config.secretAccessKey) {
+            alert("Please provide Account ID, Access Key ID, and Secret Access Key before starting migration.");
+            return;
+        }
+
+        if (!window.confirm("Start Cloudflare R2 Migration? This will scan all base64 images, upload them to your R2 bucket under their respective folders, and update database records with CDN URLs.")) {
+            return;
+        }
+
+        setMigrationState({
+            isRunning: true,
+            progress: 0,
+            status: 'STARTING',
+            message: 'Initializing migration engine...',
+            stats: null,
+            logs: []
+        });
+
+        try {
+            const finalStats = await migrateAllBase64ToR2((prog) => {
+                setMigrationState(prev => ({
+                    ...prev,
+                    progress: prog.progress !== undefined ? prog.progress : prev.progress,
+                    status: prog.status || prev.status,
+                    message: prog.message || prev.message,
+                    stats: prog.stats || prev.stats,
+                    logs: prog.itemLabel 
+                        ? [`[${new Date().toLocaleTimeString()}] ${prog.message}`, ...prev.logs.slice(0, 49)] 
+                        : (prog.message ? [`[${new Date().toLocaleTimeString()}] ${prog.message}`, ...prev.logs.slice(0, 49)] : prev.logs)
+                }));
+            }, r2Config);
+
+            setMigrationState(prev => ({
+                ...prev,
+                isRunning: false,
+                status: 'COMPLETED',
+                stats: finalStats
+            }));
+            alert(`Migration Complete! Successfully migrated ${finalStats.totalMigrated} assets.`);
+        } catch (err) {
+            console.error("Migration error:", err);
+            setMigrationState(prev => ({
+                ...prev,
+                isRunning: false,
+                status: 'ERROR',
+                message: err.message,
+                logs: [`[ERROR] ${err.message}`, ...prev.logs]
+            }));
+            alert("Migration halted due to error: " + err.message);
+        }
+    };
 
     const handleSaveEmailJS = async () => {
         try {
@@ -833,6 +945,274 @@ const AdminDashboard = () => {
         </div>
     );
 
+    const renderStorage = () => (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-full text-blue-300 text-xs font-bold tracking-wide">
+                            <Cloud size={14} /> Cloudflare R2 Object Storage
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black tracking-tight">Media Storage & Migration Suite</h2>
+                        <p className="text-sm text-slate-300 max-w-2xl">
+                            High-speed S3-compatible cloud storage for Customer Profile Pictures, Payment Proofs, and Transaction Attachments served via your custom CDN domain.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <a 
+                            href={r2Config.publicUrl || "http://cdn.backend.hisabkhata.sumanonline.com"} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 backdrop-blur-sm border border-white/10"
+                        >
+                            <ExternalLink size={16} /> Open Public CDN
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Folder Directory Mapping Badges */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold">
+                        <FolderTree size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Profile Pictures</p>
+                        <p className="text-sm font-black text-slate-800 font-mono">/cust_profile_pictures/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Merchant & Customer Avatars</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center font-bold">
+                        <FolderTree size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Payment Proofs</p>
+                        <p className="text-sm font-black text-slate-800 font-mono">/payment_proof/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">UPI Screenshot Proofs</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold">
+                        <FolderTree size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Transaction Bills</p>
+                        <p className="text-sm font-black text-slate-800 font-mono">/transaction_attachments/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Invoices & Bill Receipts</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Config & Connection Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* R2 Credentials Form */}
+                <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl">
+                                <HardDrive size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold">Cloudflare R2 Credentials</h3>
+                                <p className="text-xs text-slate-400">S3 API token with Object Read & Write permission</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cloudflare Account ID</label>
+                            <input 
+                                type="text" 
+                                value={r2Config.accountId || ''} 
+                                onChange={(e) => setR2Config({...r2Config, accountId: e.target.value.trim()})}
+                                placeholder="e.g. 5d8a9f4c3b2e1..."
+                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R2 Access Key ID</label>
+                                <input 
+                                    type="text" 
+                                    value={r2Config.accessKeyId || ''} 
+                                    onChange={(e) => setR2Config({...r2Config, accessKeyId: e.target.value.trim()})}
+                                    placeholder="Access Key ID"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R2 Secret Access Key</label>
+                                <input 
+                                    type="password" 
+                                    value={r2Config.secretAccessKey || ''} 
+                                    onChange={(e) => setR2Config({...r2Config, secretAccessKey: e.target.value.trim()})}
+                                    placeholder="Secret Access Key"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bucket Name</label>
+                                <input 
+                                    type="text" 
+                                    value={r2Config.bucketName || 'hisabkhata'} 
+                                    onChange={(e) => setR2Config({...r2Config, bucketName: e.target.value.trim()})}
+                                    placeholder="hisabkhata"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" 
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Public CDN URL</label>
+                                <input 
+                                    type="text" 
+                                    value={r2Config.publicUrl || ''} 
+                                    onChange={(e) => setR2Config({...r2Config, publicUrl: e.target.value.trim()})}
+                                    placeholder="http://cdn.backend.hisabkhata.sumanonline.com"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Test Status Banner */}
+                        {r2TestResult && (
+                            <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${r2TestResult.success ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                                {r2TestResult.success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                                <span>{r2TestResult.message}</span>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button 
+                                type="button"
+                                onClick={handleTestR2}
+                                disabled={r2Testing}
+                                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border border-slate-700 disabled:opacity-50"
+                            >
+                                <RefreshCw size={14} className={r2Testing ? "animate-spin" : ""} />
+                                {r2Testing ? "Testing Connection..." : "Test Connection"}
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleSaveR2Config}
+                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30"
+                            >
+                                <CheckCircle2 size={16} />
+                                Save R2 Config
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 1-Click Base64 Migration Engine */}
+                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                                <Sparkles size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">1-Click Base64 &rarr; R2 Migration</h3>
+                                <p className="text-xs text-slate-400">Scan Firebase RTDB and migrate all legacy base64 images</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed mt-4">
+                            This tool automatically discovers any base64-encoded profile photos, customer pictures, transaction attachments, and payment screenshots in your Firebase Realtime Database. It uploads them to Cloudflare R2 and replaces the heavy database fields with CDN links.
+                        </p>
+                    </div>
+
+                    {/* Progress Bar if running or finished */}
+                    {(migrationState.isRunning || migrationState.status === 'COMPLETED' || migrationState.status === 'ERROR') && (
+                        <div className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                            <div className="flex justify-between items-center text-xs font-bold">
+                                <span className="text-slate-700">{migrationState.message || 'Processing...'}</span>
+                                <span className="text-blue-600 font-mono">{migrationState.progress}%</span>
+                            </div>
+                            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 rounded-full"
+                                    style={{ width: `${migrationState.progress}%` }}
+                                />
+                            </div>
+                            {migrationState.stats && (
+                                <div className="grid grid-cols-4 gap-2 text-center pt-2 text-[10px] font-bold text-slate-500">
+                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
+                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.users || 0}</p>
+                                        <p>Users</p>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
+                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.customers || 0}</p>
+                                        <p>Customers</p>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
+                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.transactions || 0}</p>
+                                        <p>Bills</p>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
+                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.pendingPayments || 0}</p>
+                                        <p>Proofs</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <button
+                            onClick={handleStartMigration}
+                            disabled={migrationState.isRunning}
+                            className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 text-white rounded-2xl font-black text-sm tracking-wide transition-all shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                            {migrationState.isRunning ? (
+                                <>
+                                    <RefreshCw size={18} className="animate-spin" />
+                                    <span>Migrating Assets to R2...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Play size={18} />
+                                    <span>Run Full Migration Now</span>
+                                </>
+                            )}
+                        </button>
+                        <p className="text-[11px] text-center text-slate-400">
+                            Safe & idempotent: already-migrated images are automatically skipped.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Migration Logs Terminal */}
+            {migrationState.logs && migrationState.logs.length > 0 && (
+                <div className="bg-slate-950 rounded-3xl p-6 border border-slate-800 text-slate-300 font-mono text-xs shadow-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <span className="text-slate-400 font-bold flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live Migration Activity Log
+                        </span>
+                        <span className="text-slate-600 text-[10px]">{migrationState.logs.length} Events</span>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+                        {migrationState.logs.map((log, idx) => (
+                            <div key={idx} className="leading-relaxed hover:text-white transition-colors">
+                                {log}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="flex min-h-screen bg-[#F8FAFC] overflow-hidden">
             <Sidebar />
@@ -893,6 +1273,7 @@ const AdminDashboard = () => {
                             { id: 'OVERVIEW', label: 'Stats', icon: BarChart3 },
                             { id: 'USERS', label: 'Users', icon: Users },
                             { id: 'TRANSACTIONS', label: 'Vault', icon: Receipt },
+                            { id: 'STORAGE', label: 'R2 Cloud', icon: Cloud },
                             { id: 'LINKS', label: 'Links', icon: LinkIcon },
                             { id: 'SETTINGS', label: 'Config', icon: Settings },
                         ].map((tab) => {
@@ -923,6 +1304,7 @@ const AdminDashboard = () => {
                             {activeTab === 'OVERVIEW' && renderOverview()}
                             {activeTab === 'USERS' && renderUsers()}
                             {activeTab === 'TRANSACTIONS' && renderTransactions()}
+                            {activeTab === 'STORAGE' && renderStorage()}
                             {activeTab === 'LINKS' && renderLinks()}
                             {activeTab === 'SETTINGS' && renderSettings()}
                         </div>
@@ -935,3 +1317,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

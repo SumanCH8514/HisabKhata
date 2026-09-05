@@ -1,0 +1,17 @@
+name = "hisabkhata-backend"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+workers_dev = true
+
+routes = [
+	{ pattern = "backend.hisabkhata.sumanonline.com", custom_domain = true }
+]
+
+# Cloudflare R2 Bucket Binding
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "hisabkhata"
+
+[vars]
+PUBLIC_CDN_URL = "http://cdn.backend.hisabkhata.sumanonline.com"
+ENVIRONMENT = "production"

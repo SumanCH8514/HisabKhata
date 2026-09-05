@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Calendar, Camera, ChevronDown, X, Check } from 'lucide-react';
+import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
+import { compressImage } from '../utils/imageUtils';
 
 const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = 'gave', onSuccess, transaction = null }) => {
     const { currentUser } = useAuth();
@@ -12,7 +14,7 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
     const [description, setDescription] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
-    const [attachment, setAttachment] = useState(null); // Base64 string
+    const [attachment, setAttachment] = useState(null); // URL or Base64 string
 
     useEffect(() => {
         if (isOpen) {
@@ -30,21 +32,28 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         }
     }, [isOpen, transaction]);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // limit 1MB for base64 storage
-        if (file.size > 1024 * 1024) {
-            alert('Image size must be less than 1MB');
-            return;
+        try {
+            // Resize to max 1200x1200 and compress to 80% JPEG
+            const compressed = await compressImage(file, 1200, 1200, 0.8);
+            setAttachment(compressed); // Immediate preview
+            try {
+                const r2Url = await uploadToR2(compressed, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}`);
+                // Delete previous attachment if replacing
+                if (transaction?.attachment && transaction.attachment.startsWith('http') && transaction.attachment !== r2Url) {
+                    deleteFromR2(transaction.attachment).catch(() => {});
+                }
+                setAttachment(r2Url);
+            } catch (r2Err) {
+                console.warn("R2 upload error, using compressed base64 fallback:", r2Err);
+            }
+        } catch (err) {
+            console.error("Failed to process image:", err);
+            alert("Failed to process image");
         }
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setAttachment(reader.result);
-        };
-        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e) => {
@@ -60,13 +69,29 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
             const now = new Date();
             selectedDateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
+            // Ensure attachment is uploaded to R2 if still base64
+            let finalAttachment = attachment;
+            if (attachment && attachment.startsWith('data:')) {
+                try {
+                    finalAttachment = await uploadToR2(attachment, R2_FOLDERS.TRANSACTION, `tx_${customerId}_${Date.now()}`);
+                    if (transaction?.attachment && transaction.attachment.startsWith('http') && transaction.attachment !== finalAttachment) {
+                        deleteFromR2(transaction.attachment).catch(() => {});
+                    }
+                } catch (r2Err) {
+                    console.warn("R2 upload fallback:", r2Err);
+                }
+            } else if (!attachment && transaction?.attachment && transaction.attachment.startsWith('http')) {
+                // Attachment was removed
+                deleteFromR2(transaction.attachment).catch(() => {});
+            }
+
             const txData = {
                 amount: finalAmount,
                 description: description.trim(),
                 date,
                 timestamp: selectedDateObj.getTime(),
                 type: type === 'got' ? 'GOT' : 'GAVE',
-                attachment: attachment
+                attachment: finalAttachment
             };
 
             if (transaction) {

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { dbService, db, sendEmailNotification } from '../services/firebase';
 import { ref, onValue, push, set } from 'firebase/database';
+import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
+import { compressImage } from '../utils/imageUtils';
 // Heavy PDF libraries will be imported dynamically when needed
 
 const CustomerShareableView = () => {
@@ -18,16 +20,19 @@ const CustomerShareableView = () => {
     const handleScreenshotChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Basic size check (2MB limit for screenshots)
-            if (file.size > 2 * 1024 * 1024) {
-                alert("Screenshot too large! Please upload a file smaller than 2MB.");
-                return;
+            try {
+                const compressed = await compressImage(file, 1200, 1200, 0.8);
+                setPaymentModal(prev => ({ ...prev, screenshot: compressed }));
+                try {
+                    const r2Url = await uploadToR2(compressed, R2_FOLDERS.PAYMENT_PROOF, `proof_${id}_${Date.now()}`);
+                    setPaymentModal(prev => ({ ...prev, screenshot: r2Url }));
+                } catch (r2Err) {
+                    console.warn("R2 upload error, using compressed base64 fallback:", r2Err);
+                }
+            } catch (err) {
+                console.error("Screenshot error:", err);
+                alert("Failed to process image.");
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPaymentModal(prev => ({ ...prev, screenshot: reader.result }));
-            };
-            reader.readAsDataURL(file);
         }
     };
 
@@ -276,7 +281,14 @@ const CustomerShareableView = () => {
             alert("Merchant hasn't configured UPI payments yet.");
             return;
         }
-        setPaymentModal({ isOpen: true, step: 'amount', customAmount: '' });
+        setPaymentModal(prev => ({ 
+            ...prev, 
+            isOpen: true, 
+            step: 'amount', 
+            customAmount: '',
+            transactionId: '',
+            screenshot: ''
+        }));
     };
 
     const copyToClipboard = (text) => {
@@ -443,14 +455,24 @@ const CustomerShareableView = () => {
         setPaymentModal(prev => ({ ...prev, isSubmitting: true }));
         try {
             const pendingPaymentId = push(ref(db, 'pending_payments')).key;
+
+            let finalScreenshot = paymentModal.screenshot || '';
+            if (finalScreenshot && finalScreenshot.startsWith('data:')) {
+                try {
+                    finalScreenshot = await uploadToR2(finalScreenshot, R2_FOLDERS.PAYMENT_PROOF, `proof_${pendingPaymentId}_${Date.now()}`);
+                } catch (r2Err) {
+                    console.warn("R2 upload fallback:", r2Err);
+                }
+            }
+
             const pendingData = {
                 id: pendingPaymentId,
                 customerId: id,
                 customerName: customer.name,
                 merchantId: customer.userId,
                 amount: paymentAmount,
-                transactionId: paymentModal.transactionId,
-                screenshot: paymentModal.screenshot,
+                transactionId: paymentModal.transactionId?.trim() || 'NOT_PROVIDED',
+                screenshot: finalScreenshot,
                 timestamp: Date.now(),
                 status: 'pending'
             };
@@ -753,8 +775,8 @@ const CustomerShareableView = () => {
                                     <div className="flex flex-col gap-3 pt-4">
                                         <button
                                             onClick={handleConfirmPayment}
-                                            disabled={paymentModal.isSubmitting}
-                                            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all disabled:opacity-50"
+                                            disabled={paymentModal.isSubmitting || (!paymentModal.transactionId?.trim() && !paymentModal.screenshot)}
+                                            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all disabled:opacity-30"
                                         >
                                             {paymentModal.isSubmitting ? 'Submitting...' : 'Confirm & Notify Merchant'}
                                         </button>

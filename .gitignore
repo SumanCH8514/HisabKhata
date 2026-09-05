@@ -13,8 +13,10 @@ dist-ssr
 *.local
 .firebase/*
 .vite
+.wrangler
 .env
 .env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

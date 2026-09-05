@@ -21,6 +21,7 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import { calculateProfileStrength } from '../utils/profileUtils';
 import { compressImage } from '../utils/imageUtils';
+import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
 
 const Profile = () => {
     const { currentUser } = useAuth();
@@ -35,13 +36,16 @@ const Profile = () => {
         email: '',
         photoURL: '',
         businessName: '',
-        address: '',
-        category: '',
-        type: '',
-        gstin: '',
-        bankAccount: '',
+        businessCategory: '',
+        businessType: '',
+        businessAddress: '',
+        pan: '',
+        gst: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: '',
         upiId: '',
-        staffDetails: ''
+        staffCount: ''
     });
 
     useEffect(() => {
@@ -67,9 +71,20 @@ const Profile = () => {
         const file = e.target.files[0];
         if (file) {
             setIsUploading(true);
+            const oldPhotoURL = profileData.photoURL;
             try {
-                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
-                await dbService.updateUserProfile(currentUser.uid, { photoURL: compressedBase64 });
+                const compressedBase64 = await compressImage(file, 500, 500, 0.8);
+                let finalPhotoURL = compressedBase64;
+                try {
+                    finalPhotoURL = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `user_${currentUser.uid}_${Date.now()}`);
+                    // If successfully uploaded to R2 and there was an old R2 photo, delete it
+                    if (oldPhotoURL && oldPhotoURL.startsWith('http') && oldPhotoURL !== finalPhotoURL) {
+                        deleteFromR2(oldPhotoURL).catch(err => console.warn('Could not remove old profile photo from R2:', err));
+                    }
+                } catch (r2Err) {
+                    console.warn("R2 upload error, falling back to compressed image:", r2Err);
+                }
+                await dbService.updateUserProfile(currentUser.uid, { photoURL: finalPhotoURL });
             } catch (error) {
                 console.error("Photo processing/upload failed:", error);
                 alert("Failed to process or upload photo. Please try again.");

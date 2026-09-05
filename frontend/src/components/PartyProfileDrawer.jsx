@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/firebase';
 import { compressImage } from '../utils/imageUtils';
+import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
 
 const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -28,9 +29,21 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
         const file = e.target.files[0];
         if (file) {
             setIsUploading(true);
+            const previousPhoto = customer.photoURL;
             try {
-                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
+                // Resize and compress
+                const compressedBase64 = await compressImage(file, 500, 500, 0.8);
                 setEditPhoto(compressedBase64);
+                try {
+                    const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${customer.id}_${Date.now()}`);
+                    setEditPhoto(r2Url);
+                    // Remove old customer photo if it was on R2
+                    if (previousPhoto && previousPhoto.startsWith('http') && previousPhoto !== r2Url) {
+                        deleteFromR2(previousPhoto).catch(err => console.warn('Old customer photo deletion failed:', err));
+                    }
+                } catch (r2Err) {
+                    console.warn("R2 upload error, using fallback compressed base64:", r2Err);
+                }
             } catch (error) {
                 console.error("Compression error:", error);
                 alert("Failed to process image");
@@ -66,12 +79,19 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess }) => {
 
     const handleDelete = async () => {
         if (window.confirm(`Are you sure you want to delete ${customer.name}? All transactions will be removed.`)) {
+            setLoading(true);
             try {
+                // Delete photo from R2 if present
+                if (customer.photoURL && customer.photoURL.startsWith('http')) {
+                    deleteFromR2(customer.photoURL).catch(() => {});
+                }
                 await dbService.deleteCustomer(customer.id);
                 onClose();
                 if (onDeleteSuccess) onDeleteSuccess();
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert('Delete failed: ' + err.message);
+            } finally {
+                setLoading(false);
             }
         }
     };

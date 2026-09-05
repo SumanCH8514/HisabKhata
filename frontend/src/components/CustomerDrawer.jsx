@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 import { X, ChevronDown } from 'lucide-react';
 import { compressImage } from '../utils/imageUtils';
+import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
 
 const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     const { currentUser } = useAuth();
@@ -26,8 +27,15 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
         if (file) {
             setIsUploading(true);
             try {
-                const compressedBase64 = await compressImage(file, 500, 500, 0.7);
+                const compressedBase64 = await compressImage(file, 500, 500, 0.8);
+                // Set temporary preview
                 setPhoto(compressedBase64);
+                try {
+                    const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
+                    setPhoto(r2Url);
+                } catch (r2Err) {
+                    console.warn("R2 upload error, storing compressed image fallback:", r2Err);
+                }
             } catch (error) {
                 console.error("Compression error:", error);
                 alert("Failed to process image");

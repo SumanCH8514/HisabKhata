@@ -1,26 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirebaseErrorMessage } from '../utils/errorHandlers';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, User, Phone, Mail, FileText, MapPin, Building, UploadCloud, Trash2 } from 'lucide-react';
 import { compressImage } from '../utils/imageUtils';
-import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
+import { uploadToR2, R2_FOLDERS, deleteFromR2 } from '../services/r2Storage';
 
 const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     const { currentUser } = useAuth();
-    const [name, setName] = useState(customer?.name || '');
-    const [phone, setPhone] = useState(customer?.phone || '');
-    const [email, setEmail] = useState(customer?.email || '');
-    const [openingBalance, setOpeningBalance] = useState(Math.abs(customer?.balance || 0) || '');
-    const [balanceType, setBalanceType] = useState(
-        !customer ? 'give'
-            : (customer.balance || 0) >= 0 ? 'get' : 'give'
-    );
-    const [partyType, setPartyType] = useState('customer');
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
+    const [gst, setGst] = useState('');
+    const [address, setAddress] = useState('');
+    const [openingBalance, setOpeningBalance] = useState('');
+    const [balanceType, setBalanceType] = useState('give'); // 'give' (You'll Give) | 'get' (You'll Get)
+    const [partyType, setPartyType] = useState('customer'); // 'customer' | 'supplier'
     const [photo, setPhoto] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showMoreDetails, setShowMoreDetails] = useState(false);
+
+    useEffect(() => {
+        if (customer) {
+            setName(customer.name || '');
+            setPhone(customer.phone || '');
+            setEmail(customer.email || '');
+            setGst(customer.gst || '');
+            setAddress(customer.address || '');
+            setPartyType(customer.type || 'customer');
+            setPhoto(customer.photoURL || '');
+            const bal = customer.balance || 0;
+            setOpeningBalance(bal !== 0 ? Math.abs(bal).toString() : '');
+            setBalanceType(bal < 0 ? 'give' : 'get');
+            if (customer.gst || customer.address) {
+                setShowMoreDetails(true);
+            }
+        } else {
+            setName('');
+            setPhone('');
+            setEmail('');
+            setGst('');
+            setAddress('');
+            setOpeningBalance('');
+            setBalanceType('give');
+            setPartyType('customer');
+            setPhoto('');
+            setShowMoreDetails(false);
+            setError('');
+        }
+    }, [customer, isOpen]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -28,7 +58,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             setIsUploading(true);
             try {
                 const compressedBase64 = await compressImage(file, 500, 500, 0.8);
-                // Set temporary preview
                 setPhoto(compressedBase64);
                 try {
                     const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
@@ -45,20 +74,36 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
         }
     };
 
+    const handleRemovePhoto = (e) => {
+        e.stopPropagation();
+        if (photo && photo.startsWith('http')) {
+            deleteFromR2(photo).catch(() => {});
+        }
+        setPhoto('');
+    };
+
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
-        if (!name.trim() || !currentUser) return;
+        if (!name.trim() || !currentUser) {
+            setError('Please enter a valid party name.');
+            return;
+        }
 
         setError('');
         setLoading(true);
         try {
-            const balanceNum = Number(openingBalance) || 0;
-            const finalBalance = balanceType === 'get' ? Math.abs(balanceNum) : -Math.abs(balanceNum);
+            const balanceNum = parseFloat(openingBalance) || 0;
+            // Negative balance means We GAVE and we will GET back
+            // Positive balance means We GOT and we will GIVE back
+            const finalBalance = balanceType === 'give' ? -Math.abs(balanceNum) : Math.abs(balanceNum);
+            
             const data = {
                 name: name.trim(),
-                phone,
+                phone: phone.trim(),
                 email: email.trim(),
-                balance: finalBalance,
+                gst: gst.trim(),
+                address: address.trim(),
+                balance: balanceNum > 0 ? finalBalance : 0,
                 type: partyType,
                 photoURL: photo
             };
@@ -69,7 +114,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                 await dbService.addCustomer(currentUser.uid, data);
             }
             onClose();
-            setName(''); setPhone(''); setEmail(''); setOpeningBalance('');
         } catch (err) {
             setError(getFirebaseErrorMessage(err));
         } finally {
@@ -80,226 +124,300 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex justify-end">
+        <div className="fixed inset-0 z-[120] flex justify-end">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity" onClick={onClose} />
+            <div 
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[3px] transition-opacity animate-in fade-in duration-200" 
+                onClick={onClose} 
+            />
 
-            {/* Drawer panel */}
-            <div className="relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Slide-over Drawer Panel */}
+            <div className="relative w-full max-w-[460px] bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300">
+                
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-slate-800">
-                        {customer ? 'Edit Party' : 'Add New Party'}
-                    </h2>
+                <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-white sticky top-0 z-20">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0057BB] flex items-center justify-center font-bold">
+                            <User size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-bold text-slate-900 leading-tight">
+                                {customer ? 'Edit Party Details' : 'Add New Party'}
+                            </h2>
+                            <p className="text-xs text-slate-500 font-medium">
+                                {partyType === 'customer' ? 'Customer ledger account' : 'Supplier / vendor ledger account'}
+                            </p>
+                        </div>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                        className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                        aria-label="Close drawer"
                     >
-                        <X size={24} />
+                        <X size={19} />
                     </button>
                 </div>
 
                 {/* Form Body */}
-                <div className="flex-1 overflow-y-auto px-6 py-6">
-                    <div className="space-y-6">
-                        {error && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-                                <span className="material-symbols-outlined text-sm">error</span>
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Photo Upload */}
-                        <div className="flex flex-col items-center pb-2">
-                            <div className="relative group cursor-pointer" onClick={() => !isUploading && document.getElementById('new-party-photo').click()}>
-                                <div className="w-20 h-20 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shadow-inner relative">
-                                    {isUploading ? (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/50">
-                                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                        </div>
-                                    ) : photo ? (
-                                        <img src={photo} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="material-symbols-outlined text-slate-300 text-3xl">add_a_photo</span>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                                        <span className="material-symbols-outlined text-white text-xl">photo_camera</span>
-                                    </div>
-                                </div>
-                                <input 
-                                    id="new-party-photo"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleFileChange}
-                                />
-                            </div>
-                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Party Photo (Optional)</p>
+                <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar space-y-5">
+                    
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold px-3.5 py-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+                            <span className="material-symbols-outlined text-[18px]">error</span>
+                            <span>{error}</span>
                         </div>
+                    )}
 
-                        {/* Party Name */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-700">Party Name</label>
+                    {/* Party Type Segmented Selector */}
+                    <div className="bg-slate-100/80 p-1 rounded-xl flex items-center gap-1 border border-slate-200/60">
+                        <button
+                            type="button"
+                            onClick={() => setPartyType('customer')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                partyType === 'customer'
+                                    ? 'bg-white text-[#0057BB] shadow-sm border border-slate-200/50'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <User size={14} />
+                            Customer
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPartyType('supplier')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                partyType === 'supplier'
+                                    ? 'bg-white text-[#0057BB] shadow-sm border border-slate-200/50'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <Building size={14} />
+                            Supplier (Vendor)
+                        </button>
+                    </div>
+
+                    {/* Photo Upload Area */}
+                    <div className="flex items-center gap-4 p-3 bg-slate-50/70 border border-slate-200/60 rounded-2xl">
+                        <div 
+                            className="relative group cursor-pointer shrink-0" 
+                            onClick={() => !isUploading && document.getElementById('new-party-photo').click()}
+                        >
+                            <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden transition-all group-hover:border-[#0057BB]">
+                                {isUploading ? (
+                                    <div className="w-5 h-5 border-2 border-[#0057BB] border-t-transparent rounded-full animate-spin"></div>
+                                ) : photo ? (
+                                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={22} className="text-slate-400 group-hover:text-[#0057BB] transition-colors" />
+                                )}
+                            </div>
+                            <input 
+                                id="new-party-photo"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-800">Party Photo</p>
+                            <p className="text-[11px] text-slate-400 font-medium">JPEG, PNG or WebP image</p>
+                        </div>
+                        {photo ? (
+                            <button
+                                type="button"
+                                onClick={handleRemovePhoto}
+                                className="px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors flex items-center gap-1"
+                            >
+                                <Trash2 size={13} />
+                                Remove
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('new-party-photo').click()}
+                                className="px-3 py-1.5 text-xs font-semibold text-[#0057BB] bg-blue-50/70 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center gap-1"
+                            >
+                                <UploadCloud size={14} />
+                                Upload
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Party Name */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                            Party Name <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative flex items-center">
+                            <User size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
                             <input
                                 required
                                 type="text"
-                                placeholder="Enter Party Name"
-                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 transition-all outline-none text-slate-900 font-medium"
+                                placeholder="e.g. Ramesh Kumar or Supermart"
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-[#0057BB] focus:ring-2 focus:ring-[#0057BB]/10 bg-slate-50/30 focus:bg-white transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                             />
                         </div>
+                    </div>
 
-                        {/* Phone Number */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-bold text-slate-700">Phone Number</label>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
-                            </div>
-                            <div className="flex items-stretch">
-                                <div className="flex items-center justify-center px-4 border border-r-0 border-slate-200 rounded-l-xl bg-slate-50 text-slate-500 text-sm font-bold">
-                                    +91
-                                </div>
-                                <input
-                                    type="tel"
-                                    placeholder="Enter Phone Number"
-                                    className="flex-1 px-4 py-3 border border-slate-200 rounded-r-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 transition-all outline-none text-slate-900 font-medium"
-                                    value={phone}
-                                    onChange={e => setPhone(e.target.value)}
-                                    maxLength={10}
-                                />
-                            </div>
+                    {/* Phone Number */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                            <span className="text-[11px] text-slate-400 font-medium">Optional</span>
                         </div>
-
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-bold text-slate-700">Email</label>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
+                        <div className="flex items-stretch rounded-xl border border-slate-200 focus-within:border-[#0057BB] focus-within:ring-2 focus-within:ring-[#0057BB]/10 bg-slate-50/30 focus-within:bg-white overflow-hidden transition-all">
+                            <div className="flex items-center justify-center px-3.5 bg-slate-100/70 text-slate-600 text-xs font-bold border-r border-slate-200 select-none">
+                                +91
                             </div>
                             <input
+                                type="tel"
+                                placeholder="10-digit mobile number"
+                                className="flex-1 px-3.5 py-2.5 text-sm bg-transparent outline-none text-slate-900 font-medium placeholder:text-slate-400"
+                                value={phone}
+                                onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                maxLength={10}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700">Email Address</label>
+                            <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                        </div>
+                        <div className="relative flex items-center">
+                            <Mail size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+                            <input
                                 type="email"
-                                placeholder="Enter Email Address"
-                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 transition-all outline-none text-slate-900 font-medium"
+                                placeholder="name@example.com"
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-[#0057BB] focus:ring-2 focus:ring-[#0057BB]/10 bg-slate-50/30 focus:bg-white transition-all outline-none text-slate-900 font-medium placeholder:text-slate-400"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                             />
                         </div>
+                    </div>
 
-                        {/* Opening Balance */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-bold text-slate-700">Opening Balance</label>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(optional)</span>
-                            </div>
-                            <div className="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-4 focus-within:ring-blue-50/50 transition-all">
-                                <div className="flex items-center justify-center px-4 border-r border-slate-200 bg-slate-50 text-slate-500 font-bold">
-                                    ₹
-                                </div>
-                                <input
-                                    type="number"
-                                    placeholder="Enter amount"
-                                    className="flex-1 px-4 py-3 text-sm outline-none text-slate-900 font-medium"
-                                    value={openingBalance}
-                                    onChange={e => setOpeningBalance(e.target.value)}
-                                    min="0"
-                                />
-                                <div className="relative border-l border-slate-200">
-                                    <select
-                                        className={`h-full pl-3 pr-8 text-[10px] font-black uppercase tracking-wider outline-none cursor-pointer bg-white transition-colors appearance-none [-webkit-appearance:none] [-moz-appearance:none] ${balanceType === 'give' ? 'text-red-500' : 'text-green-600'
-                                            }`}
-                                        value={balanceType}
-                                        onChange={e => setBalanceType(e.target.value)}
-                                    >
-                                        <option value="give">You Gave</option>
-                                        <option value="get">You Got</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
-                            </div>
+                    {/* Opening Balance */}
+                    <div className="space-y-2 p-3.5 bg-slate-50/70 border border-slate-200/70 rounded-2xl">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-800">Opening Balance</label>
+                            <span className="text-[11px] text-slate-400 font-medium">Optional</span>
                         </div>
-
-                        {/* Who are they? */}
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-700">Who are they?</label>
-                            <div className="flex items-center gap-8">
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center justify-center">
-                                        <input
-                                            type="radio"
-                                            name="partyType"
-                                            value="customer"
-                                            checked={partyType === 'customer'}
-                                            onChange={() => setPartyType('customer')}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-5 h-5 rounded-full border-2 transition-all ${partyType === 'customer' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`} />
-                                        {partyType === 'customer' && <div className="absolute w-2.5 h-2.5 bg-blue-600 rounded-full animate-in zoom-in duration-200" />}
-                                    </div>
-                                    <span className={`text-sm font-bold transition-colors ${partyType === 'customer' ? 'text-slate-900' : 'text-slate-500'}`}>Customer</span>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center justify-center">
-                                        <input
-                                            type="radio"
-                                            name="partyType"
-                                            value="supplier"
-                                            checked={partyType === 'supplier'}
-                                            onChange={() => setPartyType('supplier')}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-5 h-5 rounded-full border-2 transition-all ${partyType === 'supplier' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`} />
-                                        {partyType === 'supplier' && <div className="absolute w-2.5 h-2.5 bg-blue-600 rounded-full animate-in zoom-in duration-200" />}
-                                    </div>
-                                    <span className={`text-sm font-bold transition-colors ${partyType === 'supplier' ? 'text-slate-900' : 'text-slate-500'}`}>Supplier</span>
-                                </label>
+                        <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:border-[#0057BB] focus-within:ring-2 focus-within:ring-[#0057BB]/10 transition-all">
+                            <div className="flex items-center justify-center px-3.5 text-slate-500 font-bold text-sm bg-slate-50 border-r border-slate-200 select-none">
+                                ₹
                             </div>
+                            <input
+                                type="number"
+                                placeholder="0.00"
+                                className="flex-1 px-3.5 py-2.5 text-sm bg-transparent outline-none text-slate-900 font-semibold placeholder:text-slate-300"
+                                value={openingBalance}
+                                onChange={e => setOpeningBalance(e.target.value)}
+                                min="0"
+                                step="any"
+                            />
                         </div>
+                        {/* Balance Direction Selector */}
+                        {parseFloat(openingBalance) > 0 && (
+                            <div className="grid grid-cols-2 gap-2 pt-1 animate-in fade-in duration-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setBalanceType('give')}
+                                    className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all border text-center ${
+                                        balanceType === 'give'
+                                            ? 'bg-red-50 text-red-600 border-red-300 shadow-sm'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    You'll Get (Advance Due)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setBalanceType('get')}
+                                    className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all border text-center ${
+                                        balanceType === 'get'
+                                            ? 'bg-green-50 text-green-700 border-green-300 shadow-sm'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    You'll Give (Credit)
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                        <hr className="border-slate-100" />
-
-                        {/* Collapsible Section */}
-                        <details className="group">
-                            <summary className="flex items-center justify-between cursor-pointer py-1 select-none list-none [&::-webkit-details-marker]:hidden">
-                                <span className="text-sm font-bold text-blue-600">Add GSTIN & Address (Optional)</span>
-                                <ChevronDown size={18} className="text-blue-600 group-open:rotate-180 transition-transform duration-300" />
-                            </summary>
-                            <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Number</label>
+                    {/* Additional Business Details Accordion */}
+                    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white">
+                        <button
+                            type="button"
+                            onClick={() => setShowMoreDetails(!showMoreDetails)}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50/50 hover:bg-slate-50 transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-2">
+                                <FileText size={15} className="text-slate-500" />
+                                <span className="text-xs font-bold text-slate-700">Add GSTIN & Business Address</span>
+                            </div>
+                            <ChevronDown 
+                                size={16} 
+                                className={`text-slate-400 transition-transform duration-200 ${showMoreDetails ? 'rotate-180 text-[#0057BB]' : ''}`} 
+                            />
+                        </button>
+                        {showMoreDetails && (
+                            <div className="p-4 space-y-3.5 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">GSTIN Number</label>
                                     <input
                                         type="text"
-                                        placeholder="Enter GSTIN"
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-blue-500 transition-all outline-none font-medium"
+                                        placeholder="e.g. 22AAAAA0000A1Z5"
+                                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:border-[#0057BB] outline-none font-medium text-slate-900 uppercase"
+                                        value={gst}
+                                        onChange={e => setGst(e.target.value.toUpperCase())}
+                                        maxLength={15}
                                     />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Billing Address</label>
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Billing Address</label>
                                     <textarea
-                                        placeholder="Enter full address"
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-blue-500 transition-all outline-none resize-none font-medium"
+                                        placeholder="Enter complete street and city address"
+                                        rows={2}
+                                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:border-[#0057BB] outline-none resize-none font-medium text-slate-900"
+                                        value={address}
+                                        onChange={e => setAddress(e.target.value)}
                                     />
                                 </div>
                             </div>
-                        </details>
+                        )}
                     </div>
+
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 bg-slate-50 border-t border-slate-100 mt-auto">
+                {/* Footer Action Bar */}
+                <div className="px-6 py-4 bg-slate-50/90 border-t border-slate-100 flex items-center gap-3 mt-auto sticky bottom-0 z-20">
                     <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-1/3 h-[44px] border border-slate-300 hover:bg-white rounded-xl text-xs font-bold text-slate-700 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
                         disabled={loading || !name.trim()}
                         onClick={handleSubmit}
-                        className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-lg ${loading || !name.trim()
-                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 active:scale-[0.98]'
-                            }`}
+                        className={`flex-1 h-[44px] rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm ${
+                            loading || !name.trim()
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                : 'bg-[#0057BB] hover:bg-[#00489e] text-white shadow-blue-500/10 active:scale-[0.99]'
+                        }`}
                     >
-                        {loading ? 'Processing...' : (customer ? 'Update Merchant' : 'Add Customer')}
+                        {loading ? 'Saving Party...' : (customer ? 'Update Party' : 'Save & Add Party')}
                     </button>
                 </div>
+
             </div>
         </div>
     );

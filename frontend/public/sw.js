@@ -1,25 +1,15 @@
 // HisabKhata Progressive Web App Service Worker
-const CACHE_NAME = 'hisabkhata-pwa-v1';
+const CACHE_NAME = 'hisabkhata-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.png',
   '/favicon.svg',
+  '/icons/icon.svg',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/icon-maskable-512x512.png'
-];
-
-// Domains and endpoints that must always bypass cache
-const BYPASS_URL_PATTERNS = [
-  'firebaseio.com',
-  'googleapis.com',
-  'identitytoolkit.googleapis.com',
-  'r2.cloudflarestorage.com',
-  'api.emailjs.com',
-  'api.qrserver.com',
-  '/verify-payment'
 ];
 
 // 1. Install Event
@@ -56,8 +46,8 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (request.method !== 'GET') return;
 
-  // Bypass cache for APIs, Firebase, R2, external live endpoints
-  if (BYPASS_URL_PATTERNS.some((pattern) => url.href.includes(pattern))) {
+  // Only handle same-origin requests to prevent CSP/CORS conflicts with 3rd-party services & fonts
+  if (url.origin !== self.location.origin) {
     return;
   }
 
@@ -66,7 +56,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Clone and update cache with latest navigation response
           if (response && response.status === 200) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -76,7 +65,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
-          // Offline fallback
           const cachedResponse = await caches.match(request);
           if (cachedResponse) return cachedResponse;
           const fallback = await caches.match('/index.html');
@@ -90,7 +78,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets (CSS, JS, Fonts, Images) -> Stale-While-Revalidate
+  // Static Assets (same-origin JS, CSS, PNG, SVG) -> Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request)
@@ -103,7 +91,10 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch((err) => {
+          if (cachedResponse) return cachedResponse;
+          throw err;
+        });
 
       return cachedResponse || fetchPromise;
     })

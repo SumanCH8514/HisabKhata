@@ -137,81 +137,76 @@ const CustomerLedgerDetail = () => {
                 </div>
 
                 {/* Ledger Quick Actions */}
-                <div className="bg-white px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="bg-white px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 min-h-[46px]">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1.5 flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[13px]">timer</span>
-                                Set Due Date
-                            </span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                {[
-                                    { label: '7d', fullLabel: '7 days', days: 7 },
-                                    { label: '14d', fullLabel: '14 days', days: 14 },
-                                    { label: '30d', fullLabel: '30 days', days: 30 }
-                                ].map(({ label, fullLabel, days }) => {
-                                    const presetDate = getFutureDateString(days);
-                                    const isSelected = customer?.dueDate === presetDate;
-                                    return (
+                        {customer?.dueDate ? (
+                            /* Only show due date chip when date is selected */
+                            (() => {
+                                const status = getDueDateStatus(customer.dueDate);
+                                if (!status) return null;
+                                return (
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-bold ${status.badgeColor} shadow-sm animate-in fade-in duration-200`}>
+                                        <span className="material-symbols-outlined text-[15px]">event</span>
+                                        <span>{status.label}</span>
+                                        <button
+                                            type="button"
+                                            onClick={handleClearDueDate}
+                                            title="Clear Due Date"
+                                            className="p-0.5 hover:bg-black/10 rounded ml-1 text-gray-500 hover:text-red-600"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px] leading-none block">close</span>
+                                        </button>
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            /* Show presets when no date is set */
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1.5 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px]">timer</span>
+                                    Set Due Date
+                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {[
+                                        { label: '7d', fullLabel: '7 days', days: 7 },
+                                        { label: '14d', fullLabel: '14 days', days: 14 },
+                                        { label: '30d', fullLabel: '30 days', days: 30 }
+                                    ].map(({ label, days }) => (
                                         <button 
                                             key={days}
                                             type="button"
                                             onClick={() => handleSetDueDate(days)}
-                                            className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                                                isSelected 
-                                                    ? 'bg-[#0b5cba] text-white border-[#0b5cba] shadow-sm' 
-                                                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                                            }`}
+                                            className="px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 shadow-sm"
                                         >
                                             {label}
                                         </button>
-                                    );
-                                })}
+                                    ))}
 
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="date"
-                                        min={getFutureDateString(0)}
-                                        value={customer?.dueDate || ''}
-                                        onChange={(e) => handleCustomDueDate(e.target.value)}
-                                        className="sr-only"
-                                        id="mobile-due-date-picker"
-                                    />
-                                    <span 
-                                        onClick={() => {
-                                            const el = document.getElementById('mobile-due-date-picker');
-                                            if (el && typeof el.showPicker === 'function') {
-                                                el.showPicker();
-                                            }
-                                        }}
-                                        className="px-2.5 py-1 bg-slate-100 rounded-md text-[11px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-200 flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <span className="material-symbols-outlined text-[13px]">calendar_month</span>
-                                        Date
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Active due date status badge */}
-                        {customer?.dueDate && (() => {
-                            const status = getDueDateStatus(customer.dueDate);
-                            if (!status) return null;
-                            return (
-                                <div className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-bold ${status.badgeColor} mt-3 sm:mt-0`}>
-                                    <span className="material-symbols-outlined text-[13px]">event</span>
-                                    <span>{status.label}</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleClearDueDate}
-                                        title="Clear Due Date"
-                                        className="p-0.5 hover:bg-black/10 rounded ml-1 text-gray-500 hover:text-red-600"
-                                    >
-                                        <span className="material-symbols-outlined text-[13px] leading-none block">close</span>
-                                    </button>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="date"
+                                            min={getFutureDateString(0)}
+                                            value=""
+                                            onChange={(e) => handleCustomDueDate(e.target.value)}
+                                            className="sr-only"
+                                            id="mobile-due-date-picker"
+                                        />
+                                        <span 
+                                            onClick={() => {
+                                                const el = document.getElementById('mobile-due-date-picker');
+                                                if (el && typeof el.showPicker === 'function') {
+                                                    el.showPicker();
+                                                }
+                                            }}
+                                            className="px-2.5 py-1 bg-slate-100 rounded-md text-[11px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-200 flex items-center gap-1 cursor-pointer shadow-sm"
+                                        >
+                                            <span className="material-symbols-outlined text-[13px]">calendar_month</span>
+                                            Date
+                                        </span>
+                                    </label>
                                 </div>
-                            );
-                        })()}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-2">

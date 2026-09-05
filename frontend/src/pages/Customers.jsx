@@ -818,78 +818,75 @@ const Customers = () => {
                             </div>
 
                             {/* Set Due Date row — Desktop only */}
-                            <div className="hidden md:flex items-center px-6 py-2.5 bg-white border-b border-gray-100 gap-4">
+                            <div className="hidden md:flex items-center px-6 py-2.5 bg-white border-b border-gray-100 gap-4 min-h-[46px]">
                                 <div className="flex items-center gap-2 flex-1 flex-wrap">
-                                    <span className="material-symbols-outlined text-gray-400 text-[18px]">timer</span>
-                                    <span className="text-xs text-gray-600 font-bold">Set Due Date:</span>
-                                    
-                                    {/* Quick Preset Buttons */}
-                                    {[
-                                        { label: '7 days', days: 7 },
-                                        { label: '14 days', days: 14 },
-                                        { label: '30 days', days: 30 }
-                                    ].map(({ label, days }) => {
-                                        const presetDate = getFutureDateString(days);
-                                        const isSelected = selectedCustomer.dueDate === presetDate;
-                                        return (
-                                            <button
-                                                key={days}
-                                                type="button"
-                                                onClick={() => handleSetDueDate(days)}
-                                                className={`px-3 py-1 rounded text-xs font-semibold transition-all border ${
-                                                    isSelected 
-                                                        ? 'bg-[#0057BB] text-white border-[#0057BB] shadow-sm' 
-                                                        : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300'
-                                                }`}
-                                            >
-                                                {label}
-                                            </button>
-                                        );
-                                    })}
-
-                                    {/* Custom Date Picker */}
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="date"
-                                            min={getFutureDateString(0)}
-                                            value={selectedCustomer.dueDate || ''}
-                                            onChange={(e) => handleCustomDueDate(e.target.value)}
-                                            className="sr-only"
-                                            id="customer-due-date-picker"
-                                        />
-                                        <span 
-                                            onClick={() => {
-                                                const el = document.getElementById('customer-due-date-picker');
-                                                if (el && typeof el.showPicker === 'function') {
-                                                    el.showPicker();
-                                                }
-                                            }}
-                                            className="px-3 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white"
-                                        >
-                                            <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-                                            Select Date
-                                        </span>
-                                    </label>
-
-                                    {/* Active Due Date Status Badge */}
-                                    {selectedCustomer.dueDate && (() => {
-                                        const status = getDueDateStatus(selectedCustomer.dueDate);
-                                        if (!status) return null;
-                                        return (
-                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${status.badgeColor} ml-1`}>
-                                                <span className="material-symbols-outlined text-[15px]">event</span>
-                                                <span>{status.label}</span>
+                                    {selectedCustomer.dueDate ? (
+                                        /* Only show due date chip when date is selected */
+                                        (() => {
+                                            const status = getDueDateStatus(selectedCustomer.dueDate);
+                                            if (!status) return null;
+                                            return (
+                                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold ${status.badgeColor} shadow-sm animate-in fade-in duration-200`}>
+                                                    <span className="material-symbols-outlined text-[16px]">event</span>
+                                                    <span>{status.label}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClearDueDate}
+                                                        title="Remove Due Date"
+                                                        className="p-0.5 hover:bg-black/10 rounded transition-colors ml-1 text-gray-400 hover:text-red-600 flex items-center justify-center"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[15px] leading-none block">close</span>
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        /* Show presets & Select Date when no due date is set */
+                                        <>
+                                            <span className="material-symbols-outlined text-gray-400 text-[18px]">timer</span>
+                                            <span className="text-xs text-gray-600 font-bold">Set Due Date:</span>
+                                            
+                                            {/* Quick Preset Buttons */}
+                                            {[
+                                                { label: '7 days', days: 7 },
+                                                { label: '14 days', days: 14 },
+                                                { label: '30 days', days: 30 }
+                                            ].map(({ label, days }) => (
                                                 <button
+                                                    key={days}
                                                     type="button"
-                                                    onClick={handleClearDueDate}
-                                                    title="Remove Due Date"
-                                                    className="p-0.5 hover:bg-black/10 rounded transition-colors ml-1 text-gray-500 hover:text-red-600"
+                                                    onClick={() => handleSetDueDate(days)}
+                                                    className="px-3 py-1 rounded text-xs font-semibold transition-all border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-sm"
                                                 >
-                                                    <span className="material-symbols-outlined text-[14px] leading-none block">close</span>
+                                                    {label}
                                                 </button>
-                                            </div>
-                                        );
-                                    })()}
+                                            ))}
+
+                                            {/* Custom Date Picker */}
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="date"
+                                                    min={getFutureDateString(0)}
+                                                    value=""
+                                                    onChange={(e) => handleCustomDueDate(e.target.value)}
+                                                    className="sr-only"
+                                                    id="customer-due-date-picker"
+                                                />
+                                                <span 
+                                                    onClick={() => {
+                                                        const el = document.getElementById('customer-due-date-picker');
+                                                        if (el && typeof el.showPicker === 'function') {
+                                                            el.showPicker();
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white shadow-sm"
+                                                >
+                                                    <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                                                    Select Date
+                                                </span>
+                                            </label>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="text-right shrink-0">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">NET BALANCE:</p>

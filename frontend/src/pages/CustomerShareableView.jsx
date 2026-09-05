@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { dbService, db, sendEmailNotification } from '../services/firebase';
-import { ref, onValue, push, set } from 'firebase/database';
+import { ref, onValue, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { uploadToR2, R2_FOLDERS } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
 import { getDueDateStatus } from '../utils/dueDateUtils';
@@ -11,13 +11,15 @@ const CustomerShareableView = () => {
     const { id } = useParams();
     const [customer, setCustomer] = useState(null);
     const [owner, setOwner] = useState(null);
-    const [transactions, setTransactions] = useState([]);
+    const [rawTransactions, setRawTransactions] = useState([]);
     const [viewImages, setViewImages] = useState([]);
     const [viewIndex, setViewIndex] = useState(0);
-    const [globalSettings, setGlobalSettings] = useState(null);
+    const [globalSettings, setGlobalSettings] = useState({ shareLinks: true });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
 
     const handleOpenView = (imgs, idx = 0) => {
         if (!imgs) return;
@@ -50,66 +52,175 @@ const CustomerShareableView = () => {
     };
 
     useEffect(() => {
-        // Listen to global settings
-        const unsubSettings = onValue(ref(db, 'settings'), (snapshot) => {
+        // Listen to global settings with fallback
+        const settingsRef = ref(db, 'settings');
+        const unsubSettings = onValue(settingsRef, (snapshot) => {
             if (snapshot.exists()) {
                 setGlobalSettings(snapshot.val());
             } else {
-                setGlobalSettings({});
+                setGlobalSettings({ shareLinks: true });
             }
+        }, (err) => {
+            console.warn("Global settings listener warning:", err);
+            setGlobalSettings({ shareLinks: true });
         });
-        return () => unsubSettings();
+
+        get(settingsRef).then((snap) => {
+            if (snap.exists()) setGlobalSettings(snap.val());
+        }).catch(() => {});
+
+        return () => {
+            if (typeof unsubSettings === 'function') unsubSettings();
+        };
     }, []);
 
     useEffect(() => {
-        if (!id) return;
+        if (!id) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+        }
 
-        // Listen to customer details
-        const unsubCustomer = onValue(ref(db, `customers/${id}`), (snapshot) => {
+        let isMounted = true;
+        setLoading(true);
+        setNotFound(false);
+
+        // 1. Direct one-time fetch for instant render (bypasses potential listener delays)
+        const fetchDirectData = async () => {
+            try {
+                const customerSnap = await get(ref(db, `customers/${id}`));
+                if (!isMounted) return;
+
+                if (customerSnap.exists()) {
+                    const cData = { id: customerSnap.key, ...customerSnap.val() };
+                    setCustomer(cData);
+                    setNotFound(false);
+
+                    if (cData.userId) {
+                        get(ref(db, `users/${cData.userId}`)).then((uSnap) => {
+                            if (isMounted && uSnap.exists()) {
+                                setOwner(uSnap.val());
+                            }
+                        }).catch(() => {});
+                    }
+                } else {
+                    setNotFound(true);
+                    setLoading(false);
+                    return;
+                }
+
+                const txQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(id));
+                const txSnap = await get(txQuery);
+                if (!isMounted) return;
+
+                const txList = [];
+                if (txSnap.exists()) {
+                    txSnap.forEach((child) => {
+                        txList.push({ id: child.key, ...child.val() });
+                    });
+                }
+                setRawTransactions(txList);
+                setLoading(false);
+            } catch (err) {
+                console.warn("Direct fetch warning:", err);
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        fetchDirectData();
+
+        // 2. Realtime listener for customer
+        const customerRef = ref(db, `customers/${id}`);
+        const unsubCustomer = onValue(customerRef, (snapshot) => {
+            if (!isMounted) return;
             if (snapshot.exists()) {
                 const customerData = { id: snapshot.key, ...snapshot.val() };
                 setCustomer(customerData);
+                setNotFound(false);
 
-                // Fetch owner details if userId exists
                 if (customerData.userId) {
                     onValue(ref(db, `users/${customerData.userId}`), (ownerSnap) => {
-                        if (ownerSnap.exists()) {
+                        if (isMounted && ownerSnap.exists()) {
                             setOwner(ownerSnap.val());
                         }
                     }, { onlyOnce: true });
                 }
+            } else {
+                setNotFound(true);
+                setLoading(false);
             }
+        }, (err) => {
+            console.warn("Customer listener warning:", err);
+            if (isMounted) setLoading(false);
         });
 
-        return () => {
-            if (typeof unsubCustomer === 'function') unsubCustomer();
-        };
-    }, [id]);
-
-    useEffect(() => {
-        if (!id || !customer) return;
-
-        // Listen to transactions
-        const unsubTransactions = dbService.listenCustomerTransactions(id, (data) => {
-            // Sort by timestamp descending (latest first)
-            const sorted = data.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-            let running = customer.balance || 0;
-            const withRunningBalance = sorted.map(tx => {
-                const txWithBal = { ...tx, runningBalance: running };
-                running -= (tx.amount || 0);
-                return txWithBal;
+        // 3. Realtime listener for transactions
+        const txQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(id));
+        const unsubTransactions = onValue(txQuery, (snapshot) => {
+            if (!isMounted) return;
+            const list = [];
+            snapshot.forEach((childSnapshot) => {
+                list.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-            setTransactions(withRunningBalance); // Already latest first
+            setRawTransactions(list);
             setLoading(false);
+        }, (err) => {
+            console.warn("Transactions listener warning:", err);
+            if (isMounted) setLoading(false);
         });
 
+        // 4. Safety Timeout (5s) to guarantee spinner never hangs indefinitely
+        const timer = setTimeout(() => {
+            if (isMounted && loading) {
+                setLoading(false);
+            }
+        }, 5000);
+
         return () => {
+            isMounted = false;
+            clearTimeout(timer);
+            if (typeof unsubCustomer === 'function') unsubCustomer();
             if (typeof unsubTransactions === 'function') unsubTransactions();
         };
-    }, [id, customer]);
+    }, [id, retryCount]);
 
-    if (loading || !customer || globalSettings === null) {
+    // Compute running balances cleanly
+    const transactions = useMemo(() => {
+        if (!rawTransactions.length) return [];
+        const sorted = [...rawTransactions].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        let running = customer?.balance || 0;
+        return sorted.map(tx => {
+            const txWithBal = { ...tx, runningBalance: running };
+            running -= (tx.amount || 0);
+            return txWithBal;
+        });
+    }, [rawTransactions, customer?.balance]);
+
+    if (notFound || (!loading && !customer)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 text-center antialiased font-sans">
+                <div className="max-w-md w-full bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100">
+                    <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <span className="material-symbols-outlined text-[36px]">folder_off</span>
+                    </div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-900 mb-2">Statement Not Found</h1>
+                    <p className="text-slate-500 mb-6 leading-relaxed text-xs md:text-sm">
+                        This digital statement link is invalid, expired, or may have been updated by the merchant.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => setRetryCount(prev => prev + 1)}
+                            className="w-full py-3 bg-[#0057BB] hover:bg-[#004291] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                            Retry Loading
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 antialiased font-sans">
                 <div className="flex flex-col items-center gap-4">

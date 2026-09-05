@@ -17,6 +17,7 @@ const CustomerShareableView = () => {
     const [globalSettings, setGlobalSettings] = useState({ shareLinks: true });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
+    const [copiedUpi, setCopiedUpi] = useState(false);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -50,6 +51,39 @@ const CustomerShareableView = () => {
             }
         }
     };
+
+    // Global Clipboard Paste Listener for Payment Proof
+    useEffect(() => {
+        if (!paymentModal.isOpen || paymentModal.step !== 'confirm') return;
+
+        const handlePaste = async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        try {
+                            const compressed = await compressImage(file, 1200, 1200, 0.8);
+                            setPaymentModal(prev => ({ ...prev, screenshot: compressed }));
+                            try {
+                                const r2Url = await uploadToR2(compressed, R2_FOLDERS.PAYMENT_PROOF, `proof_${id}_${Date.now()}`);
+                                setPaymentModal(prev => ({ ...prev, screenshot: r2Url }));
+                            } catch (r2Err) {
+                                console.warn("R2 upload fallback on paste:", r2Err);
+                            }
+                        } catch (err) {
+                            console.error("Paste error:", err);
+                        }
+                    }
+                    break;
+                }
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [paymentModal.isOpen, paymentModal.step, id]);
 
     useEffect(() => {
         // Listen to global settings with fallback
@@ -400,35 +434,91 @@ const CustomerShareableView = () => {
         doc.save(`${customer.name}_Statement_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
     };
 
+    const [activeMethodTab, setActiveMethodTab] = useState('upi'); // 'upi' | 'qr' | 'bank' | 'copy'
+    const [copiedField, setCopiedField] = useState(''); // track which field was copied
+
     const handlePayOnlineClick = () => {
-        if (!owner?.upiId) {
-            alert("Merchant hasn't configured UPI payments yet.");
-            return;
-        }
-        setPaymentModal(prev => ({ 
-            ...prev, 
+        const fullBal = Math.abs(balance || 0);
+        setPaymentAmount(fullBal > 0 ? fullBal : 0);
+        const hasUpi = Boolean(owner?.upiId);
+        const hasBank = Boolean(owner?.accountNumber);
+        
+        setPaymentModal({ 
             isOpen: true, 
-            step: 'amount', 
-            customAmount: '',
+            step: (hasUpi || hasBank) ? 'amount' : 'no_upi', 
+            customAmount: fullBal > 0 ? String(fullBal) : '',
             transactionId: '',
-            screenshot: ''
-        }));
+            screenshot: '',
+            isSubmitting: false
+        });
+        setActiveMethodTab(hasUpi ? 'upi' : (hasBank ? 'bank' : 'upi'));
     };
 
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text).then(() => {
-            // Optional: You could add a temporary 'Copied!' state here
-            alert("UPI ID Copied to Clipboard!");
-        });
+    const copyToClipboard = (text, fieldName = 'upi') => {
+        if (!text) return;
+        const doSuccess = () => {
+            setCopiedField(fieldName);
+            setTimeout(() => setCopiedField(''), 2200);
+        };
+
+        if (navigator?.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).then(doSuccess).catch(() => {
+                fallbackCopy(text);
+                doSuccess();
+            });
+        } else {
+            fallbackCopy(text);
+            doSuccess();
+        }
+    };
+
+    const fallbackCopy = (text) => {
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+        } catch (e) {
+            console.warn("Copy fallback failed:", e);
+        }
     };
 
     const handleAmountSelect = (amount) => {
+        if (!amount || amount <= 0) return;
         setPaymentAmount(amount);
         setPaymentModal(prev => ({ ...prev, step: 'method' }));
     };
 
+    const getUpiIntentUrl = (appScheme = 'upi') => {
+        const upiId = owner?.upiId || '';
+        const payeeName = encodeURIComponent(owner?.name || "Merchant");
+        const transactionNote = encodeURIComponent(`Ledger Payment - ${customer?.name || 'Customer'}`);
+        const baseParams = `pa=${upiId}&pn=${payeeName}&tn=${transactionNote}&am=${paymentAmount}&cu=INR`;
+
+        if (appScheme === 'phonepe') {
+            return `phonepe://pay?${baseParams}`;
+        } else if (appScheme === 'gpay') {
+            return `tez://upi/pay?${baseParams}`;
+        } else if (appScheme === 'paytm') {
+            return `paytmmp://pay?${baseParams}`;
+        }
+        return `upi://pay?${baseParams}`;
+    };
+
+    const handleLaunchUpiApp = (appScheme = 'upi') => {
+        const url = getUpiIntentUrl(appScheme);
+        window.location.href = url;
+        // Automatically switch to confirm step so when user returns from app, they are on proof submission
+        setTimeout(() => {
+            setPaymentModal(prev => ({ ...prev, step: 'confirm' }));
+        }, 1200);
+    };
+
     const handleDownloadQR = async () => {
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`upi://pay?pa=${owner?.upiId}&pn=${encodeURIComponent(owner?.name || "HisabKhata")}&tn=${encodeURIComponent("Payment")}&am=${paymentAmount}&cu=INR`)}`;
+        const upiUrl = getUpiIntentUrl('upi');
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(upiUrl)}`;
         
         try {
             const canvas = document.createElement('canvas');
@@ -436,11 +526,11 @@ const CustomerShareableView = () => {
             canvas.width = 800;
             canvas.height = 1400;
 
-            // 1. Background Layer
+            // Background Layer
             ctx.fillStyle = '#F8FAFC';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. Decorative Blue Header Shape
+            // Header Banner
             ctx.fillStyle = '#0057BB';
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -449,7 +539,7 @@ const CustomerShareableView = () => {
             ctx.lineTo(0, 450);
             ctx.fill();
 
-            // 3. Branded Header Text
+            // Header Text
             ctx.textAlign = 'center';
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 30px "Roboto", Arial';
@@ -459,13 +549,12 @@ const CustomerShareableView = () => {
             ctx.font = 'bold 22px "Roboto", Arial';
             ctx.fillText('a SumanOnline Website', 400, 210);
 
-            // 4. White QR Card with Shadow
+            // White QR Card with Shadow
             ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
             ctx.shadowBlur = 30;
             ctx.shadowOffsetY = 15;
             ctx.fillStyle = '#FFFFFF';
             
-            // Rounded Rectangle for Card
             const cardX = 100, cardY = 280, cardW = 600, cardH = 750, radius = 40;
             ctx.beginPath();
             ctx.moveTo(cardX + radius, cardY);
@@ -479,27 +568,22 @@ const CustomerShareableView = () => {
             ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
             ctx.closePath();
             ctx.fill();
-            
             ctx.shadowColor = 'transparent';
 
-            // 5. Card Header (UPI Logos Text)
             ctx.fillStyle = '#1E293B';
             ctx.font = 'bold 40px "Roboto", Arial';
             ctx.fillText('BHIM | UPI', 400, 360);
             
-            // 6. Draw QR Code
             const qrImg = new Image();
             qrImg.crossOrigin = "anonymous";
             qrImg.src = qrUrl;
             await new Promise(resolve => qrImg.onload = resolve);
             ctx.drawImage(qrImg, 150, 420, 500, 500);
 
-            // 7. Card Footer
             ctx.fillStyle = '#64748B';
             ctx.font = 'bold 22px "Roboto", Arial';
             ctx.fillText('SCAN & PAY WITH ANY UPI APP', 400, 960);
             
-            // 8. Amount & Merchant Section
             ctx.fillStyle = '#0057BB';
             ctx.font = '900 75px "Roboto", Arial';
             ctx.fillText(`₹${paymentAmount}`, 400, 1120);
@@ -510,13 +594,12 @@ const CustomerShareableView = () => {
             
             ctx.fillStyle = '#64748B';
             ctx.font = '500 22px "Roboto", Arial';
-            const tagline = `Secure payments for ${owner?.name || 'this business'}. Certified HisabKhata Merchant.`;
+            const tagline = `Secure payment for ${customer?.name || 'Customer'}. Verified HisabKhata Digital Statement.`;
             
-            // Simple text wrapping
             const words = tagline.split(' ');
             let line = '';
             let y = 1240;
-            for(let n = 0; n < words.length; n++) {
+            for (let n = 0; n < words.length; n++) {
                 let testLine = line + words[n] + ' ';
                 let metrics = ctx.measureText(testLine);
                 if (metrics.width > 550 && n > 0) {
@@ -529,7 +612,6 @@ const CustomerShareableView = () => {
             }
             ctx.fillText(line, 400, y);
 
-            // 9. Footer Security Branding (Centered)
             const footerText = '100% SECURE DIGITAL PAYMENTS';
             ctx.font = 'bold 20px "Roboto", Arial';
             const footerWidth = ctx.measureText(footerText).width;
@@ -544,34 +626,17 @@ const CustomerShareableView = () => {
             ctx.textAlign = 'center';
             ctx.fillText(footerText, 400, 1347);
 
-            // 10. Generate and Trigger Download
             const dataUrl = canvas.toDataURL('image/png', 1.0);
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = `HisabKhata_Payment_Poster_${owner?.name?.replace(/\s+/g, '_')}.png`;
+            link.download = `HisabKhata_Payment_${owner?.name?.replace(/\s+/g, '_')}_Rs${paymentAmount}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
         } catch (error) {
-            console.error("Advanced QR Download failed:", error);
-            // Simple fallback
+            console.error("QR Download failed:", error);
             window.open(qrUrl, '_blank');
-        }
-    };
-
-    const handleMethodSelect = (method) => {
-        const upiId = owner?.upiId || '';
-        // Encode the name and note to handle spaces and special characters safely
-        const payeeName = encodeURIComponent(owner?.name || "HisabKhata");
-        const transactionNote = encodeURIComponent("HisabKhata Payments");
-
-        const upiUrl = `upi://pay?pa=${upiId}&pn=${payeeName}&tn=${transactionNote}&am=${paymentAmount}&cu=INR`;
-
-        if (method === 'upi') {
-            setPaymentModal(prev => ({ ...prev, step: 'upi_id' }));
-        } else {
-            setPaymentModal(prev => ({ ...prev, step: 'qr' }));
         }
     };
 
@@ -617,33 +682,30 @@ const CustomerShareableView = () => {
                     transaction_id: paymentModal.transactionId || 'Not Provided',
                     action_url: verificationUrl,
                     type: 'PAYMENT_VERIFICATION',
-                    subject: `Action Required: New Payment Verification from ${customer.name} 💰`
+                    subject: `Payment Verification: ₹${paymentAmount} from ${customer.name} 💰`
                 };
 
-                // 1. Queue in DB as backup
                 const queueKey = push(ref(db, 'services/email_queue')).key;
                 await set(ref(db, `services/email_queue/${queueKey}`), {
                     ...emailParams,
-                    screenshot: paymentModal.screenshot || '', // Keep screenshot in DB, but don't send large base64 in email if not needed
+                    screenshot: paymentModal.screenshot || '',
                     timestamp: Date.now()
                 });
 
-                // 2. Send directly via EmailJS (Proactive)
-                await sendEmailNotification(emailParams);
+                sendEmailNotification(emailParams).catch(() => {});
             }
 
-            alert("Payment confirmation sent to merchant! They will verify and update your ledger shortly.");
-            setPaymentModal({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
+            setPaymentModal(prev => ({ ...prev, step: 'success', isSubmitting: false }));
         } catch (error) {
             console.error("Error confirming payment:", error);
-            alert("Failed to send confirmation. Please try again or contact merchant.");
-        } finally {
+            alert("Failed to submit confirmation. Please retry or contact merchant.");
             setPaymentModal(prev => ({ ...prev, isSubmitting: false }));
         }
     };
 
     const closePaymentModal = () => {
         setPaymentModal({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
+        setActiveMethodTab('upi');
     };
 
     return (
@@ -670,240 +732,546 @@ const CustomerShareableView = () => {
 
             {/* Payment Modal System */}
             {paymentModal.isOpen && (
-                <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 no-print">
-                    <div className="bg-white w-full max-w-sm rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-                        <div className="px-8 py-6 flex items-center justify-between border-b border-slate-50">
-                            <div>
-                                <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">
-                                    {paymentModal.step === 'amount' && 'Select Amount'}
-                                    {paymentModal.step === 'method' && 'Choose Method'}
-                                    {paymentModal.step === 'upi_id' && 'Payment UPI ID'}
-                                    {paymentModal.step === 'qr' && 'Scan & Pay'}
-                                    {paymentModal.step === 'confirm' && 'Confirm Payment'}
-                                </h2>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Safe Secure Transactions</p>
+                <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200 no-print">
+                    <div className="bg-white w-full max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[92vh] flex flex-col">
+                        {/* Header */}
+                        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/70">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    {paymentModal.step !== 'amount' && paymentModal.step !== 'no_upi' && paymentModal.step !== 'success' && (
+                                        <button
+                                            onClick={() => {
+                                                if (paymentModal.step === 'confirm') setPaymentModal(prev => ({ ...prev, step: 'method' }));
+                                                else setPaymentModal(prev => ({ ...prev, step: 'amount' }));
+                                            }}
+                                            className="w-8 h-8 rounded-full hover:bg-slate-200/70 flex items-center justify-center text-slate-600 transition-colors"
+                                            title="Back"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                                        </button>
+                                    )}
+                                    <div>
+                                        <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+                                            {paymentModal.step === 'amount' && '1. Choose Amount'}
+                                            {paymentModal.step === 'method' && '2. Complete Payment'}
+                                            {paymentModal.step === 'confirm' && '3. Submit Payment Proof'}
+                                            {paymentModal.step === 'no_upi' && 'Payment Options'}
+                                            {paymentModal.step === 'success' && 'Payment Submitted'}
+                                        </h2>
+                                        <p className="text-[10px] text-slate-400 font-medium">To {owner?.name || 'Merchant'}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closePaymentModal}
+                                    aria-label="Close Payment Modal"
+                                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 active:scale-95 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
                             </div>
-                            <button onClick={closePaymentModal} aria-label="Close Payment Modal" className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-500 active:scale-90 transition-transform">
-                                <span className="material-symbols-outlined text-[24px]">close</span>
-                            </button>
+
+                            {/* Step Indicator Pills */}
+                            {paymentModal.step !== 'no_upi' && paymentModal.step !== 'success' && (
+                                <div className="grid grid-cols-3 gap-1.5 mt-3">
+                                    <div className={`h-1.5 rounded-full transition-all ${paymentModal.step === 'amount' ? 'bg-[#0057BB]' : 'bg-[#0057BB]/40'}`} />
+                                    <div className={`h-1.5 rounded-full transition-all ${paymentModal.step === 'method' ? 'bg-[#0057BB]' : (paymentModal.step === 'confirm' ? 'bg-[#0057BB]/40' : 'bg-slate-200')}`} />
+                                    <div className={`h-1.5 rounded-full transition-all ${paymentModal.step === 'confirm' ? 'bg-[#0057BB]' : 'bg-slate-200'}`} />
+                                </div>
+                            )}
                         </div>
 
-                        <div className="p-8">
+                        {/* Modal Body */}
+                        <div className="p-5 overflow-y-auto custom-scrollbar">
+                            {/* No UPI Configured */}
+                            {paymentModal.step === 'no_upi' && (
+                                <div className="text-center py-4 space-y-4">
+                                    <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
+                                        <span className="material-symbols-outlined text-[32px]">account_balance_wallet</span>
+                                    </div>
+                                    <h3 className="text-base font-bold text-slate-900">Direct Online Pay Unavailable</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                                        The merchant has not configured UPI or bank account details yet. Please contact them directly for payment instructions.
+                                    </p>
+                                    {owner?.phone && (
+                                        <a
+                                            href={`tel:${owner.phone}`}
+                                            className="inline-flex items-center justify-center gap-2 w-full py-3 bg-[#0057BB] text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">call</span>
+                                            Call {owner.name || 'Merchant'} ({owner.phone})
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Step 1: Select Amount */}
                             {paymentModal.step === 'amount' && (
                                 <div className="space-y-4">
-                                    <button
-                                        onClick={() => handleAmountSelect(Math.abs(balance))}
-                                        className="w-full bg-blue-600 text-white p-5 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-100 active:scale-95 transition-all"
-                                    >
-                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Pay Full Amount</span>
-                                        <span className="text-xl font-black">₹{Math.abs(balance).toLocaleString('en-IN')}</span>
-                                    </button>
+                                    {/* Full Balance Button */}
+                                    {Math.abs(balance) > 0 && (
+                                        <button
+                                            onClick={() => handleAmountSelect(Math.abs(balance))}
+                                            className="w-full bg-[#0057BB] hover:bg-[#004291] text-white p-4 rounded-2xl flex items-center justify-between shadow-md shadow-blue-500/15 active:scale-[0.99] transition-all cursor-pointer group"
+                                        >
+                                            <div className="text-left">
+                                                <span className="block text-[10px] font-bold uppercase tracking-wider text-blue-100">Pay Full Outstanding Due</span>
+                                                <span className="block text-2xl font-black mt-0.5">₹{Math.abs(balance).toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
+                                                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                            </div>
+                                        </button>
+                                    )}
 
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                            <span className="text-lg font-black text-slate-300">₹</span>
+                                    {/* Preset Quick Chips */}
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Preset Amounts</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[500, 1000, 2000, 5000].map(amt => (
+                                                <button
+                                                    key={amt}
+                                                    onClick={() => {
+                                                        setPaymentModal(prev => ({ ...prev, customAmount: String(amt) }));
+                                                    }}
+                                                    className={`py-2.5 px-1 rounded-xl text-xs font-bold border transition-all ${
+                                                        paymentModal.customAmount === String(amt)
+                                                            ? 'bg-blue-50 border-[#0057BB] text-[#0057BB] shadow-xs'
+                                                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    ₹{amt.toLocaleString('en-IN')}
+                                                </button>
+                                            ))}
                                         </div>
-                                        <input
-                                            type="number"
-                                            placeholder="Enter Custom Amount"
-                                            className="w-full pl-10 pr-5 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
-                                            value={paymentModal.customAmount}
-                                            onChange={(e) => setPaymentModal(prev => ({ ...prev, customAmount: e.target.value }))}
-                                        />
+                                    </div>
+
+                                    {/* Custom Amount Field */}
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Custom Amount</label>
+                                        <div className="relative">
+                                            <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 font-bold text-lg">₹</span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="Enter amount to pay"
+                                                className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:bg-white focus:border-[#0057BB] focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                                                value={paymentModal.customAmount}
+                                                onChange={(e) => setPaymentModal(prev => ({ ...prev, customAmount: e.target.value }))}
+                                            />
+                                        </div>
                                     </div>
 
                                     <button
                                         disabled={!paymentModal.customAmount || parseFloat(paymentModal.customAmount) <= 0}
                                         onClick={() => handleAmountSelect(parseFloat(paymentModal.customAmount))}
-                                        className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-slate-200 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center justify-center gap-2"
                                     >
-                                        Continue
+                                        <span>Proceed with ₹{parseFloat(paymentModal.customAmount || 0).toLocaleString('en-IN')}</span>
+                                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                                     </button>
                                 </div>
                             )}
 
+                            {/* Step 2: Choose Method / Perform Payment */}
                             {paymentModal.step === 'method' && (
                                 <div className="space-y-4">
-                                    <div className="text-center mb-6">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Paying Amount</p>
-                                        <h3 className="text-3xl font-black text-slate-900">₹{paymentAmount.toLocaleString('en-IN')}</h3>
+                                    {/* Amount Summary Bar */}
+                                    <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-2xl flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Paying To: {owner?.name || 'Merchant'}</p>
+                                            <h3 className="text-2xl font-black text-slate-900 mt-0.5">₹{paymentAmount.toLocaleString('en-IN')}</h3>
+                                        </div>
+                                        <button
+                                            onClick={() => setPaymentModal(prev => ({ ...prev, step: 'amount' }))}
+                                            className="px-3 py-1.5 bg-white border border-blue-200 text-xs font-bold text-[#0057BB] hover:bg-blue-50 rounded-lg transition-colors"
+                                        >
+                                            Change
+                                        </button>
                                     </div>
 
-                                    <button
-                                        onClick={() => handleMethodSelect('upi')}
-                                        className="w-full bg-blue-600 text-white p-5 rounded-2xl flex items-center justify-center gap-4 shadow-lg shadow-blue-100 active:scale-95 transition-all"
-                                    >
-                                        <span className="material-symbols-outlined text-[28px]">payments</span>
-                                        <div className="text-left">
-                                            <span className="block text-sm font-black uppercase tracking-widest">PAY WITH UPI ID</span>
-                                            <span className="block text-[10px] font-bold opacity-80 uppercase tracking-wider">Copy ID & Pay manually</span>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => handleMethodSelect('qr')}
-                                        className="w-full bg-slate-100 text-slate-900 p-5 rounded-2xl flex items-center justify-center gap-4 border border-slate-200 active:scale-95 transition-all"
-                                    >
-                                        <span className="material-symbols-outlined text-[28px]">qr_code_2</span>
-                                        <div className="text-left">
-                                            <span className="block text-sm font-black uppercase tracking-widest">Show QR Code</span>
-                                            <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Scan with any app</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-
-                            {paymentModal.step === 'upi_id' && (
-                                <div className="space-y-6 text-center">
-                                    <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Merchant UPI ID</p>
-                                        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                            <span className="text-sm font-black text-slate-900 select-all">{owner?.upiId}</span>
-                                            <button 
-                                                onClick={() => copyToClipboard(owner?.upiId)}
-                                                className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-90 transition-transform shadow-md"
-                                                title="Copy UPI ID"
+                                    {/* Sub-tabs for Payment Method */}
+                                    <div className="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs font-bold">
+                                        {owner?.upiId && (
+                                            <button
+                                                onClick={() => setActiveMethodTab('upi')}
+                                                className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                                    activeMethodTab === 'upi' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                                                <span className="material-symbols-outlined text-[16px]">bolt</span>
+                                                UPI Apps
                                             </button>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 mt-4 leading-relaxed font-medium">
-                                            Copy the UPI ID and use it on <span className="font-bold text-slate-700">PhonePe, GPay, Paytm</span> or any UPI app.
-                                        </p>
+                                        )}
+                                        {owner?.upiId && (
+                                            <button
+                                                onClick={() => setActiveMethodTab('qr')}
+                                                className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                                    activeMethodTab === 'qr' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                                                QR Code
+                                            </button>
+                                        )}
+                                        {owner?.upiId && (
+                                            <button
+                                                onClick={() => setActiveMethodTab('copy')}
+                                                className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                                    activeMethodTab === 'copy' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                                                UPI ID
+                                            </button>
+                                        )}
+                                        {(owner?.bankName || owner?.accountNumber) && (
+                                            <button
+                                                onClick={() => setActiveMethodTab('bank')}
+                                                className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                                    activeMethodTab === 'bank' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">account_balance</span>
+                                                Bank
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <div className="flex flex-col gap-3">
+                                    {/* TAB 1: 1-Tap UPI Apps Grid */}
+                                    {activeMethodTab === 'upi' && (
+                                        <div className="space-y-2.5">
+                                            <p className="text-[11px] font-semibold text-slate-500">Tap your preferred app to initiate payment:</p>
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                                {/* PhonePe */}
+                                                <button
+                                                    onClick={() => handleLaunchUpiApp('phonepe')}
+                                                    className="p-3.5 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                >
+                                                    <div className="w-9 h-9 rounded-xl bg-[#5f259f] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                                                        Pe
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-xs font-bold text-slate-900">PhonePe</span>
+                                                        <span className="block text-[10px] text-purple-700 font-medium">1-Tap Pay</span>
+                                                    </div>
+                                                </button>
+
+                                                {/* Google Pay */}
+                                                <button
+                                                    onClick={() => handleLaunchUpiApp('gpay')}
+                                                    className="p-3.5 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                >
+                                                    <div className="w-9 h-9 rounded-xl bg-[#1a73e8] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                                                        G
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-xs font-bold text-slate-900">Google Pay</span>
+                                                        <span className="block text-[10px] text-blue-700 font-medium">1-Tap Pay</span>
+                                                    </div>
+                                                </button>
+
+                                                {/* Paytm */}
+                                                <button
+                                                    onClick={() => handleLaunchUpiApp('paytm')}
+                                                    className="p-3.5 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                >
+                                                    <div className="w-9 h-9 rounded-xl bg-[#00baf2] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                                                        Pay
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-xs font-bold text-slate-900">Paytm</span>
+                                                        <span className="block text-[10px] text-sky-700 font-medium">1-Tap Pay</span>
+                                                    </div>
+                                                </button>
+
+                                                {/* BHIM / Any UPI */}
+                                                <button
+                                                    onClick={() => handleLaunchUpiApp('upi')}
+                                                    className="p-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                                                >
+                                                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                                        <span className="material-symbols-outlined text-[20px]">bolt</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-xs font-bold text-slate-900">Any UPI App</span>
+                                                        <span className="block text-[10px] text-emerald-700 font-medium">BHIM / CRED / Other</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-start gap-2 text-[11px] text-slate-500">
+                                                <span className="material-symbols-outlined text-[16px] text-slate-400 mt-0.5">info</span>
+                                                <span>After completing the payment in your app, return here to submit the 12-digit UTR / screenshot proof.</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TAB 2: Dynamic QR Code */}
+                                    {activeMethodTab === 'qr' && (
+                                        <div className="flex flex-col items-center gap-3 text-center">
+                                            <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-sm">
+                                                <img
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(getUpiIntentUrl('upi'))}`}
+                                                    alt="UPI QR Code"
+                                                    width="180"
+                                                    height="180"
+                                                    className="w-[180px] h-[180px] aspect-square rounded-lg"
+                                                />
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 font-medium">Scan with Google Pay, PhonePe, Paytm or BHIM</p>
+                                            
+                                            <div className="flex items-center gap-2 w-full pt-1">
+                                                <button
+                                                    onClick={handleDownloadQR}
+                                                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">download</span>
+                                                    Save QR Image
+                                                </button>
+                                                <button
+                                                    onClick={() => handleLaunchUpiApp('upi')}
+                                                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                                    Open UPI App
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TAB 3: Copy UPI ID */}
+                                    {activeMethodTab === 'copy' && (
+                                        <div className="space-y-3">
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Merchant UPI ID</p>
+                                                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
+                                                    <span className="text-xs font-bold text-slate-900 select-all font-mono truncate mr-2">{owner?.upiId}</span>
+                                                    <button 
+                                                        onClick={() => copyToClipboard(owner?.upiId, 'upi')}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                                                            copiedField === 'upi' 
+                                                                ? 'bg-emerald-600 text-white shadow-xs' 
+                                                                : 'bg-[#0057BB] text-white hover:bg-[#004291]'
+                                                        }`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[14px]">
+                                                            {copiedField === 'upi' ? 'check' : 'content_copy'}
+                                                        </span>
+                                                        <span>{copiedField === 'upi' ? 'Copied' : 'Copy'}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 font-medium px-1">
+                                                Open your banking app, paste the UPI ID above, and pay <strong>₹{paymentAmount}</strong>.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* TAB 4: Bank Account Details */}
+                                    {activeMethodTab === 'bank' && (
+                                        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                                                <span className="text-xs font-bold text-slate-700">Bank Transfer (IMPS/NEFT)</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{owner?.bankName || 'Bank Account'}</span>
+                                            </div>
+
+                                            {owner?.accountNumber && (
+                                                <div>
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Account Number</span>
+                                                    <div className="flex items-center justify-between mt-0.5">
+                                                        <span className="text-xs font-mono font-bold text-slate-900 select-all">{owner.accountNumber}</span>
+                                                        <button 
+                                                            onClick={() => copyToClipboard(owner.accountNumber, 'acc')}
+                                                            className="text-[11px] font-bold text-[#0057BB] hover:underline flex items-center gap-1"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">{copiedField === 'acc' ? 'check' : 'content_copy'}</span>
+                                                            {copiedField === 'acc' ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {owner?.ifscCode && (
+                                                <div>
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase">IFSC Code</span>
+                                                    <div className="flex items-center justify-between mt-0.5">
+                                                        <span className="text-xs font-mono font-bold text-slate-900 select-all">{owner.ifscCode}</span>
+                                                        <button 
+                                                            onClick={() => copyToClipboard(owner.ifscCode, 'ifsc')}
+                                                            className="text-[11px] font-bold text-[#0057BB] hover:underline flex items-center gap-1"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">{copiedField === 'ifsc' ? 'check' : 'content_copy'}</span>
+                                                            {copiedField === 'ifsc' ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <span className="text-[10px] font-semibold text-slate-400 uppercase">Beneficiary Name</span>
+                                                <p className="text-xs font-bold text-slate-900 mt-0.5">{owner?.name || 'Account Holder'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Action to proceed to Confirmation */}
+                                    <div className="pt-2">
                                         <button
                                             onClick={() => setPaymentModal(prev => ({ ...prev, step: 'confirm' }))}
-                                            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all"
+                                            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
-                                            I've Made Payment
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentModal(prev => ({ ...prev, step: 'method' }))}
-                                            className="text-blue-600 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                                            Change Method
+                                            <span>Already Paid? Submit Reference / Proof</span>
+                                            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                                         </button>
                                     </div>
                                 </div>
                             )}
 
-                            {paymentModal.step === 'qr' && (
-                                <div className="flex flex-col items-center gap-6">
-                                    <div className="text-center">
-                                        <h3 className="text-2xl font-black text-slate-900">₹{paymentAmount.toLocaleString('en-IN')}</h3>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Scan to pay merchant</p>
-                                    </div>
-
-                                    <div className="p-4 bg-white border-4 border-slate-900 rounded-[2rem] shadow-2xl relative overflow-hidden">
-                                        <img
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${owner?.upiId}&pn=${encodeURIComponent(owner?.name || "Suman Chakrabortty")}&tn=${encodeURIComponent("HisabKhata Payments")}&am=${paymentAmount}&cu=INR`)}`}
-                                            alt="UPI QR Code"
-                                            width="200"
-                                            height="200"
-                                            className="w-[200px] h-[200px] aspect-square"
-                                        />
-                                        <div className="absolute inset-0 border-[12px] border-white pointer-events-none rounded-[1.8rem]"></div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 px-6 py-3 bg-green-50 text-green-700 rounded-full">
-                                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.15em]">Verified UPI Payment</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center gap-3 w-full">
-                                        <button
-                                            onClick={handleDownloadQR}
-                                            className="text-blue-600 text-[11px] font-black uppercase tracking-widest flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full"
-                                        >
-                                            <span className="material-symbols-outlined text-[18px]">download</span>
-                                            Download QR
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => setPaymentModal(prev => ({ ...prev, step: 'method' }))}
-                                            className="text-slate-400 text-[11px] font-black uppercase tracking-widest flex items-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                                            Change Method
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setPaymentModal(prev => ({ ...prev, step: 'confirm' }))}
-                                        className="w-full mt-2 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all"
-                                    >
-                                        I've Made Payment
-                                    </button>
-                                </div>
-                            )}
-
+                            {/* Step 3: Confirm Payment with Proof */}
                             {paymentModal.step === 'confirm' && (
-                                <div className="space-y-5">
-                                    <div className="text-center">
-                                        <h3 className="text-xl font-black text-slate-900">Confirm Payment</h3>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Please provide transaction details</p>
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase text-slate-400">Payment Amount</span>
+                                            <p className="text-lg font-bold text-slate-800">₹{paymentAmount.toLocaleString('en-IN')}</p>
+                                        </div>
+                                        <span className="text-xs font-semibold text-slate-500">To: {owner?.name || 'Merchant'}</span>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    {/* UTR / Transaction ID */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                UPI Ref / UTR / Txn ID
+                                            </label>
+                                            <span className="text-[10px] text-slate-400">12-digit number</span>
+                                        </div>
                                         <div className="relative">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Transaction ID (Optional)</label>
                                             <input
                                                 type="text"
-                                                placeholder="Enter Transaction ID / Ref No."
-                                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                                                placeholder="e.g. 423456789012 or UPI Ref"
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:border-[#0057BB] outline-none transition-all pr-20"
                                                 value={paymentModal.transactionId}
                                                 onChange={(e) => setPaymentModal(prev => ({ ...prev, transactionId: e.target.value }))}
                                             />
-                                        </div>
-
-                                        <div className="relative">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Upload Screenshot (Optional)</label>
-                                            <div
-                                                onClick={() => document.getElementById('screenshot-upload').click()}
-                                                className="w-full py-8 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 transition-all overflow-hidden relative"
-                                            >
-                                                {paymentModal.screenshot ? (
-                                                    <div className="absolute inset-0">
-                                                        <img src={paymentModal.screenshot} className="w-full h-full object-cover opacity-30" alt="Preview" />
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <span className="bg-white/80 px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-slate-700 shadow-sm">Change Image</span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <span className="material-symbols-outlined text-slate-400 text-[32px]">add_a_photo</span>
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Payment Proof</span>
-                                                    </>
-                                                )}
-                                                <input
-                                                    id="screenshot-upload"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={handleScreenshotChange}
-                                                />
-                                            </div>
+                                            {navigator?.clipboard?.readText && (
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const text = await navigator.clipboard.readText();
+                                                            if (text) setPaymentModal(prev => ({ ...prev, transactionId: text.trim() }));
+                                                        } catch (err) {
+                                                            console.warn("Clipboard read error:", err);
+                                                        }
+                                                    }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-bold bg-white hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 transition-colors"
+                                                >
+                                                    Paste
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-3 pt-4">
+                                    {/* Screenshot Proof */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Payment Screenshot
+                                            </label>
+                                            <span className="text-[10px] text-slate-400 font-normal">Ctrl+V paste supported</span>
+                                        </div>
+
+                                        {paymentModal.screenshot ? (
+                                            <div className="relative w-full h-36 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden group">
+                                                <img src={paymentModal.screenshot} className="max-h-full max-w-full object-contain" alt="Payment Proof Preview" />
+                                                <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPaymentModal(prev => ({ ...prev, screenshot: '' }))}
+                                                        className="w-7 h-7 bg-black/70 hover:bg-black text-white rounded-full flex items-center justify-center shadow-md transition-colors"
+                                                        title="Remove Image"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">close</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                onClick={() => document.getElementById('screenshot-upload').click()}
+                                                className="w-full py-5 bg-slate-50 border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
+                                            >
+                                                <span className="material-symbols-outlined text-slate-400 text-[26px]">add_photo_alternate</span>
+                                                <span className="text-xs font-semibold text-slate-600">Select Image or Paste from Clipboard</span>
+                                                <span className="text-[10px] text-slate-400">JPG, PNG, WebP supported</span>
+                                            </div>
+                                        )}
+
+                                        <input
+                                            id="screenshot-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleScreenshotChange}
+                                        />
+                                    </div>
+
+                                    <div className="pt-2">
                                         <button
                                             onClick={handleConfirmPayment}
                                             disabled={paymentModal.isSubmitting || (!paymentModal.transactionId?.trim() && !paymentModal.screenshot)}
-                                            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all disabled:opacity-30"
+                                            className="w-full bg-[#0057BB] hover:bg-[#004291] text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all disabled:opacity-35 cursor-pointer flex items-center justify-center gap-2"
                                         >
-                                            {paymentModal.isSubmitting ? 'Submitting...' : 'Confirm & Notify Merchant'}
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentModal(prev => ({ ...prev, step: 'amount' }))}
-                                            className="text-slate-400 text-[10px] font-black uppercase tracking-widest"
-                                        >
-                                            I'll Confirm Later
+                                            {paymentModal.isSubmitting ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    <span>Submitting Proof...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-[18px]">verified</span>
+                                                    <span>Submit Payment Proof</span>
+                                                </>
+                                            )}
                                         </button>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Step 4: Success Confirmation */}
+                            {paymentModal.step === 'success' && (
+                                <div className="text-center py-4 space-y-4">
+                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                                        <span className="material-symbols-outlined text-[36px]">check_circle</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-lg font-bold text-slate-900">Payment Submitted!</h3>
+                                        <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                                            The merchant has received your payment details. Once verified, your ledger balance will be updated automatically.
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 font-medium">
+                                        <div className="flex justify-between text-slate-600">
+                                            <span>Amount Paid:</span>
+                                            <strong className="text-slate-900 font-bold">₹{paymentAmount.toLocaleString('en-IN')}</strong>
+                                        </div>
+                                        {paymentModal.transactionId && (
+                                            <div className="flex justify-between text-slate-600">
+                                                <span>Ref / UTR:</span>
+                                                <strong className="text-slate-900 font-mono">{paymentModal.transactionId}</strong>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-slate-600">
+                                            <span>Status:</span>
+                                            <span className="text-amber-600 font-bold">Pending Merchant Approval</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={closePaymentModal}
+                                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                    >
+                                        Done &amp; Return to Statement
+                                    </button>
                                 </div>
                             )}
                         </div>

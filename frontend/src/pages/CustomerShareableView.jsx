@@ -1094,128 +1094,137 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Identity Card (Desktop Only) */}
-                <div className="hidden md:block bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative overflow-hidden print-rounded">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-[#0057BB]"></div>
-                    <div className="flex items-center justify-between gap-8">
-                        {/* Customer Details */}
-                        <div className="flex items-center gap-5 min-w-0">
-                            <div className="h-16 w-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center font-black text-[#0057BB] text-2xl shadow-xs uppercase overflow-hidden shrink-0">
-                                {customer.photoURL ? (
-                                    <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    initials
-                                )}
-                            </div>
-                            <div className="min-w-0 space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account Statement</span>
-                                    <span className="text-slate-300">•</span>
-                                    <span className="text-[11px] font-semibold text-slate-500">{transactions.length} Records</span>
-                                </div>
-                                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight truncate">{customer.name}</h1>
-                                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                                    {customer.phone ? (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200">
-                                            <span className="material-symbols-outlined text-[14px] text-slate-400">call</span>
-                                            +91 {customer.phone}
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs text-slate-400 italic">No phone linked</span>
-                                    )}
-                                    {customer.address && (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 text-xs font-medium border border-slate-200 truncate max-w-xs">
-                                            <span className="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
-                                            {customer.address}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
+                {/* Identity & Statement Card (Desktop Only) */}
+                <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden print-rounded">
+                    {/* Statement Meta Header */}
+                    <div className="bg-slate-50/75 border-b border-slate-200/80 px-8 py-3 flex items-center justify-between text-xs text-slate-500 font-medium">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-slate-400 text-[16px]">verified</span>
+                            <span className="font-semibold text-slate-700 tracking-wide uppercase text-[10px]">Verified Digital Statement</span>
+                            <span className="text-slate-300">•</span>
+                            <span>Ref: <strong className="font-mono text-slate-700">HK-{(id || '').substring(0, 8).toUpperCase()}</strong></span>
                         </div>
+                        <div>
+                            <span>Generated: <strong className="text-slate-700">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></span>
+                        </div>
+                    </div>
 
-                        {/* Net Balance Panel */}
-                        <div className="bg-slate-50/80 rounded-2xl border border-slate-200/90 p-5 min-w-[260px] max-w-xs flex flex-col justify-between shadow-xs shrink-0 print:bg-white">
-                            <div className="flex items-center justify-between gap-3 mb-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                    {isReceivable ? 'Net Balance Due' : 'Net Balance'}
-                                </span>
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                    isReceivable 
-                                        ? 'bg-red-50 text-red-700 border border-red-200' 
-                                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${isReceivable ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
-                                    {isReceivable ? 'Pending Due' : 'Settled'}
-                                </span>
-                            </div>
-
-                            <div className="my-1">
-                                <h2 className={`text-3xl font-black tracking-tight ${isReceivable ? 'text-red-600' : 'text-emerald-700'}`}>
-                                    ₹{balanceAbsolute}
-                                </h2>
-                            </div>
-
-                            {customer.dueDate && isReceivable && (() => {
-                                const status = getDueDateStatus(customer.dueDate);
-                                if (!status) return null;
-                                return (
-                                    <div className="mt-2.5 pt-2.5 border-t border-slate-200/70 flex items-center justify-between text-xs font-semibold">
-                                        <span className="flex items-center gap-1 text-slate-500 text-[11px]">
-                                            <span className="material-symbols-outlined text-[14px] text-slate-400">event</span>
-                                            Due Date:
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${status.badgeColor}`}>
-                                            {status.label}
-                                        </span>
+                    {/* Main Statement Details */}
+                    <div className="p-8">
+                        <div className="grid grid-cols-12 gap-8 items-center">
+                            {/* Left Column: Account Holder */}
+                            <div className="col-span-7 flex items-start gap-5">
+                                <div className="h-16 w-16 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center font-bold text-slate-700 text-2xl uppercase overflow-hidden shrink-0 shadow-xs">
+                                    {customer.photoURL ? (
+                                        <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        initials
+                                    )}
+                                </div>
+                                <div className="space-y-1.5 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Statement</span>
+                                        <span className="text-slate-300">•</span>
+                                        <span className="text-[11px] font-semibold text-slate-500">{transactions.length} Transactions</span>
                                     </div>
-                                );
-                            })()}
+                                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight truncate">{customer.name}</h1>
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                                        {customer.phone && (
+                                            <span className="inline-flex items-center gap-1 font-medium">
+                                                <span className="material-symbols-outlined text-[15px] text-slate-400">call</span>
+                                                +91 {customer.phone}
+                                            </span>
+                                        )}
+                                        {customer.address && (
+                                            <span className="inline-flex items-center gap-1 font-medium truncate max-w-xs text-slate-500">
+                                                <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+                                                {customer.address}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {owner && (
+                                        <p className="text-[11px] text-slate-400 font-medium pt-0.5">
+                                            Issued by <span className="font-semibold text-slate-700">{owner.name || 'Merchant'}</span>{owner.phone ? ` • ${owner.phone}` : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right Column: Net Balance Widget (Clean Fintech Aesthetic) */}
+                            <div className="col-span-5 border-l border-slate-100 pl-8 text-right flex flex-col justify-center items-end">
+                                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                    {isReceivable ? 'Total Amount Due' : 'Account Balance'}
+                                </p>
+                                <div className="flex items-baseline justify-end gap-2.5">
+                                    <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight font-sans">
+                                        ₹{balanceAbsolute}
+                                    </h2>
+                                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                        isReceivable 
+                                            ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    }`}>
+                                        {isReceivable ? 'Due (Dr)' : 'Clear / Cr'}
+                                    </span>
+                                </div>
+
+                                {customer.dueDate && isReceivable && (() => {
+                                    const status = getDueDateStatus(customer.dueDate);
+                                    if (!status) return null;
+                                    return (
+                                        <div className="mt-2.5 flex items-center justify-end gap-1.5 text-xs">
+                                            <span className="material-symbols-outlined text-[15px] text-amber-600">event</span>
+                                            <span className="text-slate-500 font-medium">Payment Due:</span>
+                                            <span className="font-bold text-slate-800">{status.formatted}</span>
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                                                status.isOverdue 
+                                                    ? 'bg-red-50 text-red-700 border-red-200' 
+                                                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                                            }`}>
+                                                {status.isOverdue ? status.label : `${status.daysDiff}d left`}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Desktop 3-Card Summary Grid */}
-                <div className="hidden md:grid grid-cols-3 gap-4 no-print">
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex items-center justify-between">
+                {/* Desktop 3-Metric Summary Strip (Clean & Understated) */}
+                <div className="hidden md:grid grid-cols-3 bg-white rounded-2xl border border-slate-200/80 divide-x divide-slate-100 shadow-xs no-print">
+                    <div className="p-5 flex items-center justify-between">
                         <div>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Purchases</p>
-                            <p className="text-2xl font-black text-red-600">₹{totalGave}</p>
-                            <p className="text-[11px] text-slate-500 mt-1 font-medium">Debit / You Gave</p>
+                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Total Purchases</p>
+                            <p className="text-xl font-bold text-slate-900">₹{totalGave}</p>
+                            <p className="text-[11px] text-rose-600 font-medium mt-0.5">Debit (Gave)</p>
                         </div>
-                        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
-                            <span className="material-symbols-outlined text-[24px]">trending_down</span>
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
+                            <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex items-center justify-between">
+                    <div className="p-5 flex items-center justify-between">
                         <div>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Payments</p>
-                            <p className="text-2xl font-black text-emerald-600">₹{totalGot}</p>
-                            <p className="text-[11px] text-slate-500 mt-1 font-medium">Credit / You Got</p>
+                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Total Payments</p>
+                            <p className="text-xl font-bold text-slate-900">₹{totalGot}</p>
+                            <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Credit (Got)</p>
                         </div>
-                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                            <span className="material-symbols-outlined text-[24px]">trending_up</span>
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
+                            <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
                         </div>
                     </div>
 
-                    <div className={`p-5 rounded-2xl border shadow-sm transition-all flex items-center justify-between ${
-                        isReceivable ? 'bg-red-50/50 border-red-200' : 'bg-emerald-50/50 border-emerald-200'
-                    }`}>
+                    <div className="p-5 flex items-center justify-between">
                         <div>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Closing Balance</p>
-                            <p className={`text-2xl font-black ${isReceivable ? 'text-red-600' : 'text-emerald-700'}`}>
-                                ₹{balanceAbsolute}
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-1 font-medium">
-                                {isReceivable ? 'Amount to be paid' : 'Account in clear'}
+                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Closing Balance</p>
+                            <p className="text-xl font-bold text-slate-900">₹{balanceAbsolute}</p>
+                            <p className={`text-[11px] font-medium mt-0.5 ${isReceivable ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {isReceivable ? 'Pending to Merchant' : 'Account Settled'}
                             </p>
                         </div>
-                        <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${
-                            isReceivable 
-                                ? 'bg-red-100 border-red-200 text-red-700' 
-                                : 'bg-emerald-100 border-emerald-200 text-emerald-700'
-                        }`}>
-                            <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
+                            <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
                         </div>
                     </div>
                 </div>

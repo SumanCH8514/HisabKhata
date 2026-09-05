@@ -946,12 +946,10 @@ const CustomerShareableView = () => {
                                                     onClick={() => handleLaunchUpiApp('phonepe')}
                                                     className="p-3 bg-white hover:bg-purple-50/60 border border-slate-200 hover:border-purple-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
                                                 >
-                                                    <div className="w-10 h-10 rounded-2xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/20">
-                                                        <svg viewBox="0 0 100 100" className="w-6 h-6" fill="white">
-                                                            <rect x="52" y="10" width="10" height="28" rx="5" transform="rotate(38 52 10)"/>
-                                                            <rect x="14" y="24" width="20" height="10" rx="4"/>
-                                                            <rect x="28" y="24" width="11" height="58" rx="5"/>
-                                                            <path d="M38 24H60C72 24 80 32 80 43C80 54 72 62 60 62H38V24ZM58 52C64 52 69 48 69 43C69 38 64 34 58 34H38V52H58Z" fill="white"/>
+                                                    <div className="w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm shadow-purple-500/20">
+                                                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fillRule="evenodd" clipRule="evenodd" strokeLinejoin="round" strokeMiterlimit="2" className="w-full h-full">
+                                                            <circle cx="-25.926" cy="41.954" r="29.873" fill="#5f259f" transform="rotate(-76.714 -48.435 5.641) scale(8.56802)"/>
+                                                            <path d="M372.164 189.203c0-10.008-8.576-18.593-18.584-18.593h-34.323l-78.638-90.084c-7.154-8.577-18.592-11.439-30.03-8.577l-27.17 8.577c-4.292 1.43-5.723 7.154-2.862 10.007l85.8 81.508H136.236c-4.293 0-7.154 2.861-7.154 7.154v14.292c0 10.016 8.585 18.592 18.592 18.592h20.015v68.639c0 51.476 27.17 81.499 72.931 81.499 14.292 0 25.739-1.431 40.03-7.146v45.753c0 12.87 10.016 22.886 22.885 22.886h20.015c4.293 0 8.577-4.293 8.577-8.586V210.648h32.893c4.292 0 7.145-2.861 7.145-7.145v-14.3zM280.65 312.17c-8.576 4.292-20.015 5.723-28.591 5.723-22.886 0-34.324-11.438-34.324-37.176v-68.639h62.915v100.092z" fill="#fff" fillRule="nonzero"/>
                                                         </svg>
                                                     </div>
                                                     <div className="min-w-0">

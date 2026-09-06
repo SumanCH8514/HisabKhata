@@ -212,7 +212,7 @@ const More = () => {
                         {/* Profile Card */}
                         <div className="bg-white rounded-2xl p-4 shadow-xs border border-slate-100 flex items-center justify-between w-full overflow-hidden">
                             <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg font-black overflow-hidden shadow-xs shrink-0">
+                                <div className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg font-black overflow-hidden shadow-xs shrink-0 aspect-square">
                                     {userData?.photoURL ? (
                                         <img 
                                             key={userData.photoURL}

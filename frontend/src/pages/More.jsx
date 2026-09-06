@@ -170,9 +170,9 @@ const More = () => {
                 {/* Mobile Header */}
                 <AppMobileHeader />
 
-                <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 lg:p-10 space-y-6">
+                <main className="flex-1 w-full max-w-6xl mx-auto p-3.5 pt-3 md:p-8 lg:p-10">
                     {/* Desktop Page Title Header */}
-                    <div className="hidden md:flex items-center justify-between pb-4 border-b border-slate-200/80">
+                    <div className="hidden md:flex items-center justify-between pb-4 mb-8 border-b border-slate-200/80">
                         <div>
                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                                 <span>Platform</span>
@@ -208,7 +208,7 @@ const More = () => {
                     {/* =========================================================================
                         MOBILE ONLY HEADER & STRENGTH BAR (< md)
                        ========================================================================= */}
-                    <div className="md:hidden space-y-4">
+                    <div className="md:hidden space-y-3.5">
                         {/* Profile Card */}
                         <div className="bg-white rounded-2xl p-4 shadow-xs border border-slate-100 flex items-center justify-between w-full overflow-hidden">
                             <div className="flex items-center gap-3.5 min-w-0">

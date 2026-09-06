@@ -1,27 +1,24 @@
-/**
- * Generates high-fidelity HTML email template matching HisabKhata PRO design system
- */
 export function generateEmailHtml({
-    customerName,
-    merchantName,
-    merchantPhone,
-    amount,
-    balance,
-    txType,
-    description,
-    actionUrl,
-    customMessage
+  customerName,
+  merchantName,
+  merchantPhone,
+  amount,
+  balance,
+  txType,
+  description,
+  actionUrl,
+  customMessage
 }) {
-    const isGave = txType === 'Payment Requested' || txType === 'GAVE' || txType === 'credit' || (amount && amount < 0);
-    const absAmount = amount != null ? Math.abs(amount).toLocaleString('en-IN') : '0';
-    const absBalance = balance != null ? Math.abs(balance).toLocaleString('en-IN') : absAmount;
-    const isBalanceDebit = balance != null ? balance < 0 : isGave;
-    const merchant = merchantName || 'HisabKhata Merchant';
-    const customer = customerName || 'Valued Customer';
-    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const isGave = txType === 'Payment Requested' || txType === 'GAVE' || txType === 'credit' || (amount && amount < 0);
+  const absAmount = amount != null ? Math.abs(amount).toLocaleString('en-IN') : '0';
+  const absBalance = balance != null ? Math.abs(balance).toLocaleString('en-IN') : absAmount;
+  const isBalanceDebit = balance != null ? balance < 0 : isGave;
+  const merchant = merchantName || 'HisabKhata Merchant';
+  const customer = customerName || 'Valued Customer';
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,9 +64,9 @@ export function generateEmailHtml({
     <div class="content">
       <div class="greeting">Hello ${customer},</div>
       <p class="message-text">
-        ${customMessage || (isGave 
-            ? `A payment update has been recorded by <strong>${merchant}</strong>.` 
-            : `Your payment was successfully received and updated by <strong>${merchant}</strong>.`)}
+        ${customMessage || (isGave
+      ? `A payment update has been recorded by <strong>${merchant}</strong>.`
+      : `Your payment was successfully received and updated by <strong>${merchant}</strong>.`)}
       </p>
 
       <div class="amount-card">

@@ -282,29 +282,29 @@ app.post('/api/test-email', async (c) => {
             secure: c.env.SMTP_SECURE || true,
             user: c.env.SMTP_USER,
             pass: c.env.SMTP_PASS,
-            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata PRO',
+            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata',
             fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER,
             toEmail: recipient,
-            subject: 'HisabKhata PRO - Cloudflare Worker SMTP Test',
-            text: 'Your Cloudflare Worker custom SMTP email delivery is operational!',
+            subject: 'HisabKhata - SMTP Connection Verified',
+            text: 'Your custom SMTP transactional email delivery is operational!',
             html: generateEmailHtml({
-                customerName: 'Admin / Merchant',
-                merchantName: 'HisabKhata PRO System',
+                customerName: 'Valued Merchant',
+                merchantName: 'HisabKhata System',
                 amount: 100,
                 balance: 100,
                 txType: 'GAVE',
-                description: 'Test message confirming Cloudflare Worker SMTP connection and HTML rendering.',
-                customMessage: 'Your custom SMTP server connection has been verified successfully on Cloudflare Worker!'
+                description: 'Automated test message confirming custom SMTP delivery, secure socket authentication, and responsive template formatting.',
+                customMessage: 'Your custom SMTP server connection has been verified successfully. Your transactional email gateway is active and ready to deliver real-time statements.'
             })
         });
 
         return c.json({
             success: true,
-            message: `Test email sent successfully to ${recipient} via Cloudflare Worker!`,
+            message: `Test email sent successfully to ${recipient}!`,
             result
         });
     } catch (err) {
-        console.error('Cloudflare Worker SMTP Test Error:', err);
+        console.error('SMTP Test Error:', err);
         return c.json({ success: false, error: err.message }, 500);
     }
 });
@@ -350,7 +350,7 @@ app.post('/api/send-email', async (c) => {
     if (!c.env.SMTP_HOST || !c.env.SMTP_USER || !c.env.SMTP_PASS) {
         return c.json({
             success: false,
-            error: 'SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Cloudflare Worker secrets.'
+            error: 'SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in backend secrets.'
         }, 500);
     }
 
@@ -374,7 +374,7 @@ app.post('/api/send-email', async (c) => {
             secure: c.env.SMTP_SECURE || true,
             user: c.env.SMTP_USER,
             pass: c.env.SMTP_PASS,
-            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata PRO',
+            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata',
             fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER,
             toEmail: recipient,
             subject: emailSubject,
@@ -385,10 +385,10 @@ app.post('/api/send-email', async (c) => {
         return c.json({
             success: true,
             recipient,
-            message: 'Email delivered successfully via Cloudflare Worker'
+            message: 'Email delivered successfully via Project SMTP'
         });
     } catch (err) {
-        console.error('Cloudflare Worker SMTP Error:', err);
+        console.error('Project SMTP Error:', err);
         return c.json({
             success: false,
             error: err.message

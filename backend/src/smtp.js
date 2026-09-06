@@ -102,7 +102,7 @@ export async function sendSmtpEmail({
             `Message-ID: <${Date.now()}.${Math.random().toString(36).substring(2)}@hisabkhata.sumanonline.com>`,
             `MIME-Version: 1.0`,
             `Content-Type: multipart/alternative; boundary="${boundary}"`,
-            `X-Mailer: HisabKhata Cloudflare Worker SMTP`
+            `X-Mailer: HisabKhata Mail Delivery Engine`
         ].join('\r\n');
 
         const emailBody = [
@@ -139,7 +139,7 @@ export async function sendSmtpEmail({
 
         return {
             success: true,
-            message: 'Email delivered successfully via Cloudflare Worker SMTP',
+            message: 'Email delivered successfully via Project SMTP',
             response: dataResponse.trim()
         };
     } finally {

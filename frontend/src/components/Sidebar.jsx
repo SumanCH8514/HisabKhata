@@ -40,9 +40,14 @@ const Sidebar = () => {
         >
             {/* Logo */}
             <div className="px-5 py-4 border-b border-[#243446]">
-                <div className="flex items-center gap-2">
-                    <span className="text-white font-bold text-xl tracking-tight">HisabKhata</span>
-                    <span className="pro-badge">PRO</span>
+                <div className="flex flex-col select-none">
+                    <div className="flex items-center gap-2">
+                        <span className="text-white font-bold text-xl tracking-tight">HisabKhata</span>
+                        <span className="pro-badge">PRO</span>
+                    </div>
+                    <span className="text-[10px] text-[#7a9bb5] font-semibold tracking-wide mt-0.5">
+                        a SumanOnline Project
+                    </span>
                 </div>
             </div>
 

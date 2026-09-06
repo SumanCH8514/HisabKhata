@@ -27,9 +27,14 @@ const Header = () => {
                     <div className="w-8 h-8 bg-[#0057BB] rounded-lg flex items-center justify-center shadow-sm shrink-0">
                         <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight leading-none select-none">HisabKhata</h1>
-                        <span className="pro-badge">PRO</span>
+                    <div className="flex flex-col justify-center select-none">
+                        <div className="flex items-center gap-1.5">
+                            <h1 className="text-[#0057BB] font-black text-[17px] tracking-tight leading-none">HisabKhata</h1>
+                            <span className="pro-badge">PRO</span>
+                        </div>
+                        <span className="text-[9px] text-slate-400 font-bold tracking-tight leading-none mt-0.5">
+                            a SumanOnline Project
+                        </span>
                     </div>
                 </div>
             </div>

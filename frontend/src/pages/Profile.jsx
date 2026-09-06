@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AppMobileHeader from '../components/AppMobileHeader';
+import Footer from '../components/Footer';
 import { calculateProfileStrength } from '../utils/profileUtils';
 import { compressImage } from '../utils/imageUtils';
 import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';

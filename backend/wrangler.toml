@@ -16,3 +16,13 @@ bucket_name = "hisabkhata"
 [vars]
 PUBLIC_CDN_URL = "https://cdn.backend.hisabkhata.sumanonline.com"
 ENVIRONMENT = "production"
+
+# Custom SMTP Configuration (Set values here or as Secrets in Cloudflare Dashboard)
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "465"
+SMTP_SECURE = "true"
+SMTP_USER = ""
+SMTP_PASS = ""
+SMTP_FROM_NAME = "HisabKhata PRO"
+SMTP_FROM_EMAIL = "noreply@sumanonline.com"
+

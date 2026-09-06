@@ -229,10 +229,22 @@ app.post('/api/delete', async (c) => {
  * Cloudflare Worker Email Status Endpoint
  */
 app.get('/api/email-status', async (c) => {
-    const hasSmtpConfig = !!(c.env.SMTP_USER && c.env.SMTP_PASS && c.env.SMTP_HOST);
+    const hasHost = !!c.env.SMTP_HOST;
+    const hasUser = !!c.env.SMTP_USER;
+    const hasPass = !!c.env.SMTP_PASS;
+    const hasFromEmail = !!c.env.SMTP_FROM_EMAIL;
+    const hasSmtpConfig = hasHost && hasUser && hasPass;
+
     return c.json({
         service: 'HisabKhata Cloudflare Worker Email Service',
-        status: hasSmtpConfig ? 'CONFIGURED' : 'UNCONFIGURED',
+        status: hasSmtpConfig ? 'ONLINE' : 'UNCONFIGURED',
+        configured: hasSmtpConfig,
+        diagnostics: {
+            hasHost,
+            hasUser,
+            hasPass,
+            hasFromEmail
+        },
         host: c.env.SMTP_HOST || 'Not configured',
         port: c.env.SMTP_PORT || 465,
         fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER || 'Not set',
@@ -251,10 +263,15 @@ app.post('/api/test-email', async (c) => {
         return c.json({ success: false, error: 'Recipient email address is required.' }, 400);
     }
 
-    if (!c.env.SMTP_HOST || !c.env.SMTP_USER || !c.env.SMTP_PASS) {
+    const missing = [];
+    if (!c.env.SMTP_HOST) missing.push('SMTP_HOST');
+    if (!c.env.SMTP_USER) missing.push('SMTP_USER');
+    if (!c.env.SMTP_PASS) missing.push('SMTP_PASS');
+
+    if (missing.length > 0) {
         return c.json({
             success: false,
-            error: 'SMTP secrets (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Cloudflare Worker.'
+            error: `Missing: ${missing.join(', ')}. In Cloudflare Dashboard, scroll down and click 'Deploy' / 'Save and Deploy' so secrets take effect on the active worker.`
         }, 500);
     }
 

@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AppMobileHeader from '../components/AppMobileHeader';
+import Footer from '../components/Footer';
 import {
     ChevronRight,
     Settings,
@@ -182,30 +183,16 @@ const More = () => {
                         <div className="relative z-10">
                             <h3 className="text-sm font-black uppercase tracking-widest opacity-80">HisabKhata Premium</h3>
                             <p className="text-xs font-medium mt-1">Get advanced reports & priority support</p>
-                            <button className="mt-3 bg-white text-blue-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            <button className="mt-3 bg-white text-blue-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer">
                                 Upgrade Now
                             </button>
                         </div>
                         <Wallet size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
                     </div>
-
-                    {/* Footer Section */}
-                    <div className="pt-8 pb-12 space-y-6 px-4">
-                        <div className="text-center">
-                            <p className="text-[11px] font-black text-slate-400 tracking-tighter uppercase">HisabKhata V0.1.4</p>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-4">
-                            <Link to="/privacy-policy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
-                            <Link to="/terms-of-condition" className="hover:text-blue-600 transition-colors">Terms of Condition</Link>
-                        </div>
-
-                        <div className="text-center space-y-1">
-                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Website Design & Maintained by</p>
-                            <p className="text-[12px] font-black text-blue-600 tracking-tight leading-none">SumanOnline.Com</p>
-                        </div>
-                    </div>
                 </main>
+
+                {/* Modern Bottom-Anchored Footer */}
+                <Footer className="pb-8 md:pb-5" />
             </div>
 
             {/* Mobile Nav */}

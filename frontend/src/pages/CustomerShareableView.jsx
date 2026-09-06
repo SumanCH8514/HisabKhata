@@ -1909,23 +1909,23 @@ const CustomerShareableView = () => {
                 </div>
 
                 {/* Secure Footer */}
-                <footer className="text-center pt-8 pb-28 md:pb-12 px-4 space-y-4 max-w-xl mx-auto border-t border-slate-200/80 mt-8 no-print">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-xs">
-                        <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-                        <span className="text-[11px] font-bold tracking-wide">VERIFIED DIGITAL STATEMENT</span>
+                <footer className="text-center pt-5 pb-20 md:pb-8 px-4 space-y-2.5 max-w-md mx-auto border-t border-slate-200/60 mt-4 no-print">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-2xs">
+                        <span className="material-symbols-outlined text-[14px] text-emerald-600">verified_user</span>
+                        <span className="text-[10px] font-bold tracking-wider">VERIFIED DIGITAL STATEMENT</span>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-slate-500">
-                        <p className="font-medium text-slate-600 leading-relaxed">
+                    <div className="space-y-1 text-xs text-slate-500">
+                        <p className="font-medium text-slate-600 leading-snug text-[11px]">
                             This digital ledger is provided for account transparency and instant verification.
                         </p>
-                        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
-                            <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                            <span className="material-symbols-outlined text-[13px]">schedule</span>
                             <span>Generated on {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                         </div>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400 font-medium">
+                    <div className="pt-0.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
                         <span>Platform by</span>
                         <a 
                             href="https://SumanOnline.Com" 
@@ -1934,7 +1934,7 @@ const CustomerShareableView = () => {
                             className="font-bold text-[#0057BB] hover:text-[#003e85] hover:underline inline-flex items-center gap-0.5"
                         >
                             <span>SumanOnline.Com</span>
-                            <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                            <span className="material-symbols-outlined text-[12px]">open_in_new</span>
                         </a>
                     </div>
                 </footer>

@@ -1142,58 +1142,38 @@ const Customers = () => {
                                                 {/* Desktop Layout */}
                                                 <div className="hidden md:block col-span-6">
                                                     <p className="text-sm font-medium text-gray-800">{formattedDate}</p>
-                                                    {tx.balance != null && (
-                                                        <p className="text-xs text-gray-400 mt-0.5">Balance: {(tx.balance || 0).toLocaleString('en-IN')}</p>
-                                                    )}
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        {tx.balance != null && (
+                                                            <p className="text-xs text-gray-400">Balance: {(tx.balance || 0).toLocaleString('en-IN')}</p>
+                                                        )}
+                                                        {(() => {
+                                                            const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
+                                                            if (atts.length === 0) return null;
+                                                            return (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); handleOpenPreview(atts, 0); }}
+                                                                    className="text-blue-500 hover:text-blue-700 flex items-center gap-0.5 text-xs font-bold transition-colors cursor-pointer"
+                                                                    title={`${atts.length} bill attachment(s)`}
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[16px]">image</span>
+                                                                    {atts.length > 1 && <span className="text-[11px]">{atts.length}</span>}
+                                                                </button>
+                                                            );
+                                                        })()}
+                                                    </div>
                                                     {tx.description && (
                                                         <p className="text-xs text-gray-400 mt-0.5 line-clamp-3">{tx.description}</p>
                                                     )}
                                                 </div>
                                                 <div className="hidden md:block col-span-3 text-right pt-0.5">
                                                     {isGave
-                                                        ? (
-                                                            <div className="flex flex-col items-end">
-                                                                <p className="text-sm font-semibold text-red-500">₹{absAmount.toLocaleString('en-IN')}</p>
-                                                                {(() => {
-                                                                    const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
-                                                                    if (atts.length === 0) return null;
-                                                                    return (
-                                                                        <button 
-                                                                            onClick={(e) => { e.stopPropagation(); handleOpenPreview(atts, 0); }}
-                                                                            className="text-blue-500 hover:text-blue-700 mt-1 flex items-center gap-0.5 text-xs font-bold"
-                                                                            title={`${atts.length} bill attachment(s)`}
-                                                                        >
-                                                                            <span className="material-symbols-outlined text-[16px]">image</span>
-                                                                            {atts.length > 1 && <span>{atts.length}</span>}
-                                                                        </button>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                        )
+                                                        ? <p className="text-sm font-semibold text-red-500">₹{absAmount.toLocaleString('en-IN')}</p>
                                                         : <p className="text-sm text-gray-300">-</p>
                                                     }
                                                 </div>
                                                 <div className="hidden md:block col-span-3 text-right pt-0.5">
                                                     {!isGave
-                                                        ? (
-                                                            <div className="flex flex-col items-end">
-                                                                <p className="text-sm font-semibold text-green-600">₹{absAmount.toLocaleString('en-IN')}</p>
-                                                                {(() => {
-                                                                    const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
-                                                                    if (atts.length === 0) return null;
-                                                                    return (
-                                                                        <button 
-                                                                            onClick={(e) => { e.stopPropagation(); handleOpenPreview(atts, 0); }}
-                                                                            className="text-blue-500 hover:text-blue-700 mt-1 flex items-center gap-0.5 text-xs font-bold"
-                                                                            title={`${atts.length} bill attachment(s)`}
-                                                                        >
-                                                                            <span className="material-symbols-outlined text-[16px]">image</span>
-                                                                            {atts.length > 1 && <span>{atts.length}</span>}
-                                                                        </button>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                        )
+                                                        ? <p className="text-sm font-semibold text-green-600">₹{absAmount.toLocaleString('en-IN')}</p>
                                                         : <p className="text-sm text-gray-300">-</p>
                                                     }
                                                 </div>

@@ -13,6 +13,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+import emailjs from '@emailjs/browser';
 import { sendEmailViaBackend } from './emailService';
 
 const app = initializeApp(firebaseConfig);
@@ -21,8 +22,8 @@ const db = getDatabase(app);
 
 export const sendEmailNotification = async (templateParams) => {
   try {
-    // Basic email validation
-    if (!templateParams.to_email || !templateParams.to_email.includes('@')) {
+    const toEmail = templateParams.to_email || templateParams.to || templateParams.email;
+    if (!toEmail || !toEmail.includes('@')) {
       console.warn("Skipping email: Invalid or empty recipient address.");
       return;
     }
@@ -32,10 +33,33 @@ export const sendEmailNotification = async (templateParams) => {
 
     if (settings.emailNotifications === false) return;
 
+    // Check Gateway: 'EMAILJS' vs 'SMTP' (default)
+    if (settings.emailGateway === 'EMAILJS' && settings.emailjs?.serviceId && settings.emailjs?.publicKey) {
+      const emailJSConfig = settings.emailjs;
+      let templateId = emailJSConfig.welcomeTemplateId || emailJSConfig.templateId;
+      if (templateParams.type === 'ALERT' && emailJSConfig.alertTemplateId) {
+        templateId = emailJSConfig.alertTemplateId;
+      } else if (templateParams.type === 'PAYMENT' && settings.paymentEmailjs?.templateId) {
+        return await emailjs.send(
+          settings.paymentEmailjs.serviceId || emailJSConfig.serviceId,
+          settings.paymentEmailjs.templateId,
+          templateParams,
+          settings.paymentEmailjs.publicKey || emailJSConfig.publicKey
+        );
+      }
+      return await emailjs.send(
+        emailJSConfig.serviceId,
+        templateId,
+        templateParams,
+        emailJSConfig.publicKey
+      );
+    }
+
+    // Default to Project SMTP (Backend Service)
     const result = await sendEmailViaBackend(templateParams);
     return result;
   } catch (error) {
-    console.error("Nodemailer Email Service Error:", error);
+    console.error("Email Service Error:", error);
     // Gracefully handle without blocking UI operations
     return false;
   }

@@ -26,12 +26,15 @@ import {
     ArrowUpRight,
     FolderTree,
     AlertCircle,
-    Play,
     CheckCircle,
     ExternalLink,
-    Sparkles
+    Sparkles,
+    Send,
+    Server,
+    Check
 } from 'lucide-react';
 import { testR2Connection, migrateAllBase64ToR2, R2_FOLDERS } from '../services/r2Storage';
+import { testSmtpConnection, checkSmtpStatus, getBackendEmailUrl } from '../services/emailService';
 
 import {
     XAxis,
@@ -50,8 +53,14 @@ const AdminDashboard = () => {
     const [customers, setCustomers] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [globalSettings, setGlobalSettings] = useState({});
+    const [emailGateway, setEmailGateway] = useState('SMTP');
     const [emailJSConfig, setEmailJSConfig] = useState({ serviceId: '', templateId: '', publicKey: '' });
     const [paymentEmailJS, setPaymentEmailJS] = useState({ serviceId: '', templateId: '', publicKey: '' });
+    const [testEmailRecipient, setTestEmailRecipient] = useState('');
+    const [testingEmail, setTestingEmail] = useState(false);
+    const [emailTestResult, setEmailTestResult] = useState(null);
+    const [smtpStatus, setSmtpStatus] = useState(null);
+    const [checkingSmtp, setCheckingSmtp] = useState(false);
     const [r2Config, setR2Config] = useState({
         accountId: '',
         accessKeyId: '',
@@ -88,6 +97,9 @@ const AdminDashboard = () => {
         const unsubTransactions = dbService.listenAllTransactions((data) => setTransactions(data));
         const unsubSettings = dbService.listenGlobalSettings((data) => {
             setGlobalSettings(data);
+            if (data.emailGateway) {
+                setEmailGateway(data.emailGateway);
+            }
             if (data.emailjs) {
                 setEmailJSConfig(data.emailjs);
             }
@@ -111,6 +123,48 @@ const AdminDashboard = () => {
             if (typeof unsubSettings === 'function') unsubSettings();
         };
     }, []);
+
+    const handleSelectEmailGateway = async (gateway) => {
+        setEmailGateway(gateway);
+        try {
+            await dbService.updateGlobalSettings({ emailGateway: gateway });
+        } catch (err) {
+            console.error("Failed to update email gateway:", err);
+            alert("Failed to update email delivery provider: " + err.message);
+        }
+    };
+
+    const handleTestSmtpEmail = async (e) => {
+        if (e) e.preventDefault();
+        const recipient = (testEmailRecipient || currentUser?.email || userData?.email || '').trim();
+        if (!recipient || !recipient.includes('@')) {
+            alert("Please enter a valid recipient email address.");
+            return;
+        }
+
+        setTestingEmail(true);
+        setEmailTestResult(null);
+        try {
+            const res = await testSmtpConnection(recipient);
+            setEmailTestResult(res);
+        } catch (err) {
+            setEmailTestResult({ success: false, error: err.message });
+        } finally {
+            setTestingEmail(false);
+        }
+    };
+
+    const handleCheckSmtpStatus = async () => {
+        setCheckingSmtp(true);
+        try {
+            const res = await checkSmtpStatus();
+            setSmtpStatus(res);
+        } catch (err) {
+            setSmtpStatus({ status: 'OFFLINE', error: err.message, configured: false });
+        } finally {
+            setCheckingSmtp(false);
+        }
+    };
 
     const handleSaveR2Config = async () => {
         try {
@@ -966,136 +1020,357 @@ const AdminDashboard = () => {
 
             {/* Right Column: Email Integrations & Database Tools */}
             <div className="space-y-6">
-                {/* Primary EmailJS Gateway */}
+                {/* Email Delivery Provider Selector Card */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                        <div className="p-2 bg-[#0057BB]/10 text-[#0057BB] rounded-lg">
                             <Mail size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-slate-900">EmailJS — Transactional Gateway</h3>
-                            <p className="text-[11px] text-slate-500">Primary service for welcome emails and general alerts</p>
+                            <h3 className="text-sm font-bold text-slate-900">Email Delivery Provider</h3>
+                            <p className="text-[11px] text-slate-500">Select active email dispatch engine for alerts &amp; statements</p>
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
-                            <input 
-                                type="text" 
-                                value={emailJSConfig.serviceId || ''} 
-                                onChange={(e) => setEmailJSConfig({...emailJSConfig, serviceId: e.target.value.trim()})}
-                                placeholder="service_xxxx"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Welcome Template ID</label>
-                                <input 
-                                    type="text" 
-                                    value={emailJSConfig.welcomeTemplateId || emailJSConfig.templateId || ''} 
-                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, welcomeTemplateId: e.target.value.trim()})}
-                                    placeholder="template_xxxx"
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                                />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        {/* Option 1: Project SMTP */}
+                        <div
+                            onClick={() => handleSelectEmailGateway('SMTP')}
+                            className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                                emailGateway === 'SMTP' || !emailGateway
+                                    ? 'border-[#0057BB] bg-blue-50/40 shadow-xs'
+                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                            }`}
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <div className={`p-1.5 rounded-lg ${emailGateway === 'SMTP' || !emailGateway ? 'bg-[#0057BB] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                        <Server size={15} />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs font-bold text-slate-900">Project SMTP</span>
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">Recommended</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500">Cloudflare Worker Native Sockets</p>
+                                    </div>
+                                </div>
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                                    emailGateway === 'SMTP' || !emailGateway
+                                        ? 'border-[#0057BB] bg-[#0057BB]'
+                                        : 'border-slate-300 bg-white'
+                                }`}>
+                                    {(emailGateway === 'SMTP' || !emailGateway) && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Alerts Template ID</label>
-                                <input 
-                                    type="text" 
-                                    value={emailJSConfig.alertTemplateId || emailJSConfig.templateId || ''} 
-                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, alertTemplateId: e.target.value.trim()})}
-                                    placeholder="template_yyyy"
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                                />
+                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                Direct SSL/TLS 465 SMTP via backend worker. No third-party quota limits, faster &amp; fully private.
+                            </p>
+                        </div>
+
+                        {/* Option 2: EmailJS */}
+                        <div
+                            onClick={() => handleSelectEmailGateway('EMAILJS')}
+                            className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                                emailGateway === 'EMAILJS'
+                                    ? 'border-[#0057BB] bg-blue-50/40 shadow-xs'
+                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                            }`}
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <div className={`p-1.5 rounded-lg ${emailGateway === 'EMAILJS' ? 'bg-[#0057BB] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                        <Mail size={15} />
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-bold text-slate-900">EmailJS Service</span>
+                                        <p className="text-[10px] text-slate-500">Client-Side Web SDK</p>
+                                    </div>
+                                </div>
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                                    emailGateway === 'EMAILJS'
+                                        ? 'border-[#0057BB] bg-[#0057BB]'
+                                        : 'border-slate-300 bg-white'
+                                }`}>
+                                    {emailGateway === 'EMAILJS' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
-                            <input 
-                                type="text" 
-                                value={emailJSConfig.publicKey || ''} 
-                                onChange={(e) => setEmailJSConfig({...emailJSConfig, publicKey: e.target.value.trim()})}
-                                placeholder="public_key_xxxx"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                            />
-                        </div>
-
-                        <div className="pt-1">
-                            <button 
-                                type="button"
-                                onClick={handleSaveEmailJS}
-                                className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                            >
-                                <CheckCircle2 size={14} />
-                                <span>Save EmailJS Configuration</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Payment Verification EmailJS */}
-                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
-                            <ShieldCheck size={18} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-900">Payment Verification Gateway</h3>
-                            <p className="text-[11px] text-slate-500">Dedicated pipeline for payment approvals and OTP alerts</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
-                                <input 
-                                    type="text" 
-                                    value={paymentEmailJS.serviceId || ''} 
-                                    onChange={(e) => setPaymentEmailJS({...paymentEmailJS, serviceId: e.target.value.trim()})}
-                                    placeholder="service_payment"
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Verification Template ID</label>
-                                <input 
-                                    type="text" 
-                                    value={paymentEmailJS.templateId || ''} 
-                                    onChange={(e) => setPaymentEmailJS({...paymentEmailJS, templateId: e.target.value.trim()})}
-                                    placeholder="template_payment"
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
-                            <input 
-                                type="text" 
-                                value={paymentEmailJS.publicKey || ''} 
-                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, publicKey: e.target.value.trim()})}
-                                placeholder="public_key_xxxx"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
-                            />
-                        </div>
-
-                        <div className="pt-1">
-                            <button 
-                                type="button"
-                                onClick={handleSaveEmailJS}
-                                className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                            >
-                                <CheckCircle2 size={14} />
-                                <span>Save Payment Email Configuration</span>
-                            </button>
+                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                Traditional EmailJS template pipeline dispatched directly from client browser sessions.
+                            </p>
                         </div>
                     </div>
                 </div>
+
+                {/* Conditional View: Project SMTP Live Tester */}
+                {(emailGateway === 'SMTP' || !emailGateway) && (
+                    <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                                    <Server size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Project SMTP — Live Gateway</h3>
+                                    <p className="text-[11px] text-slate-500">Backend SMTP socket delivery engine</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCheckSmtpStatus}
+                                disabled={checkingSmtp}
+                                className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Check Worker status"
+                            >
+                                <RefreshCw size={12} className={checkingSmtp ? 'animate-spin text-[#0057BB]' : ''} />
+                                <span>{checkingSmtp ? 'Checking...' : 'Check Status'}</span>
+                            </button>
+                        </div>
+
+                        {/* Status / Backend Endpoint */}
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div>
+                                <span className="text-[11px] font-semibold text-slate-500 block">Worker Endpoint</span>
+                                <span className="font-mono text-slate-800 text-[11px] break-all">{getBackendEmailUrl()}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {smtpStatus ? (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                                        smtpStatus.status === 'ONLINE' || smtpStatus.configured
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-amber-100 text-amber-700'
+                                    }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${smtpStatus.status === 'ONLINE' || smtpStatus.configured ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                        {smtpStatus.status === 'ONLINE' ? 'SMTP Online' : (smtpStatus.configured ? 'Configured' : 'Offline / Standby')}
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-100 text-emerald-700">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        Active Provider
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Test Mail Section */}
+                        <div className="space-y-3 pt-1">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
+                                    Send Test Email
+                                </label>
+                                {(currentUser?.email || userData?.email) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setTestEmailRecipient(currentUser?.email || userData?.email || '')}
+                                        className="text-[11px] text-[#0057BB] hover:underline font-medium cursor-pointer"
+                                    >
+                                        Use my email ({currentUser?.email || userData?.email})
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input 
+                                    type="email" 
+                                    value={testEmailRecipient} 
+                                    onChange={(e) => setTestEmailRecipient(e.target.value)}
+                                    placeholder="Enter recipient email (e.g. yourname@gmail.com)"
+                                    className="flex-1 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={handleTestSmtpEmail}
+                                    disabled={testingEmail}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+                                >
+                                    {testingEmail ? (
+                                        <>
+                                            <RefreshCw size={13} className="animate-spin" />
+                                            <span>Sending...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send size={13} />
+                                            <span>Send Test Mail</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Result feedback */}
+                            {emailTestResult && (
+                                <div className={`p-3 rounded-lg border text-xs flex items-start gap-2.5 transition-all ${
+                                    emailTestResult.success 
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                                        : 'bg-rose-50 border-rose-200 text-rose-800'
+                                }`}>
+                                    {emailTestResult.success ? (
+                                        <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                                    ) : (
+                                        <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                                    )}
+                                    <div className="space-y-0.5">
+                                        <p className="font-semibold">
+                                            {emailTestResult.success ? 'Test Email Sent Successfully!' : 'Email Delivery Failed'}
+                                        </p>
+                                        <p className="text-[11px] opacity-90">
+                                            {emailTestResult.success 
+                                                ? (emailTestResult.message || `Delivered to recipient. (Message ID: ${emailTestResult.messageId || 'OK'})`)
+                                                : (emailTestResult.error || emailTestResult.message || 'Check your SMTP credentials on Cloudflare Worker.')
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[11px] text-slate-600 space-y-1">
+                                <div className="font-semibold text-slate-800 flex items-center gap-1">
+                                    <ShieldCheck size={13} className="text-[#0057BB]" />
+                                    <span>Zero Frontend Secrets Exposure</span>
+                                </div>
+                                <p className="text-slate-500 leading-normal">
+                                    SMTP credentials (<code className="font-mono text-[#0057BB]">SMTP_HOST</code>, <code className="font-mono text-[#0057BB]">SMTP_PORT</code>, <code className="font-mono text-[#0057BB]">SMTP_USER</code>, <code className="font-mono text-[#0057BB]">SMTP_PASS</code>) are stored exclusively in Cloudflare Worker encrypted secrets.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Conditional View: EmailJS Configurations (Only shown if EmailJS is selected) */}
+                {emailGateway === 'EMAILJS' && (
+                    <>
+                        {/* Primary EmailJS Gateway */}
+                        <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                                <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                                    <Mail size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">EmailJS — Transactional Gateway</h3>
+                                    <p className="text-[11px] text-slate-500">Primary service for welcome emails and general alerts</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
+                                    <input 
+                                        type="text" 
+                                        value={emailJSConfig.serviceId || ''} 
+                                        onChange={(e) => setEmailJSConfig({...emailJSConfig, serviceId: e.target.value.trim()})}
+                                        placeholder="service_xxxx"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Welcome Template ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={emailJSConfig.welcomeTemplateId || emailJSConfig.templateId || ''} 
+                                            onChange={(e) => setEmailJSConfig({...emailJSConfig, welcomeTemplateId: e.target.value.trim()})}
+                                            placeholder="template_xxxx"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Alerts Template ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={emailJSConfig.alertTemplateId || emailJSConfig.templateId || ''} 
+                                            onChange={(e) => setEmailJSConfig({...emailJSConfig, alertTemplateId: e.target.value.trim()})}
+                                            placeholder="template_yyyy"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
+                                    <input 
+                                        type="text" 
+                                        value={emailJSConfig.publicKey || ''} 
+                                        onChange={(e) => setEmailJSConfig({...emailJSConfig, publicKey: e.target.value.trim()})}
+                                        placeholder="public_key_xxxx"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                    />
+                                </div>
+
+                                <div className="pt-1">
+                                    <button 
+                                        type="button"
+                                        onClick={handleSaveEmailJS}
+                                        className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                                    >
+                                        <CheckCircle2 size={14} />
+                                        <span>Save EmailJS Configuration</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Payment Verification EmailJS */}
+                        <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                                <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                                    <ShieldCheck size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Payment Verification Gateway</h3>
+                                    <p className="text-[11px] text-slate-500">Dedicated pipeline for payment approvals and OTP alerts</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={paymentEmailJS.serviceId || ''} 
+                                            onChange={(e) => setPaymentEmailJS({...paymentEmailJS, serviceId: e.target.value.trim()})}
+                                            placeholder="service_payment"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Verification Template ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={paymentEmailJS.templateId || ''} 
+                                            onChange={(e) => setPaymentEmailJS({...paymentEmailJS, templateId: e.target.value.trim()})}
+                                            placeholder="template_payment"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
+                                    <input 
+                                        type="text" 
+                                        value={paymentEmailJS.publicKey || ''} 
+                                        onChange={(e) => setPaymentEmailJS({...paymentEmailJS, publicKey: e.target.value.trim()})}
+                                        placeholder="public_key_xxxx"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                    />
+                                </div>
+
+                                <div className="pt-1">
+                                    <button 
+                                        type="button"
+                                        onClick={handleSaveEmailJS}
+                                        className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                                    >
+                                        <CheckCircle2 size={14} />
+                                        <span>Save Payment Email Configuration</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {/* Database Tools */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

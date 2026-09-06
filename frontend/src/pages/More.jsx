@@ -69,7 +69,7 @@ const More = () => {
             {/* Sidebar Desktop */}
             <Sidebar />
 
-            <div className="flex-1 md:ml-[260px] pb-24 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
+            <div className="flex-1 md:ml-[260px] pb-16 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
                 {/* Mobile Header — Branding */}
                 <AppMobileHeader />
 
@@ -142,28 +142,8 @@ const More = () => {
                         ))}
                     </div>
 
-                    {/* App Install Button & Settings */}
-                    <div className="pt-4 space-y-2.5">
-                        {canInstall && !isInstalled && (
-                            <button
-                                onClick={triggerInstall}
-                                className="w-full bg-gradient-to-r from-[#0057BB] to-[#004291] text-white px-5 py-3.5 rounded-2xl shadow-md shadow-blue-500/15 flex items-center justify-between group active:scale-[0.99] transition-all cursor-pointer"
-                            >
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
-                                        <Download size={20} />
-                                    </div>
-                                    <div className="text-left">
-                                        <span className="block text-xs font-black tracking-wide">Install HisabKhata App</span>
-                                        <span className="block text-[10px] text-blue-100 font-medium">Faster access & offline support</span>
-                                    </div>
-                                </div>
-                                <span className="text-[10px] font-bold bg-white text-[#0057BB] px-2.5 py-1 rounded-full uppercase tracking-wider">
-                                    Install
-                                </span>
-                            </button>
-                        )}
-
+                    {/* Settings */}
+                    <div className="pt-2">
                         <button
                             onClick={() => navigate('/settings')}
                             className="w-full bg-white px-5 py-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group active:bg-slate-50 transition-colors"
@@ -178,21 +158,25 @@ const More = () => {
                         </button>
                     </div>
 
-                    {/* Promo Banner / Pro Upgrade */}
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white flex items-center justify-between overflow-hidden relative">
+                    {/* Promo Banner / HisabKhata Pro Install */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white flex items-center justify-between overflow-hidden relative shadow-sm">
                         <div className="relative z-10">
-                            <h3 className="text-sm font-black uppercase tracking-widest opacity-80">HisabKhata Premium</h3>
-                            <p className="text-xs font-medium mt-1">Get advanced reports & priority support</p>
-                            <button className="mt-3 bg-white text-blue-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer">
-                                Upgrade Now
+                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-100">HisabKhata Pro</h3>
+                            <p className="text-xs font-medium mt-1 text-white/90">Install and use the HisabKhata Ledger for free</p>
+                            <button 
+                                onClick={triggerInstall}
+                                className="mt-3 bg-white text-blue-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-blue-50 active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                            >
+                                <Download size={14} className="stroke-[2.5]" />
+                                INSTALL NOW
                             </button>
                         </div>
-                        <Wallet size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
+                        <Wallet size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12 pointer-events-none" />
                     </div>
                 </main>
 
                 {/* Modern Bottom-Anchored Footer */}
-                <Footer className="pb-8 md:pb-5" />
+                <Footer className="py-4 md:py-5" />
             </div>
 
             {/* Mobile Nav */}

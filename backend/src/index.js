@@ -226,31 +226,6 @@ app.post('/api/delete', async (c) => {
 });
 
 /**
- * Direct file serving fallback for public R2 assets
- */
-app.get('/:folder/:filename', async (c) => {
-    const { folder, filename } = c.req.param();
-    const key = `${folder}/${filename}`;
-
-    if (!c.env.MY_BUCKET) {
-        return c.text('R2 Bucket not configured', 500);
-    }
-
-    const object = await c.env.MY_BUCKET.get(key);
-    if (!object) {
-        return c.text('File Not Found', 404);
-    }
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set('etag', object.httpEtag);
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-
-    return new Response(object.body, { headers });
-});
-
-/**
  * Cloudflare Worker Email Status Endpoint
  */
 app.get('/api/email-status', async (c) => {
@@ -402,6 +377,35 @@ app.post('/api/send-email', async (c) => {
             error: err.message
         }, 500);
     }
+});
+
+/**
+ * Direct file serving fallback for public R2 assets (Must be last route)
+ */
+app.get('/:folder/:filename', async (c) => {
+    const { folder, filename } = c.req.param();
+    if (folder === 'api') {
+        return c.text('API endpoint not found', 404);
+    }
+
+    const key = `${folder}/${filename}`;
+
+    if (!c.env.MY_BUCKET) {
+        return c.text('R2 Bucket not configured', 500);
+    }
+
+    const object = await c.env.MY_BUCKET.get(key);
+    if (!object) {
+        return c.text('File Not Found', 404);
+    }
+
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set('etag', object.httpEtag);
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+    return new Response(object.body, { headers });
 });
 
 export default app;

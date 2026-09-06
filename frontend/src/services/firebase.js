@@ -13,12 +13,11 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-import emailjs from '@emailjs/browser';
+import { sendEmailViaBackend } from './emailService';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-
 
 export const sendEmailNotification = async (templateParams) => {
   try {
@@ -33,74 +32,12 @@ export const sendEmailNotification = async (templateParams) => {
 
     if (settings.emailNotifications === false) return;
 
-    // Use specific payment config for payment related emails
-    let config = settings.emailjs;
-    if (templateParams.type === 'PAYMENT_VERIFICATION' && settings.paymentEmailjs) {
-      config = settings.paymentEmailjs;
-    }
-
-    if (!config || !config.serviceId || !config.publicKey) {
-      console.warn("EmailJS not configured in Admin Console.");
-      throw new Error("EmailJS not configured in Admin Console.");
-    }
-
-    // Determine which template to use
-    let templateId = config.templateId; // Fallback
-    if (templateParams.type === 'WELCOME' || templateParams.type === 'CUSTOMER_ADDED') {
-      templateId = config.welcomeTemplateId || config.templateId;
-    } else if (templateParams.type === 'TRANSACTION' || templateParams.type === 'TRANSACTION_NOTIFICATION' || templateParams.type === 'REMINDER') {
-      templateId = config.alertTemplateId || config.templateId;
-    } else if (templateParams.type === 'PAYMENT_VERIFICATION') {
-      // For payment verification, we prioritize the specific template in payment config
-      templateId = config.templateId; 
-    }
-
-    if (!templateId) {
-      console.warn("Email template ID not found.");
-      throw new Error("Email template ID not found.");
-    }
-
-    const toName = templateParams.to_name || templateParams.customer_name || 'Valued Customer';
-    const merchantName = templateParams.merchant_name || templateParams.business_name || 'HisabKhata Merchant';
-    const merchantPhone = templateParams.merchant_phone || templateParams.phone || '';
-    const amountVal = templateParams.amount != null ? templateParams.amount : '';
-    const balanceVal = templateParams.balance != null ? templateParams.balance : (templateParams.current_balance != null ? templateParams.current_balance : amountVal);
-
-    const params = {
-      ...templateParams,
-      email: templateParams.to_email, // Alias for templates using {{email}}
-      to_name: toName,
-      customer_name: toName,
-      merchant_name: merchantName,
-      merchant_phone: merchantPhone,
-      amount: amountVal,
-      transaction_amount: amountVal,
-      balance: balanceVal,
-      current_balance: balanceVal,
-      tx_type: templateParams.tx_type || 'Payment Reminder',
-      status: templateParams.status || 'Active',
-      link: templateParams.action_url || '',
-      verification_link: templateParams.action_url || '',
-      action_link: templateParams.action_url || '',
-      action_url: templateParams.action_url || ''
-    };
-
-    console.log(`email to: ${params.email}`);
-
-    // Initialize with Public Key
-    emailjs.init(config.publicKey);
-
-    await emailjs.send(
-      config.serviceId,
-      templateId,
-      params
-    );
-    console.log("Email sent successfully! ✅");
-    return true;
+    const result = await sendEmailViaBackend(templateParams);
+    return result;
   } catch (error) {
-    console.error("EmailJS Error:", error);
-    console.log("Email not sent ! ❌");
-    throw error;
+    console.error("Nodemailer Email Service Error:", error);
+    // Gracefully handle without blocking UI operations
+    return false;
   }
 };
 

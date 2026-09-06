@@ -7,11 +7,17 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "server": "node server.js",
+    "server:dev": "node --watch server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "hisabkhata-root": "file:..",
-    "hono": "^4.7.2"
+    "hono": "^4.7.2",
+    "nodemailer": "^6.9.16"
   },
   "devDependencies": {
     "wrangler": "^3.114.0"

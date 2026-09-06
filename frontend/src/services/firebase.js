@@ -325,6 +325,7 @@ export const dbService = {
           amount: Math.abs(transactionData.amount),
           balance: Math.abs(newBalance),
           tx_type: typeStr,
+          action_url: `https://hisabkhata.sumanonline.com/customer/share/${customerId}`,
           type: 'TRANSACTION'
         });
       } catch (err) {

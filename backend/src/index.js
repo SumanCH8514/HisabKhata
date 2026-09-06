@@ -294,7 +294,8 @@ app.post('/api/test-email', async (c) => {
                 balance: 100,
                 txType: 'GAVE',
                 description: 'Automated test message confirming custom SMTP delivery, secure socket authentication, and responsive template formatting.',
-                customMessage: 'Your custom SMTP server connection has been verified successfully. Your transactional email gateway is active and ready to deliver real-time statements.'
+                customMessage: 'Your custom SMTP server connection has been verified successfully. Your transactional email gateway is active and ready to deliver real-time statements.',
+                actionUrl: 'https://hisabkhata.sumanonline.com/customer/share/-Ort7aT4tXrZTTb9qSh6'
             })
         });
 

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { sendSmtpEmail } from './smtp.js';
+import { generateEmailHtml } from './emailTemplate.js';
 
 const app = new Hono();
 
@@ -248,4 +250,159 @@ app.get('/:folder/:filename', async (c) => {
     return new Response(object.body, { headers });
 });
 
+/**
+ * Cloudflare Worker Email Status Endpoint
+ */
+app.get('/api/email-status', async (c) => {
+    const hasSmtpConfig = !!(c.env.SMTP_USER && c.env.SMTP_PASS && c.env.SMTP_HOST);
+    return c.json({
+        service: 'HisabKhata Cloudflare Worker Email Service',
+        status: hasSmtpConfig ? 'CONFIGURED' : 'UNCONFIGURED',
+        host: c.env.SMTP_HOST || 'Not configured',
+        port: c.env.SMTP_PORT || 465,
+        fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER || 'Not set',
+        timestamp: new Date().toISOString()
+    });
+});
+
+/**
+ * Cloudflare Worker Test Email Endpoint
+ */
+app.post('/api/test-email', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const recipient = body.testRecipient || c.env.SMTP_USER;
+
+    if (!recipient) {
+        return c.json({ success: false, error: 'Recipient email address is required.' }, 400);
+    }
+
+    if (!c.env.SMTP_HOST || !c.env.SMTP_USER || !c.env.SMTP_PASS) {
+        return c.json({
+            success: false,
+            error: 'SMTP secrets (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Cloudflare Worker.'
+        }, 500);
+    }
+
+    try {
+        const result = await sendSmtpEmail({
+            host: c.env.SMTP_HOST,
+            port: c.env.SMTP_PORT || 465,
+            secure: c.env.SMTP_SECURE || true,
+            user: c.env.SMTP_USER,
+            pass: c.env.SMTP_PASS,
+            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata PRO',
+            fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER,
+            toEmail: recipient,
+            subject: 'HisabKhata PRO - Cloudflare Worker SMTP Test',
+            text: 'Your Cloudflare Worker custom SMTP email delivery is operational!',
+            html: generateEmailHtml({
+                customerName: 'Admin / Merchant',
+                merchantName: 'HisabKhata PRO System',
+                amount: 100,
+                balance: 100,
+                txType: 'GAVE',
+                description: 'Test message confirming Cloudflare Worker SMTP connection and HTML rendering.',
+                customMessage: 'Your custom SMTP server connection has been verified successfully on Cloudflare Worker!'
+            })
+        });
+
+        return c.json({
+            success: true,
+            message: `Test email sent successfully to ${recipient} via Cloudflare Worker!`,
+            result
+        });
+    } catch (err) {
+        console.error('Cloudflare Worker SMTP Test Error:', err);
+        return c.json({ success: false, error: err.message }, 500);
+    }
+});
+
+/**
+ * Cloudflare Worker Main Email Sending Endpoint
+ */
+app.post('/api/send-email', async (c) => {
+    let body;
+    try {
+        body = await c.req.json();
+    } catch {
+        return c.json({ success: false, error: 'Invalid JSON request body.' }, 400);
+    }
+
+    const {
+        to,
+        to_email,
+        subject,
+        html,
+        text,
+        customerName,
+        customer_name,
+        merchantName,
+        merchant_name,
+        merchantPhone,
+        merchant_phone,
+        amount,
+        balance,
+        txType,
+        tx_type,
+        description,
+        actionUrl,
+        action_url,
+        customMessage
+    } = body;
+
+    const recipient = to || to_email;
+    if (!recipient || !recipient.includes('@')) {
+        return c.json({ success: false, error: 'Invalid or missing recipient email address.' }, 400);
+    }
+
+    if (!c.env.SMTP_HOST || !c.env.SMTP_USER || !c.env.SMTP_PASS) {
+        return c.json({
+            success: false,
+            error: 'SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Cloudflare Worker secrets.'
+        }, 500);
+    }
+
+    try {
+        const emailSubject = subject || `HisabKhata Statement Update - ${merchantName || merchant_name || 'Ledger'}`;
+        const emailHtml = html || generateEmailHtml({
+            customerName: customerName || customer_name,
+            merchantName: merchantName || merchant_name,
+            merchantPhone: merchantPhone || merchant_phone,
+            amount: amount,
+            balance: balance,
+            txType: txType || tx_type,
+            description: description,
+            actionUrl: actionUrl || action_url,
+            customMessage: customMessage
+        });
+
+        const result = await sendSmtpEmail({
+            host: c.env.SMTP_HOST,
+            port: c.env.SMTP_PORT || 465,
+            secure: c.env.SMTP_SECURE || true,
+            user: c.env.SMTP_USER,
+            pass: c.env.SMTP_PASS,
+            fromName: c.env.SMTP_FROM_NAME || 'HisabKhata PRO',
+            fromEmail: c.env.SMTP_FROM_EMAIL || c.env.SMTP_USER,
+            toEmail: recipient,
+            subject: emailSubject,
+            text: text || `HisabKhata Statement: ${merchantName || 'Merchant'} has updated your ledger. Visit ${actionUrl || ''} to view.`,
+            html: emailHtml
+        });
+
+        return c.json({
+            success: true,
+            recipient,
+            message: 'Email delivered successfully via Cloudflare Worker'
+        });
+    } catch (err) {
+        console.error('Cloudflare Worker SMTP Error:', err);
+        return c.json({
+            success: false,
+            error: err.message
+        }, 500);
+    }
+});
+
 export default app;
+

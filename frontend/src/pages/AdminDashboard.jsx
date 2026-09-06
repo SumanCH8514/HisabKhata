@@ -31,7 +31,8 @@ import {
     Sparkles,
     Send,
     Server,
-    Check
+    Check,
+    Play
 } from 'lucide-react';
 import { testR2Connection, migrateAllBase64ToR2, R2_FOLDERS } from '../services/r2Storage';
 import { testSmtpConnection, checkSmtpStatus, getBackendEmailUrl } from '../services/emailService';

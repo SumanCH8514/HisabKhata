@@ -72,9 +72,11 @@ const More = () => {
             desc: 'Generate professional GST-ready invoices and share digital bill receipts via WhatsApp.',
             icon: <FileText size={22} className="text-rose-600" />,
             iconBg: 'bg-rose-50 text-rose-600',
-            badge: 'COMING SOON',
-            badgeColor: 'bg-slate-100 text-slate-500 border-slate-200',
-            actionText: 'Preview'
+            badge: 'OFFICIAL APP',
+            badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+            isExternal: true,
+            url: 'https://pos.hisabkhata.sumanonline.com/',
+            actionText: 'Open Invoicing'
         },
         {
             id: 'items',

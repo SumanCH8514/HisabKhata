@@ -158,13 +158,7 @@ const CustomerReport = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text("Hisab Khata", 15, 10);
-
-        // "PRO" in orange
-        const titleWidth = doc.getTextWidth("Hisab ");
-        doc.setTextColor(255, 165, 0); // Orange
-        doc.setFont("helvetica", "bolditalic");
-        doc.text("Khata", 15 + titleWidth, 10);
+        doc.text("HisabKhata PRO", 15, 10);
 
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");

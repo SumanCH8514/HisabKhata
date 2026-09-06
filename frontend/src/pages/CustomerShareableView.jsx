@@ -329,7 +329,7 @@ const CustomerShareableView = () => {
         // Premium Header
         doc.setFontSize(24);
         doc.setTextColor(0, 87, 187); // #0057BB
-        doc.text("Hisab Khata", 14, 20);
+        doc.text("HisabKhata", 14, 20);
 
         doc.setFontSize(14);
         doc.setTextColor(255, 107, 0); // #FF6B00
@@ -1391,14 +1391,15 @@ const CustomerShareableView = () => {
                             <span className="material-symbols-outlined text-[22px]">account_balance_wallet</span>
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-slate-900 text-base leading-tight tracking-tight">Hisab Khata</span>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-200">
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-extrabold text-slate-900 text-base leading-tight tracking-tight">HisabKhata</span>
+                                <span className="pro-badge">PRO</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-200 ml-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#0057BB]"></span> Verified Ledger
                                 </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs">
-                                Statement for <span className="font-semibold text-slate-700">{customer.name}</span>
+                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs mt-0.5">
+                                Statement for <span className="font-semibold text-slate-700">{customer.name}</span> • <span className="text-[10px] text-slate-400 font-medium">a SumanOnline Project</span>
                             </p>
                         </div>
                     </div>
@@ -1428,17 +1429,20 @@ const CustomerShareableView = () => {
                         className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wide shadow-md shadow-slate-900/10 transition-all active:scale-95 cursor-pointer"
                     >
                         <span className="material-symbols-outlined text-[18px]">download</span>
-                        Download Statement
+                        <span>PDF Statement</span>
                     </button>
                 </div>
             </header>
 
             {/* Mobile Header */}
-            <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-4 flex flex-col gap-1 shadow-md">
+            <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-3 flex flex-col gap-1 shadow-md">
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined text-white text-[24px]">account_balance_wallet</span>
-                        <h1 className="font-bold text-lg">Hisab Khata</h1>
+                        <div className="flex items-center gap-1.5">
+                            <h1 className="font-bold text-lg">HisabKhata</h1>
+                            <span className="pro-badge">PRO</span>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         {owner?.phone && (

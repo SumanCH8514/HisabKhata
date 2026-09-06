@@ -947,246 +947,246 @@ const AdminDashboard = () => {
     );
 
     const renderStorage = () => (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-                <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                    <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-full text-blue-300 text-xs font-bold tracking-wide">
-                            <Cloud size={14} /> Cloudflare R2 Object Storage
+        <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header & Overview Banner */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 md:p-6 shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cloudflare R2 Object Storage</span>
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-black tracking-tight">Media Storage & Migration Suite</h2>
-                        <p className="text-sm text-slate-300 max-w-2xl">
-                            High-speed S3-compatible cloud storage for Customer Profile Pictures, Payment Proofs, and Transaction Attachments served via your custom CDN domain.
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Media Storage &amp; Asset Pipeline</h2>
+                        <p className="text-xs text-slate-500 max-w-2xl">
+                            S3-compatible object storage for customer profile pictures, payment proofs, and transaction receipts served via high-speed global CDN.
                         </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
+
+                    <div className="flex items-center gap-2.5 shrink-0">
                         <a 
                             href={r2Config.publicUrl || "https://cdn.backend.hisabkhata.sumanonline.com"} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 backdrop-blur-sm border border-white/10"
+                            className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                         >
-                            <ExternalLink size={16} /> Open Public CDN
+                            <span>Open Public CDN</span>
+                            <ExternalLink size={13} className="text-slate-500" />
                         </a>
                     </div>
                 </div>
             </div>
 
-            {/* Folder Directory Mapping Badges */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold">
-                        <FolderTree size={24} />
+            {/* Folder Directory Mapping Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start gap-3">
+                    <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                        <FolderTree size={18} />
                     </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Profile Pictures</p>
-                        <p className="text-sm font-black text-slate-800 font-mono">/cust_profile_pictures/</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Merchant & Customer Avatars</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center font-bold">
-                        <FolderTree size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Payment Proofs</p>
-                        <p className="text-sm font-black text-slate-800 font-mono">/payment_proof/</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">UPI Screenshot Proofs</p>
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avatars</p>
+                        <p className="text-xs font-mono font-bold text-slate-900 truncate">/cust_profile_pictures/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Merchant &amp; party photos</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold">
-                        <FolderTree size={24} />
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start gap-3">
+                    <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                        <FolderTree size={18} />
                     </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Transaction Bills</p>
-                        <p className="text-sm font-black text-slate-800 font-mono">/transaction_attachments/</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Invoices & Bill Receipts</p>
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Proofs</p>
+                        <p className="text-xs font-mono font-bold text-slate-900 truncate">/payment_proof/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">UPI screenshots &amp; bank slips</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start gap-3">
+                    <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                        <FolderTree size={18} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Invoices &amp; Bills</p>
+                        <p className="text-xs font-mono font-bold text-slate-900 truncate">/transaction_attachments/</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Bill receipts &amp; documents</p>
                     </div>
                 </div>
             </div>
 
-            {/* Config & Connection Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Config & Operations Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* R2 Credentials Form */}
-                <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl">
-                                <HardDrive size={22} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold">Cloudflare R2 Credentials</h3>
-                                <p className="text-xs text-slate-400">S3 API token with Object Read & Write permission</p>
-                            </div>
+                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-5">
+                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                            <HardDrive size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900">Cloudflare R2 Credentials</h3>
+                            <p className="text-[11px] text-slate-500">S3 API token with Object Read &amp; Write permissions</p>
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cloudflare Account ID</label>
+                    <div className="space-y-3.5">
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Cloudflare Account ID</label>
                             <input 
                                 type="text" 
                                 value={r2Config.accountId || ''} 
                                 onChange={(e) => setR2Config({...r2Config, accountId: e.target.value.trim()})}
-                                placeholder="e.g. 5d8a9f4c3b2e1..."
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                                placeholder="e.g. 38b68cd5accf718d6e09b..."
+                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R2 Access Key ID</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">R2 Access Key ID</label>
                                 <input 
                                     type="text" 
                                     value={r2Config.accessKeyId || ''} 
                                     onChange={(e) => setR2Config({...r2Config, accessKeyId: e.target.value.trim()})}
                                     placeholder="Access Key ID"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                                 />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R2 Secret Access Key</label>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">R2 Secret Access Key</label>
                                 <input 
                                     type="password" 
                                     value={r2Config.secretAccessKey || ''} 
                                     onChange={(e) => setR2Config({...r2Config, secretAccessKey: e.target.value.trim()})}
                                     placeholder="Secret Access Key"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bucket Name</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Bucket Name</label>
                                 <input 
                                     type="text" 
                                     value={r2Config.bucketName || 'hisabkhata'} 
                                     onChange={(e) => setR2Config({...r2Config, bucketName: e.target.value.trim()})}
                                     placeholder="hisabkhata"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition-colors" 
                                 />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Public CDN URL</label>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public CDN URL</label>
                                 <input 
                                     type="text" 
                                     value={r2Config.publicUrl || ''} 
                                     onChange={(e) => setR2Config({...r2Config, publicUrl: e.target.value.trim()})}
                                     placeholder="https://cdn.backend.hisabkhata.sumanonline.com"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition-colors" 
                                 />
                             </div>
                         </div>
 
                         {/* Test Status Banner */}
                         {r2TestResult && (
-                            <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${r2TestResult.success ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
-                                {r2TestResult.success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                            <div className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2.5 ${r2TestResult.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                                {r2TestResult.success ? <CheckCircle size={16} className="text-emerald-600 shrink-0" /> : <AlertCircle size={16} className="text-rose-600 shrink-0" />}
                                 <span>{r2TestResult.message}</span>
                             </div>
                         )}
 
-                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
                             <button 
                                 type="button"
                                 onClick={handleTestR2}
                                 disabled={r2Testing}
-                                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border border-slate-700 disabled:opacity-50"
+                                className="flex-1 py-2 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 border border-slate-300 disabled:opacity-50 cursor-pointer"
                             >
-                                <RefreshCw size={14} className={r2Testing ? "animate-spin" : ""} />
-                                {r2Testing ? "Testing Connection..." : "Test Connection"}
+                                <RefreshCw size={13} className={r2Testing ? "animate-spin" : ""} />
+                                <span>{r2Testing ? "Testing Connection..." : "Test Connection"}</span>
                             </button>
                             <button 
                                 type="button"
                                 onClick={handleSaveR2Config}
-                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30"
+                                className="flex-1 py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                             >
-                                <CheckCircle2 size={16} />
-                                Save R2 Config
+                                <CheckCircle2 size={14} />
+                                <span>Save R2 Config</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* 1-Click Base64 Migration Engine */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+                {/* Base64 to R2 Migration Engine */}
+                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-5">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-                                <Sparkles size={22} />
+                        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                            <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                                <Database size={18} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">1-Click Base64 &rarr; R2 Migration</h3>
-                                <p className="text-xs text-slate-400">Scan Firebase RTDB and migrate all legacy base64 images</p>
+                                <h3 className="text-sm font-bold text-slate-900">Base64 &rarr; Cloudflare R2 Migration</h3>
+                                <p className="text-[11px] text-slate-500">Scan Firebase RTDB and migrate legacy base64 images</p>
                             </div>
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed mt-4">
-                            This tool automatically discovers any base64-encoded profile photos, customer pictures, transaction attachments, and payment screenshots in your Firebase Realtime Database. It uploads them to Cloudflare R2 and replaces the heavy database fields with CDN links.
+                        <p className="text-xs text-slate-600 leading-relaxed mt-3.5">
+                            Scans your Firebase database for heavy base64 strings in customer photos, transaction attachments, and payment proofs. It uploads each item to Cloudflare R2 and replaces the database fields with CDN links.
                         </p>
                     </div>
 
-                    {/* Progress Bar if running or finished */}
+                    {/* Progress Bar */}
                     {(migrationState.isRunning || migrationState.status === 'COMPLETED' || migrationState.status === 'ERROR') && (
-                        <div className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                            <div className="flex justify-between items-center text-xs font-bold">
+                        <div className="space-y-2.5 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <div className="flex justify-between items-center text-xs font-semibold">
                                 <span className="text-slate-700">{migrationState.message || 'Processing...'}</span>
-                                <span className="text-blue-600 font-mono">{migrationState.progress}%</span>
+                                <span className="text-[#0057BB] font-mono">{migrationState.progress}%</span>
                             </div>
-                            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                                 <div 
-                                    className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 rounded-full"
+                                    className="h-full bg-[#0057BB] transition-all duration-300 rounded-full"
                                     style={{ width: `${migrationState.progress}%` }}
                                 />
                             </div>
                             {migrationState.stats && (
-                                <div className="grid grid-cols-4 gap-2 text-center pt-2 text-[10px] font-bold text-slate-500">
-                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
-                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.users || 0}</p>
-                                        <p>Users</p>
+                                <div className="grid grid-cols-4 gap-2 text-center pt-1 text-[10px] font-semibold text-slate-600">
+                                    <div className="bg-white p-1.5 rounded border border-slate-200">
+                                        <p className="text-slate-900 text-xs font-bold">{migrationState.stats.users || 0}</p>
+                                        <p className="text-[10px] text-slate-400">Users</p>
                                     </div>
-                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
-                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.customers || 0}</p>
-                                        <p>Customers</p>
+                                    <div className="bg-white p-1.5 rounded border border-slate-200">
+                                        <p className="text-slate-900 text-xs font-bold">{migrationState.stats.customers || 0}</p>
+                                        <p className="text-[10px] text-slate-400">Parties</p>
                                     </div>
-                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
-                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.transactions || 0}</p>
-                                        <p>Bills</p>
+                                    <div className="bg-white p-1.5 rounded border border-slate-200">
+                                        <p className="text-slate-900 text-xs font-bold">{migrationState.stats.transactions || 0}</p>
+                                        <p className="text-[10px] text-slate-400">Bills</p>
                                     </div>
-                                    <div className="bg-white p-2 rounded-lg border border-slate-100">
-                                        <p className="text-slate-900 text-sm font-black">{migrationState.stats.pendingPayments || 0}</p>
-                                        <p>Proofs</p>
+                                    <div className="bg-white p-1.5 rounded border border-slate-200">
+                                        <p className="text-slate-900 text-xs font-bold">{migrationState.stats.pendingPayments || 0}</p>
+                                        <p className="text-[10px] text-slate-400">Proofs</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         <button
                             onClick={handleStartMigration}
                             disabled={migrationState.isRunning}
-                            className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 text-white rounded-2xl font-black text-sm tracking-wide transition-all shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-3 disabled:opacity-50"
+                            className="w-full py-2.5 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                         >
                             {migrationState.isRunning ? (
                                 <>
-                                    <RefreshCw size={18} className="animate-spin" />
+                                    <RefreshCw size={14} className="animate-spin" />
                                     <span>Migrating Assets to R2...</span>
                                 </>
                             ) : (
                                 <>
-                                    <Play size={18} />
+                                    <Play size={14} />
                                     <span>Run Full Migration Now</span>
                                 </>
                             )}
                         </button>
                         <p className="text-[11px] text-center text-slate-400">
-                            Safe & idempotent: already-migrated images are automatically skipped.
+                            Safe &amp; idempotent: already-migrated images are automatically skipped.
                         </p>
                     </div>
                 </div>
@@ -1194,15 +1194,15 @@ const AdminDashboard = () => {
 
             {/* Migration Logs Terminal */}
             {migrationState.logs && migrationState.logs.length > 0 && (
-                <div className="bg-slate-950 rounded-3xl p-6 border border-slate-800 text-slate-300 font-mono text-xs shadow-2xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <span className="text-slate-400 font-bold flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 text-slate-300 font-mono text-xs shadow-sm space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-slate-300 font-semibold flex items-center gap-2 text-xs">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             Live Migration Activity Log
                         </span>
-                        <span className="text-slate-600 text-[10px]">{migrationState.logs.length} Events</span>
+                        <span className="text-slate-500 text-[10px]">{migrationState.logs.length} Events</span>
                     </div>
-                    <div className="max-h-60 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+                    <div className="max-h-56 overflow-y-auto space-y-1 custom-scrollbar text-[11px]">
                         {migrationState.logs.map((log, idx) => (
                             <div key={idx} className="leading-relaxed hover:text-white transition-colors">
                                 {log}

@@ -598,165 +598,315 @@ const AdminDashboard = () => {
         </div>
     );
 
-    const renderTransactions = () => (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap gap-4 items-center">
-                <div className="flex-1 min-w-[200px]">
-                    <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Global Monitoring</h3>
-                    <p className="text-slate-400 text-xs">Viewing every transaction across all users for safety & auditing.</p>
-                </div>
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                            type="text"
-                            placeholder="Filter transactions..."
-                            value={txSearchTerm}
-                            onChange={(e) => setTxSearchTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 bg-slate-100 focus:bg-white border-transparent focus:border-blue-100 border rounded-xl text-sm font-medium transition-all w-[200px] outline-none"
-                        />
-                    </div>
-                    <button 
-                        onClick={handleExportTransactionsCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-blue-100"
-                    >
-                        <Download size={16} /> Export CSV
-                    </button>
-                </div>
-            </div>
+    const renderTransactions = () => {
+        const filteredTransactions = transactions
+            .filter(tx => {
+                const merchant = users.find(u => u.id === tx.userId);
+                const party = customers.find(c => c.id === tx.customerId);
+                const search = txSearchTerm.toLowerCase();
+                return (
+                    merchant?.name?.toLowerCase().includes(search) ||
+                    merchant?.email?.toLowerCase().includes(search) ||
+                    party?.name?.toLowerCase().includes(search) ||
+                    tx.type?.toLowerCase().includes(search) ||
+                    String(tx.amount || '').includes(search)
+                );
+            })
+            .sort((a, b) => b.timestamp - a.timestamp);
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="max-h-[600px] overflow-y-auto">
-                    <table className="w-full text-left">
-                        <thead className="sticky top-0 bg-white shadow-sm z-10">
-                            <tr className="bg-slate-50/80 backdrop-blur border-b border-slate-100">
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Merchant</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Party</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Type</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Amount</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {transactions
-                                .filter(tx => {
-                                    const merchant = users.find(u => u.id === tx.userId);
-                                    const party = customers.find(c => c.id === tx.customerId);
-                                    const search = txSearchTerm.toLowerCase();
-                                    return (
-                                        merchant?.name?.toLowerCase().includes(search) ||
-                                        merchant?.email?.toLowerCase().includes(search) ||
-                                        party?.name?.toLowerCase().includes(search) ||
-                                        tx.type.toLowerCase().includes(search) ||
-                                        tx.amount.toString().includes(search)
-                                    );
-                                })
-                                .sort((a, b) => b.timestamp - a.timestamp)
-                                .map(tx => {
-                                    const merchant = users.find(u => u.id === tx.userId);
-                                    const party = customers.find(c => c.id === tx.customerId);
-                                return (
-                                    <tr key={tx.id} className="hover:bg-slate-50/30 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <p className="font-bold text-slate-900 text-sm">{merchant?.name || 'Unknown'}</p>
-                                            <p className="text-[10px] text-slate-400">{merchant?.email}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="font-medium text-slate-700 text-sm">{party?.name || 'Deleted Party'}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${tx.type === 'GOT' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {tx.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <p className={`font-bold ${tx.type === 'GOT' ? 'text-green-600' : 'text-red-600'}`}>
-                                                ₹{Math.abs(tx.amount).toLocaleString()}
-                                            </p>
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-slate-500 text-xs">
-                                            {new Date(tx.timestamp).toLocaleString()}
+        return (
+            <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
+                {/* Header & Filter Bar */}
+                <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900">Platform Transaction Audit</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Real-time ledger entries stream across all merchants for security and auditing</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                        <div className="relative flex-1 sm:w-60">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                            <input 
+                                type="text"
+                                placeholder="Filter by party, merchant, amount..."
+                                value={txSearchTerm}
+                                onChange={(e) => setTxSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-slate-50 focus:bg-white border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-blue-500 transition-colors"
+                            />
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={handleExportTransactionsCSV}
+                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                        >
+                            <Download size={14} />
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                    <div className="max-h-[560px] overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-left text-xs border-collapse">
+                            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 text-[11px] font-semibold text-slate-600">
+                                <tr>
+                                    <th className="px-5 py-3">Merchant</th>
+                                    <th className="px-5 py-3">Party</th>
+                                    <th className="px-5 py-3 text-center">Type</th>
+                                    <th className="px-5 py-3 text-right">Amount (₹)</th>
+                                    <th className="px-5 py-3 text-right">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredTransactions.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-8 text-center text-slate-400">
+                                            No transactions match your search filter
                                         </td>
                                     </tr>
-                                );
-                            })}
+                                ) : (
+                                    filteredTransactions.map(tx => {
+                                        const merchant = users.find(u => u.id === tx.userId);
+                                        const party = customers.find(c => c.id === tx.customerId);
+                                        return (
+                                            <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
+                                                <td className="px-5 py-3.5">
+                                                    <p className="font-bold text-slate-900">{merchant?.name || 'Unknown'}</p>
+                                                    <p className="text-[11px] text-slate-400">{merchant?.email || 'N/A'}</p>
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    <p className="font-semibold text-slate-800">{party?.name || 'Deleted Party'}</p>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-center">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                                        tx.type === 'GOT' 
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                    }`}>
+                                                        {tx.type === 'GOT' ? 'Got (Credit)' : 'Gave (Debit)'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-right font-mono font-semibold">
+                                                    <span className={tx.type === 'GOT' ? 'text-emerald-600' : 'text-rose-600'}>
+                                                        ₹{Math.abs(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-right text-slate-500 font-mono text-[11px]">
+                                                    {new Date(tx.timestamp).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile Cards View */}
+                <div className="md:hidden space-y-3">
+                    {filteredTransactions.length === 0 ? (
+                        <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-400">
+                            No transactions found
+                        </div>
+                    ) : (
+                        filteredTransactions.map(tx => {
+                            const merchant = users.find(u => u.id === tx.userId);
+                            const party = customers.find(c => c.id === tx.customerId);
+                            return (
+                                <div key={tx.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <p className="font-bold text-slate-900 text-sm">{party?.name || 'Deleted Party'}</p>
+                                            <p className="text-[11px] text-slate-500">Merchant: {merchant?.name || 'Unknown'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`font-mono font-bold text-sm ${tx.type === 'GOT' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                ₹{Math.abs(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </p>
+                                            <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold uppercase mt-0.5 border ${
+                                                tx.type === 'GOT' 
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                                            }`}>
+                                                {tx.type === 'GOT' ? 'Credit' : 'Debit'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                                        <span>{merchant?.email || ''}</span>
+                                        <span className="font-mono">{new Date(tx.timestamp).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderLinks = () => {
+        const filteredLinks = customers.filter(customer => {
+            const merchant = users.find(u => u.id === customer.userId);
+            const search = linkSearchTerm.toLowerCase();
+            return (
+                customer.name?.toLowerCase().includes(search) ||
+                customer.id?.toLowerCase().includes(search) ||
+                merchant?.name?.toLowerCase().includes(search)
+            );
+        });
+
+        return (
+            <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
+                {/* Header & Search Bar */}
+                <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900">Public Customer Share Links</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Monitoring all live ledger share links accessible by customers</p>
+                    </div>
+                    <div className="relative w-full sm:w-64 shrink-0">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input 
+                            type="text"
+                            placeholder="Search customer, ID, merchant..."
+                            value={linkSearchTerm}
+                            onChange={(e) => setLinkSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 bg-slate-50 focus:bg-white border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                    </div>
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                    <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-600">
+                            <tr>
+                                <th className="px-5 py-3">Customer Party</th>
+                                <th className="px-5 py-3">Owner (Merchant)</th>
+                                <th className="px-5 py-3 text-center">Link Scope</th>
+                                <th className="px-5 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredLinks.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className="p-8 text-center text-slate-400">
+                                        No shared links match your search filter
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredLinks.map(customer => {
+                                    const merchant = users.find(u => u.id === customer.userId);
+                                    const shareUrl = `${window.location.origin}/customer/share/${customer.id}`;
+                                    const isCopied = copiedId === customer.id;
+                                    return (
+                                        <tr key={customer.id} className="hover:bg-slate-50/60 transition-colors">
+                                            <td className="px-5 py-3.5">
+                                                <p className="font-bold text-slate-900">{customer.name}</p>
+                                                <p className="text-[11px] font-mono text-slate-400">ID: {customer.id}</p>
+                                            </td>
+                                            <td className="px-5 py-3.5">
+                                                <p className="font-semibold text-slate-800">{merchant?.name || 'Unknown'}</p>
+                                                <p className="text-[11px] text-slate-400">{merchant?.email}</p>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <span className="bg-blue-50 text-[#0057BB] border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                                    Live Ledger View
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleCopyLink(customer.id)}
+                                                        className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                            isCopied 
+                                                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                                                                : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700'
+                                                        }`}
+                                                    >
+                                                        {isCopied ? <CheckCircle2 size={13} className="text-emerald-600" /> : <LinkIcon size={13} className="text-slate-500" />}
+                                                        <span>{isCopied ? 'Copied!' : 'Copy Link'}</span>
+                                                    </button>
+                                                    <a
+                                                        href={shareUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors cursor-pointer"
+                                                        title="Open in new tab"
+                                                    >
+                                                        <ExternalLink size={14} />
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    );
 
-    const renderLinks = () => (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                <div>
-                    <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Public Shared Links</h3>
-                    <p className="text-slate-400 text-xs">Monitoring all live ledger links shared with customers.</p>
-                </div>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input 
-                        type="text"
-                        placeholder="Search links..."
-                        value={linkSearchTerm}
-                        onChange={(e) => setLinkSearchTerm(e.target.value)}
-                        className="pl-9 pr-4 py-2 bg-slate-50 focus:bg-white border-transparent focus:border-blue-100 border rounded-xl text-sm font-medium transition-all w-[240px] outline-none"
-                    />
-                </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="bg-slate-50/50 border-b border-slate-100">
-                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Customer</th>
-                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Owner (Merchant)</th>
-                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Link Type</th>
-                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {customers
-                            .filter(customer => {
-                                const merchant = users.find(u => u.id === customer.userId);
-                                const search = linkSearchTerm.toLowerCase();
-                                return (
-                                    customer.name?.toLowerCase().includes(search) ||
-                                    customer.id?.toLowerCase().includes(search) ||
-                                    merchant?.name?.toLowerCase().includes(search)
-                                );
-                            })
-                            .map(customer => {
-                                const merchant = users.find(u => u.id === customer.userId);
+                {/* Mobile Cards View */}
+                <div className="md:hidden space-y-3">
+                    {filteredLinks.length === 0 ? (
+                        <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-400">
+                            No shared links found matching "{linkSearchTerm}"
+                        </div>
+                    ) : (
+                        filteredLinks.map(customer => {
+                            const merchant = users.find(u => u.id === customer.userId);
+                            const shareUrl = `${window.location.origin}/customer/share/${customer.id}`;
+                            const isCopied = copiedId === customer.id;
                             return (
-                                <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <p className="font-bold text-slate-900 text-sm">{customer.name}</p>
-                                        <p className="text-[10px] text-slate-400">ID: {customer.id}</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="font-medium text-slate-700 text-sm">{merchant?.name || 'Unknown'}</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">LEDGER_VIEW</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button 
+                                <div key={customer.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-slate-900 text-sm truncate">{customer.name}</p>
+                                            <p className="text-[11px] font-mono text-slate-400 truncate">ID: {customer.id}</p>
+                                        </div>
+                                        <span className="bg-blue-50 text-[#0057BB] border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0">
+                                            Live Ledger
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 font-medium">Merchant:</span>
+                                        <span className="font-semibold text-slate-800 truncate ml-2">{merchant?.name || 'Unknown'}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <button
+                                            type="button"
                                             onClick={() => handleCopyLink(customer.id)}
-                                            className={`${copiedId === customer.id ? 'text-green-600' : 'text-blue-600'} hover:underline text-xs font-bold transition-colors`}
+                                            className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                isCopied 
+                                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                                                    : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700'
+                                            }`}
                                         >
-                                            {copiedId === customer.id ? 'Copied!' : 'Copy Link'}
+                                            {isCopied ? <CheckCircle2 size={13} className="text-emerald-600" /> : <LinkIcon size={13} className="text-slate-500" />}
+                                            <span>{isCopied ? 'Link Copied!' : 'Copy Share Link'}</span>
                                         </button>
-                                    </td>
-                                </tr>
+                                        <a
+                                            href={shareUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                                            title="Open in new tab"
+                                        >
+                                            <ExternalLink size={14} />
+                                        </a>
+                                    </div>
+                                </div>
                             );
-                        })}
-                    </tbody>
-                </table>
+                        })
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
 
 
@@ -1303,8 +1453,8 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1 pb-24 md:pb-8">
-                    {/* Compact Tab Bar */}
-                    <div className="flex gap-1.5 p-1.5 bg-slate-100/80 backdrop-blur-sm rounded-2xl mb-6 w-full overflow-x-auto scrollbar-hide border border-slate-200/50">
+                    {/* Compact Clean Tab Bar */}
+                    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-5 w-full overflow-x-auto scrollbar-hide border border-slate-200/80">
                         {[
                             { id: 'OVERVIEW', label: 'Stats', icon: BarChart3 },
                             { id: 'USERS', label: 'Users', icon: Users },
@@ -1317,14 +1467,15 @@ const AdminDashboard = () => {
                             return (
                                 <button
                                     key={tab.id}
+                                    type="button"
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap flex-1 justify-center relative overflow-hidden group ${active 
-                                        ? 'bg-white text-blue-600 shadow-sm border border-slate-200/20' 
-                                        : 'text-slate-500 hover:text-slate-800'
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs transition-all whitespace-nowrap flex-1 shrink-0 cursor-pointer ${active 
+                                        ? 'bg-white text-[#0057BB] shadow-xs border border-slate-200/80 font-bold' 
+                                        : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-200/60'
                                     }`}
                                 >
-                                    <tab.icon size={active ? 18 : 16} className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`} />
-                                    <span className={`${active ? 'block' : 'hidden md:block'} transition-all`}>{tab.label}</span>
+                                    <tab.icon size={15} />
+                                    <span>{tab.label}</span>
                                 </button>
                             );
                         })}

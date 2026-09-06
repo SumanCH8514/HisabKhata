@@ -56,10 +56,10 @@ export const sendEmailViaBackend = async (emailParams) => {
             throw new Error(data.error || `HTTP ${response.status}: Failed to send email`);
         }
 
-        console.log(`✅ Email sent via Nodemailer to ${toEmail}:`, data);
+        console.log(`✅ Email sent to ${toEmail}\nSuccess`);
         return { success: true, messageId: data.messageId };
     } catch (err) {
-        console.error('❌ Email Service Error (Nodemailer Backend):', err.message);
+        console.error(`❌ Email failed to ${toEmail}\nFailed: ${err.message}`);
         throw err;
     }
 };

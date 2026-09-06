@@ -59,7 +59,8 @@ export const sendEmailNotification = async (templateParams) => {
     const result = await sendEmailViaBackend(templateParams);
     return result;
   } catch (error) {
-    console.error("Email Service Error:", error);
+    const toEmail = templateParams.to_email || templateParams.to || templateParams.email;
+    console.error(`❌ Email failed to ${toEmail || 'recipient'}\nFailed: ${error.message || error}`);
     // Gracefully handle without blocking UI operations
     return false;
   }

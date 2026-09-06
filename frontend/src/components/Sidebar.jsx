@@ -137,6 +137,11 @@ const Sidebar = () => {
                         <span>Admin Panel</span>
                     </Link>
                 )}
+
+                <Link to="/more" className={navLinkClass('/more')}>
+                    <span className="material-symbols-outlined text-[20px]">more_horiz</span>
+                    <span>More</span>
+                </Link>
             </div>
 
             {/* Bottom logout */}

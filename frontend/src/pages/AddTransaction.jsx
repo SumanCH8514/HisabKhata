@@ -117,15 +117,49 @@ const AddTransaction = () => {
                 </div>
 
                 {/* Details Entry Section */}
-                <div className="space-y-4">
-                    <label className="text-[14px] font-black text-slate-400 ml-2 tracking-wide">Transaction Details (Optional)</label>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between ml-2">
+                        <label className="text-[14px] font-black text-slate-400 tracking-wide uppercase">Transaction Details (Optional)</label>
+                        <span className="text-xs text-slate-400 font-bold">Supports multi-line & formatting</span>
+                    </div>
                     <div className="bg-white border border-slate-300 rounded-[28px] shadow-sm overflow-hidden focus-within:border-blue-500 transition-all duration-300">
                         <textarea 
-                            placeholder="Enter details (Items, bill no., quantity, etc.)"
-                            className="w-full p-6 min-h-[160px] border-none outline-none text-slate-700 font-bold text-xl placeholder-slate-300 resize-none leading-relaxed"
+                            rows={4}
+                            placeholder="Enter details (e.g. Items, bill no., quantity, rate)&#10;Press Enter for next line"
+                            className="w-full p-6 min-h-[140px] border-none outline-none text-slate-700 font-medium text-lg placeholder-slate-400 resize-y leading-relaxed whitespace-pre-wrap"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                         />
+                        <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-xs font-bold">
+                            <button
+                                type="button"
+                                onClick={() => setNote(prev => prev ? `${prev}\n• ` : '• ')}
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors shrink-0"
+                            >
+                                • Bullet List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNote(prev => prev ? `${prev}\nBill No: ` : 'Bill No: ')}
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors shrink-0"
+                            >
+                                + Bill No
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNote(prev => prev ? `${prev}\nItem: Qty @ Rate` : 'Item: Qty @ Rate')}
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors shrink-0"
+                            >
+                                + Item List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNote(prev => prev ? `${prev}\nNote: ` : 'Note: ')}
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors shrink-0"
+                            >
+                                + Note
+                            </button>
+                        </div>
                     </div>
                 </div>
 

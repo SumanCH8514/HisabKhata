@@ -1162,7 +1162,7 @@ const Customers = () => {
                                                         })()}
                                                     </div>
                                                     {tx.description && (
-                                                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-3">{tx.description}</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap break-words">{tx.description}</p>
                                                     )}
                                                 </div>
                                                 <div className="hidden md:block col-span-3 text-right pt-0.5">
@@ -1190,7 +1190,7 @@ const Customers = () => {
                                                                 <p className={`text-[9px] font-black ${(tx.balance || 0) < 0 ? 'text-red-400' : 'text-green-600'}`}>Bal. ₹{(tx.balance || 0).toLocaleString('en-IN')}</p>
                                                             </div>
                                                         )}
-                                                        <p className="text-[13px] font-bold text-gray-700 leading-snug break-words line-clamp-3">
+                                                        <p className="text-[13px] font-bold text-gray-700 leading-snug break-words whitespace-pre-wrap">
                                                             {tx.description || (isGave ? 'You gave' : 'You got')}
                                                         </p>
                                                     </div>
@@ -1540,7 +1540,7 @@ const Customers = () => {
                                                                 Bal. ₹ {Math.abs(tx.balance || 0).toLocaleString('en-IN')}
                                                             </div>
                                                         </div>
-                                                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5 line-clamp-3">{tx.description || '-'}</p>
+                                                        <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 whitespace-pre-wrap break-words">{tx.description || '-'}</p>
                                                     </div>
                                                     <div className="col-span-6 flex items-center justify-end px-4 gap-4">
                                                         {isGave ? (

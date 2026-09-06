@@ -168,7 +168,15 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
 
                         {tx.description && (
                             <div className="px-4 pb-4">
-                                <p className="text-[14px] text-gray-600 leading-relaxed italic">{tx.description}</p>
+                                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[14px]">notes</span>
+                                        <span>Transaction Details</span>
+                                    </p>
+                                    <div className="text-[13px] text-slate-800 leading-relaxed whitespace-pre-wrap break-words font-medium">
+                                        {tx.description}
+                                    </div>
+                                </div>
                             </div>
                         )}
 

@@ -226,15 +226,50 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                     </div>
 
                     {/* Details Entry Section */}
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-slate-400 ml-1 tracking-wider uppercase">Transaction Details (Optional)</label>
-                        <div className="bg-white border border-slate-300 rounded-[16px] shadow-sm overflow-hidden focus-within:border-blue-400 transition-all duration-200">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between ml-1">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Transaction Details (Optional)</label>
+                            <span className="text-[10px] text-slate-400 font-medium">Supports multi-line & formats</span>
+                        </div>
+                        <div className="bg-white border border-slate-300 rounded-[16px] shadow-sm overflow-hidden focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-all duration-200">
                             <textarea
-                                placeholder="Enter details (Items, bill no., quantity, etc.)"
-                                className="w-full p-3 min-h-[80px] border-none outline-none focus:ring-0 text-slate-800 font-bold text-base placeholder-slate-300 resize-none leading-relaxed"
+                                rows={3}
+                                placeholder="Enter details (Items, bill no., quantity, rate, etc.)&#10;Press Enter for next line"
+                                className="w-full p-3 min-h-[84px] border-none outline-none focus:ring-0 text-slate-800 font-medium text-sm placeholder-slate-400/80 resize-y leading-relaxed whitespace-pre-wrap"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
+                            {/* Format & Structure Toolbar */}
+                            <div className="px-2.5 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar text-[11px]">
+                                <button
+                                    type="button"
+                                    onClick={() => setDescription(prev => prev ? `${prev}\n• ` : '• ')}
+                                    className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 font-medium transition-colors shrink-0"
+                                >
+                                    • Bullet
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDescription(prev => prev ? `${prev}\nBill No: ` : 'Bill No: ')}
+                                    className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 font-medium transition-colors shrink-0"
+                                >
+                                    + Bill No
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDescription(prev => prev ? `${prev}\nItem: Qty @ Rate` : 'Item: Qty @ Rate')}
+                                    className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 font-medium transition-colors shrink-0"
+                                >
+                                    + Item List
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDescription(prev => prev ? `${prev}\nNote: ` : 'Note: ')}
+                                    className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 font-medium transition-colors shrink-0"
+                                >
+                                    + Note
+                                </button>
+                            </div>
                         </div>
                     </div>
 

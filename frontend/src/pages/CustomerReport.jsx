@@ -429,7 +429,7 @@ const CustomerReport = () => {
                                             Bal. ₹ {Math.abs(tx.balance || 0).toLocaleString('en-IN')}
                                         </div>
                                     </div>
-                                    <p className="text-[12px] text-slate-500 leading-snug mt-0.5 line-clamp-3">{tx.description || '-'}</p>
+                                    <p className="text-[12px] text-slate-600 leading-relaxed mt-0.5 whitespace-pre-wrap break-words">{tx.description || '-'}</p>
                                 </div>
                                 <div className={`col-span-4 flex items-center justify-center h-full ${isGave ? 'bg-[#fff9f9]' : ''}`}>
                                     {isGave && (

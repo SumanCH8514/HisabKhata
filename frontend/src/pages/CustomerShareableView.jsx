@@ -1754,7 +1754,7 @@ const CustomerShareableView = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
+                                                    <p className="text-xs font-medium text-slate-700 mt-0.5 whitespace-pre-wrap break-words leading-relaxed">
                                                         {tx.description || (isGave ? 'You Gave' : 'You Got')}
                                                     </p>
                                                 </div>
@@ -1844,7 +1844,7 @@ const CustomerShareableView = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-slate-500 font-normal leading-tight">
+                                                <p className="text-xs text-slate-600 font-normal leading-relaxed whitespace-pre-wrap break-words mt-1">
                                                     {tx.description || 'General Entry'}
                                                 </p>
                                                 {(() => {

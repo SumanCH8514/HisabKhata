@@ -761,177 +761,219 @@ const AdminDashboard = () => {
 
 
     const renderSettings = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
-            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+            {/* Left Column: Global Feature Toggles */}
+            <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-6 flex flex-col justify-between">
                 <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Global Feature Toggles</h3>
-                    <p className="text-slate-500 text-sm">Control platform-wide functionality instantly.</p>
+                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 mb-4">
+                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                            <Settings size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900">Platform Feature Controls</h3>
+                            <p className="text-[11px] text-slate-500">Toggle system modules and security policies in real time</p>
+                        </div>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                        {[
+                            { key: 'emailNotifications', label: 'Email Notifications', desc: 'Send automated transactional and ledger alerts to users', icon: Mail },
+                            { key: 'shareLinks', label: 'Customer Share Links', desc: 'Enable live balance and transaction share links for parties', icon: LinkIcon },
+                            { key: 'pdfExport', label: 'PDF Report Export', desc: 'Allow downloading party statements and balance sheet PDFs', icon: Download },
+                            { key: 'analytics', label: 'Merchant Analytics', desc: 'Display volume charts and financial summary metrics', icon: BarChart3 },
+                            { key: 'newRegistrations', label: 'New Registrations', desc: 'Allow new merchants to sign up and create accounts', icon: Users },
+                            { key: 'captcha', label: 'Security Captcha', desc: 'Require verification challenges on sensitive auth actions', icon: ShieldCheck },
+                            { key: 'signupWithMail', label: 'Email/Password Signup', desc: 'Allow direct email and password authentication', icon: Mail }
+                        ].map((feature, i) => (
+                            <div key={i} className="py-3.5 flex items-center justify-between gap-4 first:pt-1 last:pb-1">
+                                <div className="flex items-start gap-3 min-w-0">
+                                    <div className="p-2 bg-slate-50 text-slate-600 rounded-lg shrink-0 mt-0.5 border border-slate-100">
+                                        <feature.icon size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 leading-tight">{feature.label}</p>
+                                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{feature.desc}</p>
+                                    </div>
+                                </div>
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleSetting(feature.key)}
+                                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${globalSettings[feature.key] ? 'bg-[#0057BB]' : 'bg-slate-200'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${globalSettings[feature.key] ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="space-y-6">
-                    {[
-                        { key: 'emailNotifications', label: 'Email Notifications', icon: Mail },
-                        { key: 'shareLinks', label: 'Customer Share Links', icon: LinkIcon },
-                        { key: 'pdfExport', label: 'PDF Report Export', icon: Download },
-                        { key: 'analytics', label: 'Merchant Analytics', icon: BarChart3 },
-                        { key: 'newRegistrations', label: 'New Registrations', icon: Users },
-                        { key: 'captcha', label: 'Security Captcha', icon: ShieldCheck },
-                        { key: 'signupWithMail', label: 'Email Signup', icon: Mail }
-                    ].map((feature, i) => (
-                        <div key={i} className="flex items-center justify-between group">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-slate-50 p-2.5 rounded-xl group-hover:bg-blue-50 transition-colors">
-                                    <feature.icon size={20} className="text-slate-600 group-hover:text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-slate-900">{feature.label}</p>
-                                    <p className="text-xs text-slate-400">Enable or disable this module for all users.</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleToggleSetting(feature.key)}
-                                className={`w-14 h-7 rounded-full transition-all relative ${globalSettings[feature.key] ? 'bg-blue-600' : 'bg-slate-200'}`}
-                            >
-                                <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${globalSettings[feature.key] ? 'right-1' : 'left-1'}`} />
-                            </button>
-                        </div>
-                    ))}
+                <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                    <span>Toggles update instantly across all connected client sessions.</span>
                 </div>
             </div>
 
-            <div className="space-y-8">
-                <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6">
-                    <div className="flex items-center gap-3">
-                        <Mail className="text-blue-400" />
-                        <h3 className="text-xl font-bold">EmailJS Configuration</h3>
+            {/* Right Column: Email Integrations & Database Tools */}
+            <div className="space-y-6">
+                {/* Primary EmailJS Gateway */}
+                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                            <Mail size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900">EmailJS — Transactional Gateway</h3>
+                            <p className="text-[11px] text-slate-500">Primary service for welcome emails and general alerts</p>
+                        </div>
                     </div>
-                    <p className="text-xs text-slate-400">Using Frontend Email (Blaze Plan Not Required)</p>
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Service ID</label>
+
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
                             <input 
                                 type="text" 
                                 value={emailJSConfig.serviceId || ''} 
-                                onChange={(e) => setEmailJSConfig({...emailJSConfig, serviceId: e.target.value})}
+                                onChange={(e) => setEmailJSConfig({...emailJSConfig, serviceId: e.target.value.trim()})}
                                 placeholder="service_xxxx"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                             />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Welcome Template ID</label>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Welcome Template ID</label>
                                 <input 
                                     type="text" 
                                     value={emailJSConfig.welcomeTemplateId || emailJSConfig.templateId || ''} 
-                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, welcomeTemplateId: e.target.value})}
+                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, welcomeTemplateId: e.target.value.trim()})}
                                     placeholder="template_xxxx"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                                 />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Alerts Template ID</label>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Alerts Template ID</label>
                                 <input 
                                     type="text" 
                                     value={emailJSConfig.alertTemplateId || emailJSConfig.templateId || ''} 
-                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, alertTemplateId: e.target.value})}
+                                    onChange={(e) => setEmailJSConfig({...emailJSConfig, alertTemplateId: e.target.value.trim()})}
                                     placeholder="template_yyyy"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                                 />
                             </div>
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Public Key</label>
+
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
                             <input 
                                 type="text" 
                                 value={emailJSConfig.publicKey || ''} 
-                                onChange={(e) => setEmailJSConfig({...emailJSConfig, publicKey: e.target.value})}
-                                placeholder="user_xxxx"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                                onChange={(e) => setEmailJSConfig({...emailJSConfig, publicKey: e.target.value.trim()})}
+                                placeholder="public_key_xxxx"
+                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                             />
                         </div>
-                        <div className="flex gap-4 mt-4">
+
+                        <div className="pt-1">
                             <button 
+                                type="button"
                                 onClick={handleSaveEmailJS}
-                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                             >
-                                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                                Save Basic Config
+                                <CheckCircle2 size={14} />
+                                <span>Save EmailJS Configuration</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-slate-900 p-8 rounded-3xl text-white space-y-6">
-                    <div className="flex items-center gap-3">
-                        <ShieldCheck className="text-orange-400" />
-                        <h3 className="text-xl font-bold">Payment EmailJS Config</h3>
+                {/* Payment Verification EmailJS */}
+                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                            <ShieldCheck size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900">Payment Verification Gateway</h3>
+                            <p className="text-[11px] text-slate-500">Dedicated pipeline for payment approvals and OTP alerts</p>
+                        </div>
                     </div>
-                    <p className="text-xs text-slate-400">Dedicated account for Verification & Payment Alerts</p>
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Service ID</label>
-                            <input 
-                                type="text" 
-                                value={paymentEmailJS.serviceId || ''} 
-                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, serviceId: e.target.value})}
-                                placeholder="service_payment"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
-                            />
+
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Service ID</label>
+                                <input 
+                                    type="text" 
+                                    value={paymentEmailJS.serviceId || ''} 
+                                    onChange={(e) => setPaymentEmailJS({...paymentEmailJS, serviceId: e.target.value.trim()})}
+                                    placeholder="service_payment"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Verification Template ID</label>
+                                <input 
+                                    type="text" 
+                                    value={paymentEmailJS.templateId || ''} 
+                                    onChange={(e) => setPaymentEmailJS({...paymentEmailJS, templateId: e.target.value.trim()})}
+                                    placeholder="template_payment"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Verification Template ID</label>
-                            <input 
-                                type="text" 
-                                value={paymentEmailJS.templateId || ''} 
-                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, templateId: e.target.value})}
-                                placeholder="template_payment"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Public Key</label>
+
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Public Key</label>
                             <input 
                                 type="text" 
                                 value={paymentEmailJS.publicKey || ''} 
-                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, publicKey: e.target.value})}
-                                placeholder="user_payment"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500" 
+                                onChange={(e) => setPaymentEmailJS({...paymentEmailJS, publicKey: e.target.value.trim()})}
+                                placeholder="public_key_xxxx"
+                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
                             />
                         </div>
-                        <div className="flex gap-4 mt-4">
+
+                        <div className="pt-1">
                             <button 
+                                type="button"
                                 onClick={handleSaveEmailJS}
-                                className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                className="w-full py-2 px-4 bg-[#0057BB] hover:bg-[#00479e] text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                             >
-                                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                                Save Payment Config
+                                <CheckCircle2 size={14} />
+                                <span>Save Payment Email Configuration</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-orange-50 p-3 rounded-2xl text-orange-600">
-                            <Database size={24} />
+                {/* Database Tools */}
+                <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg shrink-0">
+                            <Database size={18} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-900">Database Tools</h3>
-                            <p className="text-xs text-slate-400">Export as JSON or Restore from Backup.</p>
+                            <h3 className="text-sm font-bold text-slate-900">Database Tools &amp; Backups</h3>
+                            <p className="text-[11px] text-slate-500">Export full JSON snapshot or restore database records</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <button
+                            type="button"
                             onClick={handleExportDatabase}
-                            className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-100 text-slate-900 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                            <Download size={16} /> Export
+                            <Download size={13} />
+                            <span>Export</span>
                         </button>
                         <button
+                            type="button"
                             onClick={() => document.getElementById('db-import-input').click()}
-                            className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 sm:flex-none px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                            <Upload size={16} /> Import
+                            <Upload size={13} />
+                            <span>Import</span>
                         </button>
                         <input 
                             id="db-import-input"

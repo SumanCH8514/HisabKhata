@@ -4,17 +4,19 @@ import { dbService } from '../services/firebase';
 import { parseStatementFile } from '../utils/statementParser';
 import { 
     X, 
-    UploadCloud, 
+    Upload, 
     FileText, 
+    FileSpreadsheet,
     CheckCircle2, 
     AlertCircle, 
-    ArrowUpDown, 
     Check, 
     Trash2, 
     Search,
-    ShieldCheck,
     Calendar,
-    HelpCircle
+    ArrowRight,
+    RefreshCw,
+    Lock,
+    Download
 } from 'lucide-react';
 
 const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
@@ -47,6 +49,7 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
         setImportedCount(0);
         setSearchQuery('');
         setTypeFilter('ALL');
+        setResetBalance(false);
     };
 
     const handleClose = () => {
@@ -63,13 +66,13 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
         try {
             const result = await parseStatementFile(selectedFile);
             if (!result || !result.transactions || result.transactions.length === 0) {
-                throw new Error("No transactions could be found in the uploaded file. Please make sure it's a valid Khatabook PDF or Excel export.");
+                throw new Error("No transaction entries could be extracted. Please ensure the file contains valid columns for date, debit/credit amounts, and remarks.");
             }
             setParsedData(result);
             setTransactions(result.transactions);
         } catch (err) {
             console.error("Statement parse failed:", err);
-            setParseError(err.message || "Failed to parse statement. Please check file format.");
+            setParseError(err.message || "Unable to read this file format. Please upload a standard PDF or Excel statement.");
         } finally {
             setIsParsing(false);
         }
@@ -139,6 +142,7 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
     // Totals of selected
     const totalSelectedGave = selectedTransactions.filter(t => t.type === 'GAVE').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
     const totalSelectedGot = selectedTransactions.filter(t => t.type === 'GOT').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const netDifference = totalSelectedGot - totalSelectedGave;
 
     const handleImport = async () => {
         if (selectedTransactions.length === 0 || !currentUser) return;
@@ -167,89 +171,109 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={handleClose} />
+            <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity" onClick={handleClose} />
 
-            {/* Modal Box */}
-            <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Dialog */}
+            <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10 border border-slate-200 animate-in fade-in zoom-in-98 duration-150">
                 
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0057BB] flex items-center justify-center font-bold">
-                            <UploadCloud size={22} />
-                        </div>
-                        <div>
-                            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
-                                Import Transactions
-                                <span className="text-[10px] px-2 py-0.5 bg-blue-100/60 text-[#0057BB] font-bold rounded-md uppercase tracking-wider">
-                                    Khatabook & Statements
-                                </span>
+                {/* Clean SaaS Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-base font-semibold text-slate-900">
+                                Import Statement
                             </h2>
-                            <p className="text-xs text-slate-500 font-medium">
-                                Target Party: <strong className="text-slate-700 font-bold">{customer.name}</strong> ({customer.phone || 'No phone'})
-                            </p>
+                            <span className="text-xs text-slate-400">•</span>
+                            <span className="text-xs text-slate-500 font-medium">
+                                Step {importSuccess ? '3' : parsedData ? '2' : '1'} of {importSuccess ? '3' : '2'}
+                            </span>
                         </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Customer: <span className="font-semibold text-slate-700">{customer.name}</span>
+                            {customer.phone && <span className="text-slate-400 font-normal"> (+91 {customer.phone})</span>}
+                        </p>
                     </div>
+
                     <button 
                         onClick={handleClose}
-                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                        title="Close (Esc)"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                {/* Body Content */}
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar">
 
                     {/* SUCCESS VIEW */}
                     {importSuccess ? (
-                        <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="w-20 h-20 rounded-full bg-green-50 text-green-600 flex items-center justify-center animate-in zoom-in-50 duration-300">
-                                <CheckCircle2 size={48} />
+                        <div className="py-12 px-4 max-w-md mx-auto text-center space-y-4">
+                            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                                <CheckCircle2 size={32} />
                             </div>
-                            <h3 className="text-xl font-black text-slate-800">Transactions Successfully Imported!</h3>
-                            <p className="text-sm text-slate-500 max-w-md">
-                                <strong className="text-slate-800 font-bold">{importedCount} entries</strong> have been parsed and credited/debited into <strong className="text-slate-800">{customer.name}</strong>'s ledger.
-                            </p>
-                            <div className="pt-4 flex gap-3">
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-bold text-slate-900">Import Completed</h3>
+                                <p className="text-xs text-slate-500">
+                                    Successfully added <strong className="text-slate-800 font-semibold">{importedCount} transactions</strong> to {customer.name}'s khata.
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border border-slate-200 text-left space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-600">
+                                    <span>Imported Records:</span>
+                                    <span className="font-semibold text-slate-900">{importedCount}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                    <span>Total Debit (Gave):</span>
+                                    <span className="font-semibold text-rose-600">₹{totalSelectedGave.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                    <span>Total Credit (Got):</span>
+                                    <span className="font-semibold text-emerald-600">₹{totalSelectedGot.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
                                 <button
                                     onClick={handleClose}
-                                    className="px-6 py-2.5 bg-[#0057BB] text-white text-sm font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
+                                    className="flex-1 px-4 py-2.5 bg-[#0057BB] text-white text-xs font-semibold rounded-lg hover:bg-[#00479e] transition-colors shadow-sm cursor-pointer"
                                 >
-                                    View Customer Ledger
+                                    Done
                                 </button>
                                 <button
                                     onClick={resetState}
-                                    className="px-5 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all"
+                                    className="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
                                 >
                                     Import Another File
                                 </button>
                             </div>
                         </div>
                     ) : !parsedData ? (
-                        /* UPLOAD VIEW */
-                        <div className="space-y-6">
+                        /* STEP 1: FILE UPLOAD */
+                        <div className="max-w-2xl mx-auto space-y-5">
                             {parseError && (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm flex items-start gap-3">
-                                    <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="font-bold">Failed to read statement</p>
-                                        <p className="opacity-90">{parseError}</p>
+                                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-start gap-2.5">
+                                    <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-600" />
+                                    <div className="space-y-0.5">
+                                        <p className="font-semibold">Unable to process file</p>
+                                        <p className="text-rose-700">{parseError}</p>
                                     </div>
                                 </div>
                             )}
 
+                            {/* Drop Zone */}
                             <div
                                 onDrop={handleDrop}
                                 onDragOver={handleDragOver}
                                 onDragLeave={handleDragLeave}
                                 onClick={() => !isParsing && fileInputRef.current?.click()}
-                                className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-4 ${
+                                className={`border border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all bg-white flex flex-col items-center justify-center ${
                                     isDragging 
-                                        ? 'border-[#0057BB] bg-blue-50/50 scale-[0.99]' 
-                                        : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/50 bg-slate-50/20'
+                                        ? 'border-[#0057BB] bg-blue-50/40 ring-4 ring-blue-50' 
+                                        : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50/60 shadow-xs'
                                 }`}
                             >
                                 <input
@@ -261,190 +285,191 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                                 />
 
                                 {isParsing ? (
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="w-12 h-12 border-3 border-[#0057BB] border-t-transparent rounded-full animate-spin" />
-                                        <p className="text-sm font-bold text-slate-700">Extracting Khatabook Transactions...</p>
-                                        <p className="text-xs text-slate-400">Analyzing PDF columns, dates, debits, credits and balance</p>
+                                    <div className="py-4 flex flex-col items-center gap-3">
+                                        <RefreshCw size={28} className="animate-spin text-[#0057BB]" />
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-semibold text-slate-800">Reading Statement Data...</p>
+                                            <p className="text-xs text-slate-500">Extracting transaction rows, dates, and amounts</p>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <>
-                                        <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#0057BB] flex items-center justify-center shadow-inner">
-                                            <UploadCloud size={32} />
+                                    <div className="space-y-3">
+                                        <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mx-auto">
+                                            <Upload size={22} />
                                         </div>
                                         <div>
-                                            <h3 className="text-base font-bold text-slate-800">
-                                                Click to upload or drag & drop statement
-                                            </h3>
-                                            <p className="text-xs text-slate-400 mt-1">
-                                                Supports Khatabook PDF statements, Excel (.xlsx, .xls), and CSV reports
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                Drop your statement file here, or <span className="text-[#0057BB] hover:underline font-bold">browse</span>
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Supports Khatabook PDF, Excel (.xlsx, .xls), and standard CSV statements
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[11px] font-bold rounded-md border border-red-100 flex items-center gap-1">
-                                                <FileText size={12} /> Khatabook PDF
-                                            </span>
-                                            <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[11px] font-bold rounded-md border border-green-100 flex items-center gap-1">
-                                                <FileText size={12} /> Excel XLSX
-                                            </span>
-                                            <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md border border-slate-200 flex items-center gap-1">
-                                                <FileText size={12} /> CSV Ledger
-                                            </span>
+                                        <div className="pt-2 flex items-center justify-center gap-4 text-xs text-slate-400 font-medium">
+                                            <span>Max file size: 25 MB</span>
+                                            <span>•</span>
+                                            <span>Auto-detects columns</span>
                                         </div>
-                                    </>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Info Feature Banner */}
-                            <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/80 rounded-xl p-4 flex items-start gap-3">
-                                <ShieldCheck size={20} className="text-[#0057BB] shrink-0 mt-0.5" />
-                                <div className="text-xs text-slate-600 space-y-1">
-                                    <p className="font-bold text-slate-800">100% Private & Instant Local Parsing</p>
-                                    <p>
-                                        Your customer statements are processed locally in your browser. All transactions, dates, items, and debit/credit entries are extracted automatically with full arithmetic validation before importing.
-                                    </p>
+                            {/* Supported Formats Card */}
+                            <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-2.5">
+                                    Supported Source Formats
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                    <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex items-start gap-2.5">
+                                        <FileText size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-slate-800">Khatabook PDF</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Direct statement export with balance audit</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex items-start gap-2.5">
+                                        <FileSpreadsheet size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-slate-800">Excel (.xlsx, .xls)</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Custom or downloaded ledger spreadsheets</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex items-start gap-2.5">
+                                        <FileText size={16} className="text-slate-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-slate-800">CSV Export</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Comma-separated tabular accounting records</p>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Privacy footnote */}
+                            <div className="flex items-center gap-2 text-xs text-slate-400 justify-center">
+                                <Lock size={13} />
+                                <span>Parsed securely in-browser. Your financial files are not stored on external servers.</span>
                             </div>
                         </div>
                     ) : (
-                        /* REVIEW & CONFIRM VIEW */
-                        <div className="space-y-5">
+                        /* STEP 2: REVIEW & CONFIRM VIEW */
+                        <div className="space-y-4">
                             
-                            {/* Statement Overview Cards */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Entries</p>
-                                    <p className="text-lg font-black text-slate-800 mt-0.5">
-                                        {transactions.length}
-                                        <span className="text-xs font-medium text-slate-400 ml-1.5">
-                                            ({selectedTransactions.length} selected)
-                                        </span>
-                                    </p>
-                                </div>
-
-                                <div className="bg-red-50/60 border border-red-100 rounded-xl p-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-red-500">Total You Gave (Debit)</p>
-                                    <p className="text-lg font-black text-red-600 mt-0.5">
-                                        ₹{totalSelectedGave.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-
-                                <div className="bg-green-50/60 border border-green-100 rounded-xl p-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-green-600">Total You Got (Credit)</p>
-                                    <p className="text-lg font-black text-green-700 mt-0.5">
-                                        ₹{totalSelectedGot.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-
-                                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#0057BB]">Net Change</p>
-                                    <p className="text-lg font-black text-slate-900 mt-0.5">
-                                        ₹{Math.abs(totalSelectedGot - totalSelectedGave).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        <span className={`text-[10px] ml-1 uppercase font-bold ${totalSelectedGave > totalSelectedGot ? 'text-red-500' : 'text-green-600'}`}>
-                                            {totalSelectedGave > totalSelectedGot ? 'You Get' : 'You Give'}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Detected File Info */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            {/* Summary Bar */}
+                            <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 text-xs">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                                        <FileText size={18} />
+                                    <div className="w-8 h-8 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-medium">
+                                        <FileText size={16} />
                                     </div>
                                     <div>
-                                        <p className="font-bold text-slate-800">{file?.name}</p>
-                                        {parsedData.meta?.dateRange && (
-                                            <p className="text-slate-400 text-[11px] flex items-center gap-1 mt-0.5">
-                                                <Calendar size={11} /> Period: {parsedData.meta.dateRange}
-                                            </p>
-                                        )}
+                                        <p className="font-semibold text-slate-900 truncate max-w-xs sm:max-w-md">{file?.name}</p>
+                                        <p className="text-[11px] text-slate-500">
+                                            {transactions.length} rows detected {parsedData.meta?.dateRange && `• ${parsedData.meta.dateRange}`}
+                                        </p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={resetState}
-                                    className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
-                                >
-                                    Change File
-                                </button>
+
+                                <div className="flex items-center gap-4 text-xs">
+                                    <div>
+                                        <span className="text-slate-400 block text-[10px] uppercase">Gave (Debit)</span>
+                                        <span className="font-semibold text-rose-600">₹{totalSelectedGave.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div className="border-l border-slate-200 pl-4">
+                                        <span className="text-slate-400 block text-[10px] uppercase">Got (Credit)</span>
+                                        <span className="font-semibold text-emerald-600">₹{totalSelectedGot.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div className="border-l border-slate-200 pl-4">
+                                        <span className="text-slate-400 block text-[10px] uppercase">Net Balance</span>
+                                        <span className={`font-bold ${netDifference >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                            ₹{Math.abs(netDifference).toLocaleString('en-IN', { minimumFractionDigits: 2 })} {netDifference >= 0 ? '(Cr)' : '(Dr)'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={resetState}
+                                        className="ml-2 px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded border border-slate-300 transition-colors cursor-pointer"
+                                    >
+                                        Change File
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Search & Action Filters */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                            {/* Table Controls */}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={toggleSelectAll}
-                                        className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5"
+                                        className="px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[10px] ${transactions.every(t => t.selected) ? 'bg-[#0057BB] border-[#0057BB] text-white' : 'border-slate-400 bg-white'}`}>
+                                        <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center text-[10px] ${transactions.every(t => t.selected) ? 'bg-[#0057BB] border-[#0057BB] text-white' : 'border-slate-400 bg-white'}`}>
                                             {transactions.every(t => t.selected) && <Check size={10} />}
                                         </span>
-                                        {transactions.every(t => t.selected) ? 'Deselect All' : 'Select All'}
+                                        <span>{transactions.every(t => t.selected) ? 'Deselect All' : 'Select All'}</span>
                                     </button>
 
-                                    <div className="flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs font-bold">
+                                    <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-xs font-medium">
                                         <button
                                             onClick={() => setTypeFilter('ALL')}
-                                            className={`px-2.5 py-1 rounded-md transition-all ${typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${typeFilter === 'ALL' ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                                         >
                                             All ({transactions.length})
                                         </button>
                                         <button
                                             onClick={() => setTypeFilter('GAVE')}
-                                            className={`px-2.5 py-1 rounded-md transition-all ${typeFilter === 'GAVE' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${typeFilter === 'GAVE' ? 'bg-rose-50 text-rose-700 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                                         >
-                                            Gave ({transactions.filter(t => t.type === 'GAVE').length})
+                                            Debit ({transactions.filter(t => t.type === 'GAVE').length})
                                         </button>
                                         <button
                                             onClick={() => setTypeFilter('GOT')}
-                                            className={`px-2.5 py-1 rounded-md transition-all ${typeFilter === 'GOT' ? 'bg-white text-green-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${typeFilter === 'GOT' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                                         >
-                                            Got ({transactions.filter(t => t.type === 'GOT').length})
+                                            Credit ({transactions.filter(t => t.type === 'GOT').length})
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="relative flex-1 max-w-xs">
-                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search remarks, amount, date..."
+                                        placeholder="Search remarks, amount..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
 
-                            {/* Table of Entries */}
-                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                                <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+                            {/* Data Table */}
+                            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
+                                <div className="max-h-[340px] overflow-y-auto custom-scrollbar">
                                     <table className="w-full text-left text-xs border-collapse">
-                                        <thead className="bg-slate-50 text-slate-500 font-bold sticky top-0 border-b border-slate-200 z-10 uppercase tracking-wider text-[10px]">
+                                        <thead className="bg-slate-50 text-slate-600 font-semibold sticky top-0 border-b border-slate-200 z-10 text-[11px]">
                                             <tr>
-                                                <th className="p-3 w-10 text-center">#</th>
-                                                <th className="p-3 w-28">Date</th>
-                                                <th className="p-3">Details / Remarks</th>
-                                                <th className="p-3 w-28 text-center">Type</th>
-                                                <th className="p-3 w-32 text-right">Amount (₹)</th>
-                                                <th className="p-3 w-10"></th>
+                                                <th className="p-2.5 w-10 text-center">
+                                                    <span className="sr-only">Select</span>
+                                                </th>
+                                                <th className="p-2.5 w-32">Date</th>
+                                                <th className="p-2.5">Description / Remarks</th>
+                                                <th className="p-2.5 w-28 text-center">Type</th>
+                                                <th className="p-2.5 w-32 text-right">Amount (₹)</th>
+                                                <th className="p-2.5 w-10"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 bg-white">
+                                        <tbody className="divide-y divide-slate-100">
                                             {visibleTransactions.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">
+                                                    <td colSpan={6} className="p-8 text-center text-slate-400">
                                                         No transactions match your search filter
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                visibleTransactions.map((tx, idx) => (
+                                                visibleTransactions.map((tx) => (
                                                     <tr 
                                                         key={tx.id} 
-                                                        className={`hover:bg-slate-50/80 transition-colors ${!tx.selected ? 'opacity-40 bg-slate-50/40' : ''}`}
+                                                        className={`hover:bg-slate-50/70 transition-colors ${!tx.selected ? 'opacity-40 bg-slate-50/40' : ''}`}
                                                     >
-                                                        <td className="p-3 text-center">
+                                                        <td className="p-2.5 text-center">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={tx.selected}
@@ -452,60 +477,60 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                                                                 className="rounded border-slate-300 text-[#0057BB] focus:ring-0 cursor-pointer"
                                                             />
                                                         </td>
-                                                        <td className="p-3">
+                                                        <td className="p-2.5">
                                                             <input
                                                                 type="date"
                                                                 value={tx.date}
                                                                 onChange={(e) => updateTransactionField(tx.id, 'date', e.target.value)}
-                                                                className="w-full bg-transparent font-medium text-slate-800 outline-none border-b border-transparent focus:border-blue-400 py-0.5"
+                                                                className="w-full bg-transparent text-slate-800 outline-none border-b border-transparent focus:border-blue-500 py-0.5 text-xs"
                                                             />
                                                         </td>
-                                                        <td className="p-3">
+                                                        <td className="p-2.5">
                                                             <input
                                                                 type="text"
                                                                 value={tx.description}
                                                                 onChange={(e) => updateTransactionField(tx.id, 'description', e.target.value)}
-                                                                className="w-full bg-transparent font-medium text-slate-800 outline-none border-b border-transparent focus:border-blue-400 py-0.5"
+                                                                className="w-full bg-transparent text-slate-800 outline-none border-b border-transparent focus:border-blue-500 py-0.5 text-xs"
                                                                 placeholder="Enter description"
                                                             />
                                                         </td>
-                                                        <td className="p-3 text-center">
+                                                        <td className="p-2.5 text-center">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => toggleTransactionType(tx.id)}
-                                                                className={`px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition-all border ${
+                                                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer border ${
                                                                     tx.type === 'GAVE'
-                                                                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                                                        : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                                                        ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                                                 }`}
-                                                                title="Click to toggle between Gave and Got"
+                                                                title="Click to toggle type"
                                                             >
-                                                                {tx.type === 'GAVE' ? 'You Gave' : 'You Got'}
+                                                                {tx.type === 'GAVE' ? 'Debit (Gave)' : 'Credit (Got)'}
                                                             </button>
                                                         </td>
-                                                        <td className="p-3 text-right">
-                                                            <div className="flex items-center justify-end gap-1">
-                                                                <span className="text-slate-400 font-medium">₹</span>
+                                                        <td className="p-2.5 text-right">
+                                                            <div className="flex items-center justify-end gap-1 font-mono font-medium">
+                                                                <span className="text-slate-400">₹</span>
                                                                 <input
                                                                     type="number"
                                                                     step="0.01"
                                                                     min="0"
                                                                     value={tx.amount}
                                                                     onChange={(e) => updateTransactionField(tx.id, 'amount', parseFloat(e.target.value) || 0)}
-                                                                    className={`w-24 text-right font-bold outline-none border-b border-transparent focus:border-blue-400 py-0.5 bg-transparent ${
-                                                                        tx.type === 'GAVE' ? 'text-red-600' : 'text-green-700'
+                                                                    className={`w-24 text-right outline-none border-b border-transparent focus:border-blue-500 py-0.5 bg-transparent font-semibold ${
+                                                                        tx.type === 'GAVE' ? 'text-rose-600' : 'text-emerald-600'
                                                                     }`}
                                                                 />
                                                             </div>
                                                         </td>
-                                                        <td className="p-3 text-center">
+                                                        <td className="p-2.5 text-center">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeTransaction(tx.id)}
-                                                                className="text-slate-300 hover:text-red-500 p-1 rounded transition-colors"
-                                                                title="Delete row"
+                                                                className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+                                                                title="Exclude row"
                                                             >
-                                                                <Trash2 size={14} />
+                                                                <Trash2 size={13} />
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -519,17 +544,18 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                     )}
                 </div>
 
-                {/* Footer */}
+                {/* Footer Controls */}
                 {parsedData && !importSuccess && (
-                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <p className="text-xs text-slate-500">
-                            Ready to import <strong className="text-slate-800 font-bold">{selectedTransactions.length}</strong> of {transactions.length} entries
-                        </p>
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="px-6 py-3.5 border-t border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="text-xs text-slate-500">
+                            Selected <strong className="text-slate-800 font-semibold">{selectedTransactions.length}</strong> of {transactions.length} entries for import
+                        </div>
+
+                        <div className="flex items-center gap-2.5 w-full sm:w-auto">
                             <button
                                 type="button"
-                                onClick={resetState}
-                                className="flex-1 sm:flex-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                                onClick={handleClose}
+                                className="flex-1 sm:flex-none px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -537,17 +563,17 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                                 type="button"
                                 disabled={selectedTransactions.length === 0 || isImporting}
                                 onClick={handleImport}
-                                className="flex-1 sm:flex-none px-6 py-2.5 bg-[#0057BB] text-white rounded-xl text-xs font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 sm:flex-none px-5 py-2 bg-[#0057BB] text-white rounded-lg text-xs font-semibold hover:bg-[#00479e] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                             >
                                 {isImporting ? (
                                     <>
-                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <RefreshCw size={13} className="animate-spin" />
                                         <span>Importing {selectedTransactions.length} Entries...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Check size={16} />
-                                        <span>Import {selectedTransactions.length} Entries</span>
+                                        <Check size={14} />
+                                        <span>Confirm & Import ({selectedTransactions.length})</span>
                                     </>
                                 )}
                             </button>

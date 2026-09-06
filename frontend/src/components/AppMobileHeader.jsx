@@ -19,23 +19,23 @@ const AppMobileHeader = ({ rightElement, onBack, showLogout = true, sticky = tru
 
     return (
         <header className={`md:hidden ${sticky ? 'sticky top-0 z-30' : 'relative'} flex h-14 w-full items-center justify-between px-4 bg-white border-b border-gray-100 shadow-sm shrink-0`}>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
                 {onBack && (
                     <button onClick={onBack} className="p-1 -ml-1 text-slate-500 hover:text-slate-800 transition-colors">
                         <span className="material-symbols-outlined text-[22px]">arrow_back</span>
                     </button>
                 )}
-                <div className="w-8 h-8 bg-[#0057BB] rounded-lg flex items-center justify-center shadow-sm shrink-0">
-                    <span className="material-symbols-outlined text-white text-[20px]">account_balance_wallet</span>
+                <div className="w-9 h-9 bg-[#0057BB] rounded-xl flex items-center justify-center shadow-xs shrink-0">
+                    <span className="material-symbols-outlined text-white text-[22px]">account_balance_wallet</span>
                 </div>
                 <div className="flex flex-col justify-center select-none">
                     <div className="flex items-center gap-1.5">
-                        <h1 className="text-[#0057BB] font-black text-[17px] tracking-tight leading-none">
+                        <h1 className="text-[#0057BB] font-black text-[19px] tracking-tight leading-none">
                             HisabKhata
                         </h1>
                         <span className="pro-badge">PRO</span>
                     </div>
-                    <span className="text-[9px] text-slate-400 font-bold tracking-tight leading-none mt-0.5">
+                    <span className="text-[11px] text-slate-500 font-bold tracking-tight leading-none mt-1">
                         a SumanOnline Project
                     </span>
                 </div>

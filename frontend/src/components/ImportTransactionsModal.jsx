@@ -16,7 +16,10 @@ import {
     ArrowRight,
     RefreshCw,
     Lock,
-    Download
+    Download,
+    ArrowLeftRight,
+    User,
+    Users
 } from 'lucide-react';
 
 const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
@@ -29,6 +32,7 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
     const [parseError, setParseError] = useState('');
     const [parsedData, setParsedData] = useState(null);
     const [transactions, setTransactions] = useState([]);
+    const [perspective, setPerspective] = useState('MERCHANT'); // 'MERCHANT' (My View) or 'CUSTOMER' (Customer's View)
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState('ALL');
     const [resetBalance, setResetBalance] = useState(false);
@@ -42,6 +46,7 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
         setFile(null);
         setParsedData(null);
         setTransactions([]);
+        setPerspective('MERCHANT');
         setParseError('');
         setIsParsing(false);
         setIsImporting(false);
@@ -57,6 +62,24 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
         onClose();
     };
 
+    const handlePerspectiveChange = (newPerspective) => {
+        if (newPerspective === perspective) return;
+        setPerspective(newPerspective);
+        // Automatically invert transaction types when switching perspectives
+        setTransactions(prev => prev.map(t => ({
+            ...t,
+            type: t.type === 'GAVE' ? 'GOT' : 'GAVE'
+        })));
+    };
+
+    const invertAllTransactionTypes = () => {
+        setPerspective(prev => prev === 'MERCHANT' ? 'CUSTOMER' : 'MERCHANT');
+        setTransactions(prev => prev.map(t => ({
+            ...t,
+            type: t.type === 'GAVE' ? 'GOT' : 'GAVE'
+        })));
+    };
+
     const handleFile = async (selectedFile) => {
         if (!selectedFile) return;
         setFile(selectedFile);
@@ -69,7 +92,18 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                 throw new Error("No transaction entries could be extracted. Please ensure the file contains valid columns for date, debit/credit amounts, and remarks.");
             }
             setParsedData(result);
-            setTransactions(result.transactions);
+            
+            // If user selected Customer's POV upfront, invert the initial parsed entries
+            const initialTransactions = result.transactions.map(t => {
+                if (perspective === 'CUSTOMER') {
+                    return {
+                        ...t,
+                        type: t.type === 'GAVE' ? 'GOT' : 'GAVE'
+                    };
+                }
+                return t;
+            });
+            setTransactions(initialTransactions);
         } catch (err) {
             console.error("Statement parse failed:", err);
             setParseError(err.message || "Unable to read this file format. Please upload a standard PDF or Excel statement.");
@@ -264,6 +298,53 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                                 </div>
                             )}
 
+                            {/* Perspective / Statement Origin Selection */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-800">Who provided or exported this statement?</span>
+                                    <span className="text-[11px] text-slate-400">Can also be switched in review</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPerspective('MERCHANT')}
+                                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                                            perspective === 'MERCHANT'
+                                                ? 'border-[#0057BB] bg-blue-50/50 ring-1 ring-[#0057BB]'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <User size={18} className={`shrink-0 mt-0.5 ${perspective === 'MERCHANT' ? 'text-[#0057BB]' : 'text-slate-400'}`} />
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-xs font-bold text-slate-800">My Statement (Merchant)</p>
+                                                {perspective === 'MERCHANT' && <span className="text-[10px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.2 rounded">Active</span>}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Gave = You gave goods/credit. Got = You received payment.</p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setPerspective('CUSTOMER')}
+                                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                                            perspective === 'CUSTOMER'
+                                                ? 'border-[#0057BB] bg-blue-50/50 ring-1 ring-[#0057BB]'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <ArrowLeftRight size={18} className={`shrink-0 mt-0.5 ${perspective === 'CUSTOMER' ? 'text-[#0057BB]' : 'text-slate-400'}`} />
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-xs font-bold text-slate-800">Customer's Statement</p>
+                                                {perspective === 'CUSTOMER' && <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.2 rounded">Inverted</span>}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Provided by {customer.name}. Automatically inverts Gave & Got.</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Drop Zone */}
                             <div
                                 onDrop={handleDrop}
@@ -388,6 +469,54 @@ const ImportTransactionsModal = ({ isOpen, onClose, customer, onSuccess }) => {
                                         className="ml-2 px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded border border-slate-300 transition-colors cursor-pointer"
                                     >
                                         Change File
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Perspective / POV Toolbar in Step 2 */}
+                            <div className="bg-slate-100/90 border border-slate-200 rounded-lg p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-xs font-semibold text-slate-800">Perspective:</span>
+                                    <div className="inline-flex rounded-md border border-slate-300 bg-white p-0.5 text-xs font-medium">
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePerspectiveChange('MERCHANT')}
+                                            className={`px-3 py-1 rounded transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                                perspective === 'MERCHANT'
+                                                    ? 'bg-[#0057BB] text-white font-semibold shadow-2xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            <User size={13} />
+                                            <span>My View (Merchant)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePerspectiveChange('CUSTOMER')}
+                                            className={`px-3 py-1 rounded transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                                perspective === 'CUSTOMER'
+                                                    ? 'bg-[#0057BB] text-white font-semibold shadow-2xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            <ArrowLeftRight size={13} />
+                                            <span>Customer's View (Inverted)</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-slate-500">
+                                        {perspective === 'CUSTOMER' ? "Customer gave = Your Credit (Got)" : "You gave = Your Debit (Gave)"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={invertAllTransactionTypes}
+                                        className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                                        title="Invert all Debit / Credit types"
+                                    >
+                                        <ArrowLeftRight size={12} className="text-slate-500" />
+                                        <span>Swap All</span>
                                     </button>
                                 </div>
                             </div>

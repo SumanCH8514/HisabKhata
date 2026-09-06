@@ -412,9 +412,9 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 className="text-base md:text-lg font-bold text-slate-900 mb-6">Volume Analysis (7 Days)</h3>
-                    <div className="w-full h-[250px] md:h-[300px] min-h-[250px] min-w-0">
+                    <div className="w-full h-[260px] min-w-0">
                         {mounted && (
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
+                            <ResponsiveContainer width="100%" height={260} debounce={50}>
                                 <AreaChart data={stats.chartData}>
                                     <defs>
                                         <linearGradient id="colorCredit" x1="0" y1="0" x2="0" y2="1">

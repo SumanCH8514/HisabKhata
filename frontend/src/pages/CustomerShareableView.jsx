@@ -1442,70 +1442,109 @@ const CustomerShareableView = () => {
             </header>
 
             {/* Mobile Header */}
-            <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-3 flex flex-col gap-1 shadow-md">
-                <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-2.5">
-                        <span className="material-symbols-outlined text-white text-[24px]">account_balance_wallet</span>
-                        <div className="flex flex-col justify-center">
-                            <div className="flex items-center gap-1.5">
-                                <h1 className="font-bold text-lg leading-none">HisabKhata</h1>
-                                <span className="pro-badge">PRO</span>
-                            </div>
-                            <span className="text-[9px] text-blue-200 font-semibold tracking-wide leading-none mt-0.5">
-                                a SumanOnline Project
-                            </span>
-                        </div>
+            <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-3 flex items-center justify-between shadow-xs border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-white shrink-0 border border-white/20">
+                        <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        {owner?.phone && (
-                            <a href={`tel:${owner.phone}`} className="p-1">
-                                <span className="material-symbols-outlined text-[24px]">call</span>
-                            </a>
-                        )}
-                        {owner?.email && (
-                            <a href={`mailto:${owner.email}`} className="p-1">
-                                <span className="material-symbols-outlined text-[24px]">mail</span>
-                            </a>
-                        )}
+                    <div className="flex flex-col justify-center select-none">
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-white text-base leading-tight tracking-tight">HisabKhata</span>
+                            <span className="pro-badge">PRO</span>
+                        </div>
+                        <span className="text-[10px] text-blue-200 font-semibold tracking-tight leading-none mt-0.5">
+                            a SumanOnline Project
+                        </span>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-[10px] uppercase overflow-hidden shrink-0">
-                        {customer.photoURL ? (
-                            <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
-                        ) : (
-                            initials
-                        )}
-                    </div>
-                    <p className="text-[11px] font-medium text-blue-100 uppercase tracking-wider truncate">Statement: {customer.name}</p>
+                <div className="flex items-center gap-2">
+                    {owner?.phone && (
+                        <a 
+                            href={`tel:${owner.phone}`} 
+                            className="w-8 h-8 rounded-full bg-white/15 active:bg-white/30 flex items-center justify-center text-white transition-colors"
+                            title="Call Merchant"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">call</span>
+                        </a>
+                    )}
+                    {owner?.email && (
+                        <a 
+                            href={`mailto:${owner.email}`} 
+                            className="w-8 h-8 rounded-full bg-white/15 active:bg-white/30 flex items-center justify-center text-white transition-colors"
+                            title="Email Merchant"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">mail</span>
+                        </a>
+                    )}
                 </div>
             </header>
 
             <main className="flex-1 w-full max-w-5xl mx-auto p-0 md:p-8 space-y-4 md:space-y-6 print-container">
 
                 {/* Mobile Identity / Balance Card */}
-                <div className="md:hidden bg-[#0057BB] text-white px-4 pb-12 pt-4">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-lg border border-white/20 uppercase overflow-hidden shrink-0">
-                            {customer.photoURL ? (
-                                <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
-                            ) : (
-                                initials
-                            )}
+                <div className="md:hidden bg-gradient-to-b from-[#0057BB] via-[#004ea7] to-[#00418c] text-white px-4 pt-4 pb-10 rounded-b-3xl shadow-sm">
+                    {/* Customer Profile Pill */}
+                    <div className="flex items-center justify-between mb-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/15">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white text-base border border-white/30 uppercase overflow-hidden shrink-0 shadow-inner">
+                                {customer.photoURL ? (
+                                    <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    initials
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                    <h2 className="text-base font-bold text-white truncate leading-tight">{customer.name}</h2>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Active Ledger" />
+                                </div>
+                                {customer.phone && (
+                                    <p className="text-xs text-blue-100/90 font-medium mt-0.5">
+                                        +91 {customer.phone}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="min-w-0">
-                            <h2 className="text-lg font-bold text-white truncate">{customer.name}</h2>
-                            {customer.phone && <p className="text-xs text-blue-100 font-medium opacity-80">+91 {customer.phone}</p>}
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <p className="text-xs text-blue-100 opacity-80 uppercase font-medium tracking-wider">Net Balance</p>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-4xl font-black">₹{balanceAbsolute}</h2>
-                            <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full uppercase">
-                                {isReceivable ? 'Pending' : 'Settled'}
+                        <div className="text-right shrink-0">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-bold text-blue-100 uppercase tracking-wider">
+                                Customer
                             </span>
                         </div>
+                    </div>
+
+                    {/* Net Balance Centerpiece */}
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">
+                                {isReceivable ? 'Total Amount Due' : 'Account Balance'}
+                            </span>
+                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                                isReceivable ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
+                            }`}>
+                                {isReceivable ? 'Payment Pending' : 'Settled / Advance'}
+                            </span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-black tracking-tight font-sans text-white">₹{balanceAbsolute}</span>
+                        </div>
+
+                        {customer.dueDate && isReceivable && (() => {
+                            const status = getDueDateStatus(customer.dueDate);
+                            if (!status) return null;
+                            return (
+                                <div className="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs">
+                                    <span className="text-blue-200 font-medium flex items-center gap-1 text-[11px]">
+                                        <span className="material-symbols-outlined text-[14px]">event</span>
+                                        Due Date:
+                                    </span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                        status.isOverdue ? 'bg-red-500/80 text-white' : 'bg-amber-400/90 text-slate-900'
+                                    }`}>
+                                        {status.formatted} ({status.isOverdue ? status.label : `${status.daysDiff}d left`})
+                                    </span>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -1644,24 +1683,117 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Summary Row (Mobile Only Overlay) */}
-                <div className="px-4 -mt-8 md:hidden">
-                    <div className="grid grid-cols-2 bg-white p-4 rounded-xl shadow-lg border border-slate-100 divide-x divide-slate-100">
-                        <div className="pr-4">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Purchases</p>
-                            <p className="text-lg font-bold text-red-500">₹{totalGave}</p>
+                {/* Summary Row (Mobile Floating Metric Cards) */}
+                <div className="px-4 -mt-6 md:hidden z-10 relative">
+                    <div className="grid grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl shadow-lg border border-slate-100/90">
+                        <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-100/80 flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider">Total Purchases</span>
+                                <span className="material-symbols-outlined text-[16px] text-rose-500">arrow_downward</span>
+                            </div>
+                            <p className="text-lg font-black text-rose-600 tracking-tight">₹{totalGave}</p>
+                            <span className="text-[9px] font-bold text-rose-400 uppercase mt-0.5">Debit (-)</span>
                         </div>
-                        <div className="pl-4 text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Payments</p>
-                            <p className="text-lg font-bold text-green-600">₹{totalGot}</p>
+                        <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-100/80 flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">Total Payments</span>
+                                <span className="material-symbols-outlined text-[16px] text-emerald-500">arrow_upward</span>
+                            </div>
+                            <p className="text-lg font-black text-emerald-600 tracking-tight">₹{totalGot}</p>
+                            <span className="text-[9px] font-bold text-emerald-400 uppercase mt-0.5">Credit (+)</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Ledger Transactions Table Container */}
-                <div className="bg-white md:rounded-2xl md:border border-slate-200/90 md:shadow-xs overflow-hidden print-rounded">
-                    {/* Desktop table title header */}
-                    <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-slate-50/50">
+                {/* Mobile Transactions Feed */}
+                <div className="md:hidden px-4 pt-2 space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-slate-500 text-[18px]">receipt_long</span>
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Transaction History</h3>
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {transactions.length} Entry{transactions.length === 1 ? '' : 'ies'}
+                        </span>
+                    </div>
+
+                    {transactions.length === 0 ? (
+                        <div className="bg-white rounded-2xl p-8 text-center border border-slate-100 shadow-xs">
+                            <span className="material-symbols-outlined text-slate-300 text-[36px]">description</span>
+                            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mt-1">No transactions recorded</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2.5">
+                            {transactions.map((tx, index) => {
+                                const amount = tx.amount || 0;
+                                const isGave = amount < 0;
+                                const absAmount = Math.abs(amount).toLocaleString('en-IN');
+                                const date = tx.timestamp ? new Date(tx.timestamp) : null;
+                                const isBalanceDebit = (tx.runningBalance || 0) < 0;
+                                const atts = Array.isArray(tx.attachments) && tx.attachments.length > 0 ? tx.attachments : (tx.attachment ? [tx.attachment] : []);
+
+                                return (
+                                    <div key={tx.id} className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-slate-200 transition-all">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-start gap-2.5 min-w-0">
+                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                                                    isGave ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                                }`}>
+                                                    <span className="material-symbols-outlined text-[17px]">
+                                                        {isGave ? 'arrow_downward' : 'arrow_upward'}
+                                                    </span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-xs font-bold text-slate-800">
+                                                            {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                                                        </span>
+                                                        {index === 0 && (
+                                                            <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200 leading-none">
+                                                                Latest
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
+                                                        {tx.description || (isGave ? 'You Gave' : 'You Got')}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right shrink-0">
+                                                <p className={`text-sm font-black tracking-tight font-sans ${isGave ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                    {isGave ? '-' : '+'}₹{absAmount}
+                                                </p>
+                                                <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                                                    Bal: ₹{Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')}{' '}
+                                                    <span className={`font-bold ${isBalanceDebit ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                                        {isBalanceDebit ? 'Dr' : 'Cr'}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {atts.length > 0 && (
+                                            <div className="mt-2.5 pt-2 border-t border-slate-50 flex items-center justify-between">
+                                                <button
+                                                    onClick={() => handleOpenView(atts, 0)}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold border border-blue-100 transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[13px]">attach_file</span>
+                                                    <span>View {atts.length} Bill / Attachment{atts.length > 1 ? 's' : ''}</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Desktop Ledger Transactions Table Container */}
+                <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden print-rounded">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-slate-50/50">
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-slate-600 text-[20px]">receipt_long</span>
                             <h2 className="font-bold text-sm text-slate-800 uppercase tracking-wide">Transaction History</h2>
@@ -1671,23 +1803,23 @@ const CustomerShareableView = () => {
                         </span>
                     </div>
 
-                    <div className="overflow-x-auto md:overflow-x-visible">
+                    <div className="overflow-x-auto">
                         <table className="w-full text-left table-fixed">
                             <thead className="bg-[#F8FAFC] border-b border-slate-200">
                                 <tr>
-                                    <th className="px-2 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-slate-600 uppercase tracking-wider w-[36%] md:w-[40%]">Date & Details</th>
-                                    <th className="px-1 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-rose-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Debit (-)</th>
-                                    <th className="px-1 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-emerald-600 uppercase tracking-wider text-center md:text-right w-[21%] md:w-[20%]">Credit (+)</th>
-                                    <th className="px-2 md:px-6 py-2.5 md:py-3.5 text-[10px] md:text-xs font-bold text-slate-600 uppercase tracking-wider text-right w-[22%] md:w-[20%]">Balance</th>
+                                    <th className="px-6 py-3.5 text-xs font-bold text-slate-600 uppercase tracking-wider w-[40%]">Date & Details</th>
+                                    <th className="px-6 py-3.5 text-xs font-bold text-rose-600 uppercase tracking-wider text-right w-[20%]">Debit (-)</th>
+                                    <th className="px-6 py-3.5 text-xs font-bold text-emerald-600 uppercase tracking-wider text-right w-[20%]">Credit (+)</th>
+                                    <th className="px-6 py-3.5 text-xs font-bold text-slate-600 uppercase tracking-wider text-right w-[20%]">Balance</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 md:divide-slate-200/70">
+                            <tbody className="divide-y divide-slate-200/70">
                                 {transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-16 md:py-20 text-center">
+                                        <td colSpan="4" className="px-6 py-20 text-center">
                                             <div className="flex flex-col items-center justify-center gap-2">
-                                                <span className="material-symbols-outlined text-slate-300 text-[36px] md:text-[40px]">description</span>
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-[11px] md:text-xs">No transactions recorded yet</p>
+                                                <span className="material-symbols-outlined text-slate-300 text-[40px]">description</span>
+                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No transactions recorded yet</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -1701,23 +1833,18 @@ const CustomerShareableView = () => {
                                     return (
                                         <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors group">
                                             {/* Date & Details Column */}
-                                            <td className="px-2 md:px-6 py-2.5 md:py-4 align-top">
+                                            <td className="px-6 py-4 align-top">
                                                 <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                                    <span className="text-[11px] md:text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">
-                                                        {date ? (
-                                                            <>
-                                                                <span className="md:hidden">{date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                                                                <span className="hidden md:inline">{date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                                            </>
-                                                        ) : '—'}
+                                                    <span className="text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">
+                                                        {date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                                                     </span>
                                                     {index === 0 && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[8px] md:text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80 leading-none">
+                                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80 leading-none">
                                                             Latest
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-[9px] md:text-xs text-slate-500 font-normal line-clamp-2 md:line-clamp-none break-words leading-tight">
+                                                <p className="text-xs text-slate-500 font-normal leading-tight">
                                                     {tx.description || 'General Entry'}
                                                 </p>
                                                 {(() => {
@@ -1727,12 +1854,11 @@ const CustomerShareableView = () => {
                                                         <div className="mt-1 no-print">
                                                             <button
                                                                 onClick={() => handleOpenView(atts, 0)}
-                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-[10px] font-semibold transition-colors cursor-pointer border border-blue-100"
+                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 text-xs font-semibold transition-colors cursor-pointer border border-blue-100"
                                                                 title={`${atts.length} attachment(s)`}
                                                             >
-                                                                <span className="material-symbols-outlined text-[14px] md:text-[15px]">attach_file</span>
-                                                                <span className="hidden md:inline text-xs">{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
-                                                                {atts.length > 1 && <span className="md:hidden text-[9px] font-bold">{atts.length}</span>}
+                                                                <span className="material-symbols-outlined text-[15px]">attach_file</span>
+                                                                <span>{atts.length} {atts.length === 1 ? 'Bill attached' : 'Bills attached'}</span>
                                                             </button>
                                                         </div>
                                                     );
@@ -1740,34 +1866,34 @@ const CustomerShareableView = () => {
                                             </td>
 
                                             {/* Debit Column */}
-                                            <td className={`px-1 md:px-6 py-2.5 md:py-4 text-center md:text-right align-top ${isGave ? 'bg-rose-50/20 md:bg-transparent' : ''}`}>
+                                            <td className="px-6 py-4 text-right align-top">
                                                 {isGave ? (
-                                                    <span className="text-[11px] md:text-sm font-extrabold text-rose-600 whitespace-nowrap">
+                                                    <span className="text-sm font-extrabold text-rose-600 whitespace-nowrap">
                                                         ₹{absAmount}
                                                     </span>
                                                 ) : (
-                                                    <span className="hidden md:inline text-slate-300 text-xs">—</span>
+                                                    <span className="text-slate-300 text-xs">—</span>
                                                 )}
                                             </td>
 
                                             {/* Credit Column */}
-                                            <td className={`px-1 md:px-6 py-2.5 md:py-4 text-center md:text-right align-top ${!isGave ? 'bg-emerald-50/20 md:bg-transparent' : ''}`}>
+                                            <td className="px-6 py-4 text-right align-top">
                                                 {!isGave ? (
-                                                    <span className="text-[11px] md:text-sm font-extrabold text-emerald-600 whitespace-nowrap">
+                                                    <span className="text-sm font-extrabold text-emerald-600 whitespace-nowrap">
                                                         ₹{absAmount}
                                                     </span>
                                                 ) : (
-                                                    <span className="hidden md:inline text-slate-300 text-xs">—</span>
+                                                    <span className="text-slate-300 text-xs">—</span>
                                                 )}
                                             </td>
 
                                             {/* Balance Column */}
-                                            <td className="px-2 md:px-6 py-2.5 md:py-4 text-right align-top">
-                                                <div className="flex flex-col md:flex-row items-end justify-end md:gap-1 font-bold">
-                                                    <span className={`text-[11px] md:text-sm whitespace-nowrap ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
+                                            <td className="px-6 py-4 text-right align-top">
+                                                <div className="flex items-end justify-end gap-1 font-bold">
+                                                    <span className={`text-sm whitespace-nowrap ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
                                                         ₹{Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')}
                                                     </span>
-                                                    <span className={`text-[8px] md:text-[9px] font-bold ${
+                                                    <span className={`text-[9px] font-bold ${
                                                         isBalanceDebit ? 'text-rose-500' : 'text-emerald-600'
                                                     }`}>
                                                         {isBalanceDebit ? 'Dr' : 'Cr'}
@@ -1815,20 +1941,20 @@ const CustomerShareableView = () => {
             </main>
 
             {/* Mobile Fixed Bottom Bar — High Fidelity Action Hub */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3.5 flex items-center gap-3 no-print z-50 safe-bottom shadow-[0_-10px_25px_rgba(0,0,0,0.08)]">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-3 flex items-center gap-3 no-print z-50 safe-bottom shadow-[0_-8px_20px_rgba(0,0,0,0.08)]">
                 <button
                     onClick={handleDownloadStatement}
-                    className={`${isReceivable ? 'flex-[1.4]' : 'flex-1'} bg-[#0057BB] text-white h-[56px] rounded-2xl font-bold text-[13px] flex items-center justify-center gap-2 shadow-xl shadow-blue-100 active:scale-[0.98] transition-all whitespace-nowrap`}
+                    className={`${isReceivable ? 'flex-[1.2]' : 'flex-1'} bg-[#0057BB] hover:bg-[#004ca8] text-white h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all whitespace-nowrap`}
                 >
-                    <span className="material-symbols-outlined text-[20px]">download</span>
-                    Download Statement
+                    <span className="material-symbols-outlined text-[19px]">download</span>
+                    Download PDF
                 </button>
                 {isReceivable && (
                     <button
                         onClick={handlePayOnlineClick}
-                        className="flex-1 bg-[#2E7D32] text-white h-[56px] rounded-2xl font-bold text-[13px] flex items-center justify-center gap-2 shadow-xl shadow-green-100 active:scale-[0.98] transition-all whitespace-nowrap"
+                        className="flex-1 bg-[#107c41] hover:bg-[#0d6535] text-white h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-[0.98] transition-all whitespace-nowrap"
                     >
-                        <span className="material-symbols-outlined text-[20px]">payments</span>
+                        <span className="material-symbols-outlined text-[19px]">payments</span>
                         Pay Online
                     </button>
                 )}

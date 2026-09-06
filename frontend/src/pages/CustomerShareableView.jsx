@@ -1384,24 +1384,31 @@ const CustomerShareableView = () => {
             )}
 
             {/* Desktop Header */}
-            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-16 items-center justify-between shadow-sm">
+            <header className="hidden md:flex no-print sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-16 items-center justify-between shadow-xs">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#0057BB] rounded-xl flex items-center justify-center shadow-md text-white shrink-0">
-                            <span className="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+                        <div className="w-10 h-10 bg-[#0057BB] rounded-xl flex items-center justify-center shadow-xs text-white shrink-0">
+                            <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
                         </div>
-                        <div>
+                        <div className="flex flex-col justify-center select-none">
                             <div className="flex items-center gap-1.5">
-                                <span className="font-extrabold text-slate-900 text-base leading-tight tracking-tight">HisabKhata</span>
+                                <span className="font-extrabold text-slate-900 text-lg leading-tight tracking-tight">HisabKhata</span>
                                 <span className="pro-badge">PRO</span>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0057BB] border border-blue-200 ml-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#0057BB]"></span> Verified Ledger
                                 </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs mt-0.5">
-                                Statement for <span className="font-semibold text-slate-700">{customer.name}</span> • <span className="text-[10px] text-slate-400 font-medium">a SumanOnline Project</span>
-                            </p>
+                            <span className="text-[11px] text-slate-400 font-bold tracking-tight leading-none mt-1">
+                                a SumanOnline Project
+                            </span>
                         </div>
+                    </div>
+
+                    <div className="hidden lg:block h-6 w-[1px] bg-slate-200 mx-1"></div>
+
+                    <div className="hidden lg:flex flex-col justify-center">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Statement For</span>
+                        <span className="text-xs font-bold text-slate-800 truncate max-w-[220px]">{customer.name}</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1436,12 +1443,17 @@ const CustomerShareableView = () => {
 
             {/* Mobile Header */}
             <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-3 flex flex-col gap-1 shadow-md">
-                <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-0.5">
+                    <div className="flex items-center gap-2.5">
                         <span className="material-symbols-outlined text-white text-[24px]">account_balance_wallet</span>
-                        <div className="flex items-center gap-1.5">
-                            <h1 className="font-bold text-lg">HisabKhata</h1>
-                            <span className="pro-badge">PRO</span>
+                        <div className="flex flex-col justify-center">
+                            <div className="flex items-center gap-1.5">
+                                <h1 className="font-bold text-lg leading-none">HisabKhata</h1>
+                                <span className="pro-badge">PRO</span>
+                            </div>
+                            <span className="text-[9px] text-blue-200 font-semibold tracking-wide leading-none mt-0.5">
+                                a SumanOnline Project
+                            </span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1771,17 +1783,34 @@ const CustomerShareableView = () => {
                 </div>
 
                 {/* Secure Footer */}
-                <footer className="text-center space-y-3 py-10 px-4">
-                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                <footer className="text-center pt-8 pb-28 md:pb-12 px-4 space-y-4 max-w-xl mx-auto border-t border-slate-200/80 mt-8 no-print">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-xs">
                         <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Verified Digital Statement</span>
+                        <span className="text-[11px] font-bold tracking-wide">VERIFIED DIGITAL STATEMENT</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
-                        This digital ledger is provided for account transparency.
-                        Generated on {new Date().toLocaleString()}
-                        <br className="hidden md:block" />
-                        Platform by <a href="https://SumanOnline.Com" target="_blank" rel="noreferrer" className="text-[#0057BB] font-bold hover:underline no-print">SumanOnline.Com</a>
-                    </p>
+
+                    <div className="space-y-1.5 text-xs text-slate-500">
+                        <p className="font-medium text-slate-600 leading-relaxed">
+                            This digital ledger is provided for account transparency and instant verification.
+                        </p>
+                        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                            <span className="material-symbols-outlined text-[14px]">schedule</span>
+                            <span>Generated on {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400 font-medium">
+                        <span>Platform by</span>
+                        <a 
+                            href="https://SumanOnline.Com" 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="font-bold text-[#0057BB] hover:text-[#003e85] hover:underline inline-flex items-center gap-0.5"
+                        >
+                            <span>SumanOnline.Com</span>
+                            <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                        </a>
+                    </div>
                 </footer>
             </main>
 

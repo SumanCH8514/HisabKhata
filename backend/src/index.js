@@ -5,10 +5,8 @@ import { generateEmailHtml } from './emailTemplate.js';
 
 const app = new Hono();
 
-// Global CORS Middleware
 app.use('*', cors({
     origin: (origin) => {
-        // Allow all local dev servers and official production domains
         if (!origin || 
             origin.includes('localhost') || 
             origin.includes('127.0.0.1') || 
@@ -32,9 +30,6 @@ const R2_FOLDERS = {
     TRANSACTION: 'transaction_attachments'
 };
 
-/**
- * Health check & diagnostic
- */
 app.get('/', (c) => {
     return c.json({
         service: 'HisabKhata Cloudflare Worker Backend',
@@ -54,9 +49,6 @@ app.get('/api/health', async (c) => {
     });
 });
 
-/**
- * Test R2 connection
- */
 app.post('/api/test-connection', async (c) => {
     if (!c.env.MY_BUCKET) {
         return c.json({ success: false, message: 'R2 Bucket binding MY_BUCKET is missing in Worker configuration.' }, 500);
@@ -75,9 +67,6 @@ app.post('/api/test-connection', async (c) => {
     }
 });
 
-/**
- * Helper to parse Base64 to ArrayBuffer and content-type
- */
 function parseBase64(base64Str) {
     let contentType = 'image/jpeg';
     let rawBase64 = base64Str;
@@ -98,9 +87,6 @@ function parseBase64(base64Str) {
     return { buffer: bytes.buffer, contentType };
 }
 
-/**
- * Upload endpoint (Accepts JSON with Base64 or FormData multipart)
- */
 app.post('/api/upload', async (c) => {
     if (!c.env.MY_BUCKET) {
         return c.json({ success: false, error: 'R2 Bucket binding is not configured in Worker.' }, 500);
@@ -143,14 +129,12 @@ app.post('/api/upload', async (c) => {
             fileBuffer = await file.arrayBuffer();
             contentType = file.type || 'image/jpeg';
         } else {
-            // Raw binary stream
             fileBuffer = await c.req.arrayBuffer();
             folder = c.req.query('folder') || R2_FOLDERS.PROFILE;
             customFilename = c.req.query('filename') || null;
             contentType = contentTypeHeader || 'image/jpeg';
         }
 
-        // Determine extension
         let ext = 'jpg';
         if (contentType.includes('png')) ext = 'png';
         else if (contentType.includes('webp')) ext = 'webp';
@@ -166,7 +150,6 @@ app.post('/api/upload', async (c) => {
         const cleanFolder = folder.replace(/^\/+|\/+$/g, '');
         const key = `${cleanFolder}/${filename}`;
 
-        // Put into R2 bucket
         await c.env.MY_BUCKET.put(key, fileBuffer, {
             httpMetadata: {
                 contentType: contentType,
@@ -192,9 +175,6 @@ app.post('/api/upload', async (c) => {
     }
 });
 
-/**
- * Delete endpoint
- */
 app.post('/api/delete', async (c) => {
     if (!c.env.MY_BUCKET) {
         return c.json({ success: false, error: 'R2 Bucket binding is missing.' }, 500);
@@ -225,9 +205,6 @@ app.post('/api/delete', async (c) => {
     }
 });
 
-/**
- * Cloudflare Worker Email Status Endpoint
- */
 app.get('/api/email-status', async (c) => {
     const hasHost = !!c.env.SMTP_HOST;
     const hasUser = !!c.env.SMTP_USER;
@@ -252,9 +229,6 @@ app.get('/api/email-status', async (c) => {
     });
 });
 
-/**
- * Cloudflare Worker Test Email Endpoint
- */
 app.post('/api/test-email', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const recipient = body.testRecipient || c.env.SMTP_USER;
@@ -288,14 +262,8 @@ app.post('/api/test-email', async (c) => {
             subject: 'HisabKhata - SMTP Connection Verified',
             text: 'Your custom SMTP transactional email delivery is operational!',
             html: generateEmailHtml({
-                customerName: 'Valued Merchant',
-                merchantName: 'HisabKhata System',
-                amount: 100,
-                balance: 100,
-                txType: 'GAVE',
-                description: 'Automated test message confirming custom SMTP delivery, secure socket authentication, and responsive template formatting.',
-                customMessage: 'Your custom SMTP server connection has been verified successfully. Your transactional email gateway is active and ready to deliver real-time statements.',
-                actionUrl: 'https://hisabkhata.sumanonline.com/customer/share/-Ort7aT4tXrZTTb9qSh6'
+                type: 'TEST',
+                recipient: recipient
             })
         });
 
@@ -310,9 +278,6 @@ app.post('/api/test-email', async (c) => {
     }
 });
 
-/**
- * Cloudflare Worker Main Email Sending Endpoint
- */
 app.post('/api/send-email', async (c) => {
     let body;
     try {
@@ -327,6 +292,8 @@ app.post('/api/send-email', async (c) => {
         subject,
         html,
         text,
+        type,
+        template,
         customerName,
         customer_name,
         merchantName,
@@ -337,6 +304,11 @@ app.post('/api/send-email', async (c) => {
         balance,
         txType,
         tx_type,
+        transactionId,
+        transaction_id,
+        utr,
+        dueDate,
+        due_date,
         description,
         actionUrl,
         action_url,
@@ -358,15 +330,22 @@ app.post('/api/send-email', async (c) => {
     try {
         const emailSubject = subject || `HisabKhata Statement Update - ${merchantName || merchant_name || 'Ledger'}`;
         const emailHtml = html || generateEmailHtml({
-            customerName: customerName || customer_name,
+            ...body,
+            type: type || template,
+            otp: body.otp || body.code || body.otpCode || body.loginOtp,
+            purpose: body.purpose,
+            expiry: body.expiry,
+            customerName: customerName || customer_name || body.userName || body.toName || body.name,
             merchantName: merchantName || merchant_name,
             merchantPhone: merchantPhone || merchant_phone,
             amount: amount,
             balance: balance,
             txType: txType || tx_type,
+            transactionId: transactionId || transaction_id || utr,
+            dueDate: dueDate || due_date,
             description: description,
-            actionUrl: actionUrl || action_url,
-            customMessage: customMessage
+            actionUrl: actionUrl || action_url || body.link,
+            customMessage: customMessage || body.message
         });
 
         const result = await sendSmtpEmail({
@@ -397,9 +376,6 @@ app.post('/api/send-email', async (c) => {
     }
 });
 
-/**
- * Direct file serving fallback for public R2 assets (Must be last route)
- */
 app.get('/:folder/:filename', async (c) => {
     const { folder, filename } = c.req.param();
     if (folder === 'api') {

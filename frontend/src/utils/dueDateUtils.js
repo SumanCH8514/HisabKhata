@@ -1,12 +1,4 @@
-/**
- * Utility functions for Customer Due Dates in HisabKhata
- */
 
-/**
- * Returns YYYY-MM-DD string for today + given number of days
- * @param {number} days 
- * @returns {string} YYYY-MM-DD
- */
 export const getFutureDateString = (days = 0) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -16,11 +8,6 @@ export const getFutureDateString = (days = 0) => {
     return `${year}-${month}-${day}`;
 };
 
-/**
- * Normalizes any date value (timestamp, ISO string, YYYY-MM-DD) into YYYY-MM-DD
- * @param {string|number|Date} dateVal 
- * @returns {string|null}
- */
 export const normalizeDateString = (dateVal) => {
     if (!dateVal) return null;
     if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
@@ -34,12 +21,6 @@ export const normalizeDateString = (dateVal) => {
     return `${year}-${month}-${day}`;
 };
 
-/**
- * Formats a due date into a human readable string (e.g. "15 Sep 2026")
- * @param {string|number|Date} dateVal 
- * @param {boolean} includeYear 
- * @returns {string}
- */
 export const formatDueDate = (dateVal, includeYear = true) => {
     if (!dateVal) return '';
     const norm = normalizeDateString(dateVal);
@@ -54,11 +35,6 @@ export const formatDueDate = (dateVal, includeYear = true) => {
     });
 };
 
-/**
- * Calculates due date status: overdue, today, or upcoming
- * @param {string|number|Date} dateVal 
- * @returns {object|null}
- */
 export const getDueDateStatus = (dateVal) => {
     const norm = normalizeDateString(dateVal);
     if (!norm) return null;
@@ -125,25 +101,16 @@ export const getDueDateStatus = (dateVal) => {
     }
 };
 
-/**
- * Checks if a customer's due date is today
- */
 export const isDueToday = (dateVal) => {
     const norm = normalizeDateString(dateVal);
     return !!norm && norm === getFutureDateString(0);
 };
 
-/**
- * Checks if a customer's due date is in the future
- */
 export const isUpcomingDue = (dateVal) => {
     const norm = normalizeDateString(dateVal);
     return !!norm && norm > getFutureDateString(0);
 };
 
-/**
- * Checks if a customer's due date is in the past
- */
 export const isOverdue = (dateVal) => {
     const norm = normalizeDateString(dateVal);
     return !!norm && norm < getFutureDateString(0);

@@ -78,7 +78,6 @@ const Profile = () => {
             let finalPhotoURL = compressedBase64;
             try {
                 finalPhotoURL = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `user_${currentUser.uid}_${Date.now()}`);
-                // If successfully uploaded to R2 and there was an old R2 photo, delete it
                 if (oldPhotoURL && oldPhotoURL.startsWith('http') && oldPhotoURL !== finalPhotoURL) {
                     deleteFromR2(oldPhotoURL).catch(err => console.warn('Could not remove old profile photo from R2:', err));
                 }
@@ -161,7 +160,6 @@ const Profile = () => {
         setLoading(true);
         try {
             const updateData = { [editingField.key]: editingField.value };
-            // Special handling for phone if needed
             if (editingField.key === 'phone') updateData.mobile = editingField.value;
             
             await dbService.updateUserProfile(currentUser.uid, updateData);
@@ -205,13 +203,11 @@ const Profile = () => {
             <Sidebar />
 
             <div className="flex-1 md:ml-[260px] pb-20 md:pb-0 flex flex-col min-w-0 min-h-screen">
-                {/* Mobile Branded Header */}
                 <AppMobileHeader 
                     onBack={() => navigate(-1)} 
                     showLogout={false} 
                 />
 
-                {/* Desktop Page Title Header */}
                 <div className="hidden md:flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200/80">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -238,19 +234,14 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* =========================================================================
-                    DESKTOP VIEW (md:block) — 2-Column Responsive Dashboard
-                   ========================================================================= */}
+                
                 <main className="hidden md:block flex-1 w-full max-w-6xl mx-auto p-8 lg:p-10">
                     <div className="grid grid-cols-12 gap-8 items-start">
                         
-                        {/* LEFT COLUMN: 4 cols — Identity Card & Strength */}
                         <div className="col-span-12 lg:col-span-4 space-y-6">
                             
-                            {/* Merchant Identity Card */}
                             <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center text-center relative overflow-hidden">
                                 
-                                {/* Photo Uploader */}
                                 <div 
                                     className="relative group cursor-pointer" 
                                     onClick={() => !isUploading && document.getElementById('avatar-upload-desktop').click()}
@@ -310,7 +301,6 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Profile Strength Card */}
                             <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
@@ -340,10 +330,8 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: 8 cols — Structured Information Sections */}
                         <div className="col-span-12 lg:col-span-8 space-y-6">
                             
-                            {/* Section 1: Personal & Business Identity */}
                             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                     <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
@@ -387,7 +375,6 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Section 2: Store Details & Category */}
                             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                     <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
@@ -431,7 +418,6 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Section 3: Financial & Payment Info */}
                             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                     <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
@@ -475,7 +461,6 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Section 4: Staff & Operations */}
                             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                     <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
@@ -501,11 +486,8 @@ const Profile = () => {
                     </div>
                 </main>
 
-                {/* =========================================================================
-                    MOBILE VIEW (< md) — Exact Existing Layout Preserved
-                   ========================================================================= */}
+                
                 <main className="md:hidden max-w-2xl mx-auto w-full bg-white min-h-screen shadow-sm relative z-10">
-                    {/* Photo & Strength Section */}
                     <div className="pt-6 pb-5 flex flex-col items-center border-b border-slate-100 bg-white">
                         <div 
                             className="relative group cursor-pointer" 
@@ -563,7 +545,6 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* Info Lists */}
                     <div className="pb-10">
                         <SectionHeader title="Personal Info" />
                         <ProfileItem 
@@ -635,7 +616,6 @@ const Profile = () => {
                     </div>
                 </main>
 
-                {/* Edit Modal */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                         <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -677,11 +657,9 @@ const Profile = () => {
                     </div>
                 )}
 
-                {/* Modern Footer on Desktop */}
                 <Footer className="mt-auto hidden md:block" />
             </div>
 
-            {/* Mobile Nav */}
             <BottomNav />
         </div>
     );

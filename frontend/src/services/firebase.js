@@ -5,7 +5,7 @@ import { getDatabase, ref, set, get, push, update, remove, onValue, query, order
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'hisabkhata-sumanonline.firebaseapp.com',
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
@@ -15,6 +15,7 @@ const firebaseConfig = {
 
 import emailjs from '@emailjs/browser';
 import { sendEmailViaBackend } from './emailService';
+import { deleteFromR2 } from './r2Storage';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -33,7 +34,6 @@ export const sendEmailNotification = async (templateParams) => {
 
     if (settings.emailNotifications === false) return;
 
-    // Check Gateway: 'EMAILJS' vs 'SMTP' (default)
     if (settings.emailGateway === 'EMAILJS' && settings.emailjs?.serviceId && settings.emailjs?.publicKey) {
       const emailJSConfig = settings.emailjs;
       let templateId = emailJSConfig.welcomeTemplateId || emailJSConfig.templateId;
@@ -55,25 +55,21 @@ export const sendEmailNotification = async (templateParams) => {
       );
     }
 
-    // Default to Project SMTP (Backend Service)
     const result = await sendEmailViaBackend(templateParams);
     return result;
   } catch (error) {
     const toEmail = templateParams.to_email || templateParams.to || templateParams.email;
     console.error(`❌ Email failed to ${toEmail || 'recipient'}\nFailed: ${error.message || error}`);
-    // Gracefully handle without blocking UI operations
     return false;
   }
 };
 
-// Authentication Service
 export const authService = {
   register: async (name, email, password, phone) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     await updateProfile(user, { displayName: name });
 
-    // Create user profile in Realtime Database
     await set(ref(db, `users/${user.uid}`), {
       name: name,
       email: email,
@@ -82,7 +78,6 @@ export const authService = {
       createdAt: Date.now()
     });
 
-    // Send Welcome Email (Frontend)
     sendEmailNotification({
       to_email: email,
       to_name: name,
@@ -138,12 +133,9 @@ export const authService = {
       const user = result.user;
       const additionalInfo = getAdditionalUserInfo(result);
 
-      // Check if user already exists in DB
       const userSnap = await get(ref(db, `users/${user.uid}`));
 
       if (!userSnap.exists()) {
-        // New user from Google, create profile
-        // Attempt to get phone number from multiple sources
         const fetchedPhone = user.phoneNumber || 
                            user.providerData?.find(p => p.phoneNumber)?.phoneNumber || 
                            additionalInfo?.profile?.phone_number || 
@@ -159,7 +151,6 @@ export const authService = {
           createdAt: Date.now()
         });
 
-        // Send Welcome Email
         sendEmailNotification({
           to_email: user.email,
           to_name: user.displayName || 'Google User',
@@ -177,9 +168,7 @@ export const authService = {
   }
 };
 
-// Database Service
 export const dbService = {
-  // Customers
   addCustomer: async (userId, customerData) => {
     const customerRef = push(ref(db, 'customers'));
     const newCustomer = {
@@ -189,7 +178,6 @@ export const dbService = {
     };
     await set(customerRef, newCustomer);
 
-    // Send "Added as Customer" Email
     if (newCustomer.email) {
       try {
         const userSnap = await get(ref(db, `users/${userId}`));
@@ -212,7 +200,6 @@ export const dbService = {
     return customerRef.key;
   },
 
-  // Alias for backward compatibility
   createCustomer: async (userId, customerData) => {
     return dbService.addCustomer(userId, customerData);
   },
@@ -228,19 +215,44 @@ export const dbService = {
 
   deleteCustomer: async (customerId) => {
     try {
-      // 1. Delete associated transactions
+      const customerSnapshot = await get(ref(db, `customers/${customerId}`));
+      if (customerSnapshot.exists()) {
+        const customerData = customerSnapshot.val();
+        if (customerData.profilePicture && customerData.profilePicture.startsWith('http')) {
+          deleteFromR2(customerData.profilePicture).catch(err => {
+            console.warn('Failed to delete customer profile picture from R2:', err);
+          });
+        }
+      }
+
       const transactionsQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(customerId));
       const snapshot = await get(transactionsQuery);
       if (snapshot.exists()) {
         const transactionsRef = ref(db, 'transactions');
         const updates = {};
+        const attachmentUrls = [];
+
         snapshot.forEach((child) => {
+          const t = child.val();
+          if (Array.isArray(t?.attachments)) {
+            attachmentUrls.push(...t.attachments);
+          }
+          if (t?.attachment && !attachmentUrls.includes(t.attachment)) {
+            attachmentUrls.push(t.attachment);
+          }
+          if (t?.screenshot && !attachmentUrls.includes(t.screenshot)) {
+            attachmentUrls.push(t.screenshot);
+          }
           updates[child.key] = null;
         });
+
+        Promise.allSettled(
+          attachmentUrls.filter(u => u && typeof u === 'string' && u.startsWith('http')).map(u => deleteFromR2(u))
+        ).catch(() => {});
+
         await update(transactionsRef, updates);
       }
 
-      // 2. Delete customer node
       await remove(ref(db, `customers/${customerId}`));
       return true;
     } catch (error) {
@@ -265,18 +277,15 @@ export const dbService = {
     });
   },
 
-  // Listen to a single customer (for CustomerLedgerDetail)
   listenCustomer: (customerId, callback) => {
     return onValue(ref(db, `customers/${customerId}`), (snapshot) => {
       if (snapshot.exists()) callback({ id: snapshot.key, ...snapshot.val() });
     });
   },
 
-  // Transactions
   addTransaction: async (userId, customerId, transactionData) => {
     const transactionRef = push(ref(db, 'transactions'));
 
-    // Get current customer balance
     const customerSnapshot = await get(ref(db, `customers/${customerId}`));
     let newBalance = 0;
     let customerName = '';
@@ -289,8 +298,11 @@ export const dbService = {
       customerEmail = customer.email;
     }
 
+    const inferredType = transactionData.type || (Number(transactionData.amount) > 0 ? 'GOT' : 'GAVE');
+
     const newTransaction = {
       ...transactionData,
+      type: inferredType,
       userId,
       customerId,
       balance: newBalance,
@@ -308,7 +320,6 @@ export const dbService = {
       throw error;
     }
 
-    // Send Transaction Alert
     if (customerEmail) {
       try {
         const typeStr = transactionData.type === 'GOT' ? 'Payment Received' : 'Credit Given';
@@ -338,10 +349,36 @@ export const dbService = {
 
   deleteTransaction: async (customerId, transactionId, amount) => {
     try {
-      // 1. Delete transaction
-      await remove(ref(db, `transactions/${transactionId}`));
+      const txRef = ref(db, `transactions/${transactionId}`);
+      const txSnapshot = await get(txRef);
+      const txData = txSnapshot.exists() ? txSnapshot.val() : null;
 
-      // 2. Reverse customer balance
+      if (txData) {
+        const attachmentUrls = [];
+        if (Array.isArray(txData.attachments)) {
+          attachmentUrls.push(...txData.attachments);
+        }
+        if (txData.attachment && !attachmentUrls.includes(txData.attachment)) {
+          attachmentUrls.push(txData.attachment);
+        }
+        if (txData.screenshot && !attachmentUrls.includes(txData.screenshot)) {
+          attachmentUrls.push(txData.screenshot);
+        }
+
+        await Promise.allSettled(
+          attachmentUrls.map(url => {
+            if (url && typeof url === 'string' && url.startsWith('http')) {
+              return deleteFromR2(url).catch(err => {
+                console.warn('Failed to delete attachment from R2 storage:', url, err);
+              });
+            }
+            return Promise.resolve();
+          })
+        );
+      }
+
+      await remove(txRef);
+
       const customerRef = ref(db, `customers/${customerId}`);
       const customerSnapshot = await get(customerRef);
       if (customerSnapshot.exists()) {
@@ -363,13 +400,11 @@ export const dbService = {
 
   updateTransaction: async (customerId, transactionId, updatedData, oldAmount) => {
     try {
-      // 1. Update transaction node
       await update(ref(db, `transactions/${transactionId}`), {
         ...updatedData,
         updatedAt: Date.now()
       });
 
-      // 2. Adjust customer balance if amount changed
       const newAmount = Number(updatedData.amount);
       const diff = newAmount - Number(oldAmount);
 
@@ -406,7 +441,6 @@ export const dbService = {
       currentBalance = Number(options.openingBalance || 0);
     }
 
-    // Sort chronologically ascending
     const sorted = [...transactionsList].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const updates = {};
@@ -470,7 +504,6 @@ export const dbService = {
   },
 
   deleteCustomer: async (customerId) => {
-    // 1. Delete all transactions for this customer
     const txQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(customerId));
     const txSnapshot = await get(txQuery);
     if (txSnapshot.exists()) {
@@ -481,11 +514,9 @@ export const dbService = {
       await update(ref(db), updates);
     }
 
-    // 2. Delete customer
     await remove(ref(db, `customers/${customerId}`));
   },
 
-  // Admin specifically
   listenAllUsers: (callback, errorCallback) => {
     return onValue(ref(db, 'users'), (snapshot) => {
       const users = [];
@@ -525,7 +556,6 @@ export const dbService = {
     });
   },
 
-  // Global Settings
   listenGlobalSettings: (callback) => {
     return onValue(ref(db, 'settings'), (snapshot) => {
       callback(snapshot.val() || {});
@@ -541,7 +571,6 @@ export const dbService = {
     }
   },
 
-  // User Management
   listenToUserProfile: (userId, callback) => {
     return onValue(ref(db, `users/${userId}`), (snapshot) => {
       callback(snapshot.val());
@@ -560,10 +589,8 @@ export const dbService = {
   },
 
   deleteUserCascaded: async (userId) => {
-    // 1. Delete user profile
     await remove(ref(db, `users/${userId}`));
 
-    // 2. Delete all customers of this user
     const customersRef = ref(db, 'customers');
     const customersSnapshot = await get(customersRef);
     if (customersSnapshot.exists()) {
@@ -576,7 +603,6 @@ export const dbService = {
       await update(ref(db), updates);
     }
 
-    // 3. Delete all transactions of this user
     const txRef = ref(db, 'transactions');
     const txSnapshot = await get(txRef);
     if (txSnapshot.exists()) {

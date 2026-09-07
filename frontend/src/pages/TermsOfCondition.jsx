@@ -7,7 +7,6 @@ const TermsOfCondition = () => {
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
             <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-4 flex items-center gap-4 z-10">
                 <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
                     <ArrowLeft size={24} className="text-slate-600" />

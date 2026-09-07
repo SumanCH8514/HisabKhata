@@ -11,9 +11,6 @@ export const R2_FOLDERS = {
 const DEFAULT_BACKEND_URL = 'https://backend.hisabkhata.sumanonline.com';
 export const DEFAULT_CDN_URL = 'https://cdn.backend.hisabkhata.sumanonline.com';
 
-/**
- * Ensures any image URL using HTTP from our CDN or R2 is upgraded to HTTPS
- */
 export const ensureHttpsUrl = (url) => {
     if (!url || typeof url !== 'string') return url;
     if (url.startsWith('http://cdn.backend.hisabkhata.sumanonline.com')) {
@@ -25,9 +22,6 @@ export const ensureHttpsUrl = (url) => {
     return url;
 };
 
-/**
- * Fetch dynamic R2 configuration from Firebase settings or fall back to .env
- */
 export const getR2Config = async () => {
     let settings = {};
     try {
@@ -52,9 +46,6 @@ export const getR2Config = async () => {
     };
 };
 
-/**
- * Instantiate direct S3 client for Cloudflare R2 (Fallback)
- */
 export const getS3Client = (config) => {
     if (!config.accountId || !config.accessKeyId || !config.secretAccessKey) {
         throw new Error('Cloudflare R2 credentials (Account ID, Access Key, Secret Key) are not configured.');
@@ -70,9 +61,6 @@ export const getS3Client = (config) => {
     });
 };
 
-/**
- * Helper to convert Base64 string to Uint8Array & MIME type
- */
 export const base64ToBinary = (base64String) => {
     let base64 = base64String;
     let contentType = 'image/jpeg';
@@ -92,9 +80,6 @@ export const base64ToBinary = (base64String) => {
     return { bytes, contentType };
 };
 
-/**
- * Helper to convert File / Blob to Uint8Array & MIME type
- */
 export const fileToBinary = async (file) => {
     const arrayBuffer = await file.arrayBuffer();
     return {
@@ -103,9 +88,6 @@ export const fileToBinary = async (file) => {
     };
 };
 
-/**
- * Helper to convert File/Blob to Base64
- */
 export const fileToBase64 = (fileOrBlob) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -115,31 +97,20 @@ export const fileToBase64 = (fileOrBlob) => {
     });
 };
 
-/**
- * Upload an image to Cloudflare R2 via Cloudflare Worker Backend (or Direct S3 fallback)
- * @param {File|Blob|string} fileOrBase64 
- * @param {string} folder - Folder in bucket (e.g., cust_profile_pictures, payment_proof, transaction_attachments)
- * @param {string} [customFilename] - Optional custom filename
- * @param {object} [customConfig] - Optional override config
- * @returns {Promise<string>} Public CDN URL of uploaded file
- */
 export const uploadToR2 = async (fileOrBase64, folder = R2_FOLDERS.PROFILE, customFilename = null, customConfig = null) => {
     if (!fileOrBase64) return null;
 
-    // Already a public URL (starts with http)
     if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('http')) {
         return fileOrBase64;
     }
 
     const config = customConfig || await getR2Config();
 
-    // 1. Prepare base64 payload
     let base64Payload = fileOrBase64;
     if (fileOrBase64 instanceof Blob || fileOrBase64 instanceof File) {
         base64Payload = await fileToBase64(fileOrBase64);
     }
 
-    // 2. Try uploading via Cloudflare Worker Backend API (Preferred & Enterprise Secure)
     const backendUrl = (config.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
     if (backendUrl) {
         try {
@@ -172,7 +143,6 @@ export const uploadToR2 = async (fileOrBase64, folder = R2_FOLDERS.PROFILE, cust
         }
     }
 
-    // 3. Fallback to Direct S3 client if worker is unavailable and direct keys exist
     if (config.accountId && config.accessKeyId && config.secretAccessKey) {
         const s3 = getS3Client(config);
         const { bytes, contentType } = base64ToBinary(base64Payload);
@@ -206,16 +176,12 @@ export const uploadToR2 = async (fileOrBase64, folder = R2_FOLDERS.PROFILE, cust
     throw new Error('Unable to upload image: Cloudflare Worker backend is unreachable and direct R2 S3 keys are not provided.');
 };
 
-/**
- * Delete a file from Cloudflare R2 given its public URL or key
- */
 export const deleteFromR2 = async (fileUrlOrKey, customConfig = null) => {
     if (!fileUrlOrKey) return;
     try {
         const config = customConfig || await getR2Config();
         const backendUrl = (config.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
 
-        // Try via Worker
         if (backendUrl) {
             try {
                 const res = await fetch(`${backendUrl}/api/delete`, {
@@ -229,7 +195,6 @@ export const deleteFromR2 = async (fileUrlOrKey, customConfig = null) => {
             }
         }
 
-        // Direct S3 fallback
         if (config.accountId && config.accessKeyId && config.secretAccessKey) {
             const s3 = getS3Client(config);
 
@@ -254,13 +219,9 @@ export const deleteFromR2 = async (fileUrlOrKey, customConfig = null) => {
     }
 };
 
-/**
- * Test R2 connection with the given config
- */
 export const testR2Connection = async (config) => {
     const backendUrl = (config.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
 
-    // 1. Test via Worker
     if (backendUrl) {
         try {
             const res = await fetch(`${backendUrl}/api/test-connection`, {
@@ -273,7 +234,6 @@ export const testR2Connection = async (config) => {
                 }
             }
         } catch (workerErr) {
-            // Check health
             try {
                 const healthRes = await fetch(`${backendUrl}/api/health`);
                 if (healthRes.ok) {
@@ -283,7 +243,6 @@ export const testR2Connection = async (config) => {
         }
     }
 
-    // 2. Direct S3 test
     if (config.accountId && config.accessKeyId && config.secretAccessKey) {
         try {
             const s3 = getS3Client(config);
@@ -314,11 +273,6 @@ export const testR2Connection = async (config) => {
     };
 };
 
-/**
- * Full Migration Utility:
- * Scans Firebase RTDB users, customers, transactions, pending_payments for base64 images
- * and migrates them to R2 storage with public URLs.
- */
 export const migrateAllBase64ToR2 = async (onProgress = () => {}, customConfig = null) => {
     const config = customConfig || await getR2Config();
     const stats = {
@@ -337,23 +291,18 @@ export const migrateAllBase64ToR2 = async (onProgress = () => {}, customConfig =
     try {
         onProgress({ status: 'FETCHING', message: 'Fetching all records from Firebase database...' });
 
-        // 1. Users
         const usersSnap = await get(ref(db, 'users'));
         const usersData = usersSnap.exists() ? usersSnap.val() : {};
 
-        // 2. Customers
         const customersSnap = await get(ref(db, 'customers'));
         const customersData = customersSnap.exists() ? customersSnap.val() : {};
 
-        // 3. Transactions
         const transactionsSnap = await get(ref(db, 'transactions'));
         const transactionsData = transactionsSnap.exists() ? transactionsSnap.val() : {};
 
-        // 4. Pending Payments
         const paymentsSnap = await get(ref(db, 'pending_payments'));
         const paymentsData = paymentsSnap.exists() ? paymentsSnap.val() : {};
 
-        // Collect items that need migration
         const migrationQueue = [];
 
         Object.entries(usersData).forEach(([uid, user]) => {
@@ -472,10 +421,8 @@ export const migrateAllBase64ToR2 = async (onProgress = () => {}, customConfig =
                     message: `Migrating (${i + 1}/${totalItems}): ${item.label}...`
                 });
 
-                // 1. Upload to R2
                 const publicUrl = await uploadToR2(item.data, item.folder, item.customFilename, config);
 
-                // 2. Update Firebase DB record
                 if (item.isArrayField) {
                     await update(ref(db, `${item.dbPath}/attachments`), {
                         [item.arrayIndex]: publicUrl

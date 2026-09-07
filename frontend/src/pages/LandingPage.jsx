@@ -28,7 +28,6 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    // ... existing scroll animation logic ...
     const observerOptions = {
       threshold: 0.1
     };
@@ -50,7 +49,6 @@ const LandingPage = () => {
       observer.observe(el);
     });
 
-    // Navbar Scroll Effect
     const handleScroll = () => {
       const nav = document.querySelector('.landing-page nav');
       if (nav) {
@@ -66,7 +64,6 @@ const LandingPage = () => {
 
     window.addEventListener('scroll', handleScroll);
 
-    // Stat Counter Animation
     const statsSection = document.querySelector('.stats');
     const statsObserver = new IntersectionObserver((entries) => {
       if (entries[0] && entries[0].isIntersecting) {
@@ -431,7 +428,6 @@ const LandingPage = () => {
         </div>
       </footer>
 
-      {/* Fallback Install Instructions Modal */}
       {showInstallGuide && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">

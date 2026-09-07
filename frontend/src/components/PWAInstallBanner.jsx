@@ -1,33 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePWAInstall } from '../utils/pwaUtils';
 
 const DISMISS_KEY = 'hk_pwa_banner_dismissed_until';
 
 const PWAInstallBanner = () => {
+  const location = useLocation();
   const { canInstall, isInstalled, triggerInstall } = usePWAInstall();
   const [isVisible, setIsVisible] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    if (!canInstall || isInstalled) {
+    if (location.pathname !== '/' || !canInstall || isInstalled) {
       setIsVisible(false);
       return;
     }
 
-    // Check if dismissed recently
     const dismissedUntil = localStorage.getItem(DISMISS_KEY);
     if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
       setIsVisible(false);
       return;
     }
 
-    // Small delay for non-intrusive appearance
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [canInstall, isInstalled]);
+  }, [location.pathname, canInstall, isInstalled]);
 
   const handleInstallClick = async () => {
     setInstalling(true);
@@ -41,22 +41,19 @@ const PWAInstallBanner = () => {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    // Suppress for 7 days
     const nextWeek = Date.now() + 7 * 24 * 60 * 60 * 1000;
     localStorage.setItem(DISMISS_KEY, String(nextWeek));
   };
 
-  if (!isVisible) return null;
+  if (location.pathname !== '/' || !isVisible) return null;
 
   return (
     <div className="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:max-w-sm z-[95] animate-in fade-in slide-in-from-bottom-4 duration-300 no-print">
       <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/60 flex items-center gap-3.5">
-        {/* App Icon */}
         <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-blue-500/20 border border-white/20 shrink-0 flex items-center justify-center bg-[#0057BB]">
           <img src="/icons/icon.svg" alt="HisabKhata" className="w-full h-full object-cover" />
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <h4 className="text-xs font-bold text-white tracking-tight leading-tight truncate">Install HisabKhata</h4>
           <p className="text-[11px] text-slate-300 font-medium leading-tight mt-0.5">
@@ -64,7 +61,6 @@ const PWAInstallBanner = () => {
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleInstallClick}

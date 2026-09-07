@@ -84,7 +84,8 @@ const PaymentVerification = () => {
         try {
             const txData = {
                 customerId: pendingPayment.customerId,
-                amount: Number(pendingPayment.amount), // Positive for Got
+                amount: Math.abs(Number(pendingPayment.amount)), // Positive for Got (Credit)
+                type: 'GOT',
                 description: `Online Payment Received (Ref: ${pendingPayment.transactionId || 'N/A'})`,
                 date: new Date(pendingPayment.timestamp).toISOString().split('T')[0],
                 timestamp: pendingPayment.timestamp,
@@ -178,7 +179,6 @@ const PaymentVerification = () => {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pb-28 md:pb-12 flex flex-col items-center">
                     <div className="max-w-3xl w-full space-y-4">
                         
-                        {/* Navigation Top link */}
                         <div className="flex items-center justify-between">
                             <button 
                                 onClick={() => navigate('/payments')} 
@@ -195,9 +195,7 @@ const PaymentVerification = () => {
                             )}
                         </div>
 
-                        {/* Card Container */}
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            {/* Card Top Banner */}
                             <div className="bg-slate-900 text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
                                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Payment Amount</p>
@@ -228,12 +226,9 @@ const PaymentVerification = () => {
                                 </div>
                             </div>
 
-                            {/* Card Body */}
                             <div className="p-6 md:p-8 space-y-6">
                                 
-                                {/* Info Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Customer info */}
                                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-slate-100">
                                             {pendingPayment.customerPhoto ? (
@@ -256,7 +251,6 @@ const PaymentVerification = () => {
                                         </div>
                                     </div>
 
-                                    {/* Reference ID */}
                                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm shrink-0">
                                             <Smartphone size={18} />
@@ -281,7 +275,6 @@ const PaymentVerification = () => {
                                     </div>
                                 </div>
 
-                                {/* Proof Preview */}
                                 {pendingPayment.screenshot ? (
                                     <div className="space-y-2">
                                         <p className="text-xs font-bold text-slate-700">Payment Screenshot / Receipt</p>
@@ -305,7 +298,6 @@ const PaymentVerification = () => {
                                     </div>
                                 )}
 
-                                {/* Action Buttons for Pending */}
                                 {isPending ? (
                                     <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
                                         <button
@@ -347,7 +339,6 @@ const PaymentVerification = () => {
 
             <BottomNav />
 
-            {/* Proof Modal */}
             {viewImage && (
                 <div 
                     className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"

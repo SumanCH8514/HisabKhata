@@ -32,7 +32,6 @@ import { useAuth } from './contexts/AuthContext';
 function App() {
   const { globalSettings, isAdmin } = useAuth();
 
-  // Redirect to maintenance if enabled and user is not an admin
   if (globalSettings?.maintenanceMode && !isAdmin) {
     return (
       <Router>
@@ -71,7 +70,6 @@ function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-condition" element={<TermsOfCondition />} />
         
-        {/* Fallback routes */}
         <Route path="/dashboard" element={<Navigate to="/reports" replace />} />
         <Route path="*" element={<Navigate to="/reports" replace />} />
       </Routes>

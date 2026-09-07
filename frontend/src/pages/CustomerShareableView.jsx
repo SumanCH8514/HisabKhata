@@ -5,7 +5,6 @@ import { ref, onValue, push, set, get, query, orderByChild, equalTo } from 'fire
 import { uploadToR2, R2_FOLDERS, ensureHttpsUrl } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
 import { getDueDateStatus } from '../utils/dueDateUtils';
-// Heavy PDF libraries will be imported dynamically when needed
 
 const CustomerShareableView = () => {
     const { id } = useParams();
@@ -54,7 +53,6 @@ const CustomerShareableView = () => {
         }
     };
 
-    // Global Clipboard Paste Listener for Payment Proof
     useEffect(() => {
         if (!paymentModal.isOpen || paymentModal.step !== 'confirm') return;
 
@@ -88,7 +86,6 @@ const CustomerShareableView = () => {
     }, [paymentModal.isOpen, paymentModal.step, id]);
 
     useEffect(() => {
-        // Listen to global settings with fallback
         const settingsRef = ref(db, 'settings');
         const unsubSettings = onValue(settingsRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -121,7 +118,6 @@ const CustomerShareableView = () => {
         setLoading(true);
         setNotFound(false);
 
-        // 1. Direct one-time fetch for instant render (bypasses potential listener delays)
         const fetchDirectData = async () => {
             try {
                 const customerSnap = await get(ref(db, `customers/${id}`));
@@ -175,7 +171,6 @@ const CustomerShareableView = () => {
 
         fetchDirectData();
 
-        // 2. Realtime listener for customer
         const customerRef = ref(db, `customers/${id}`);
         const unsubCustomer = onValue(customerRef, (snapshot) => {
             if (!isMounted) return;
@@ -204,7 +199,6 @@ const CustomerShareableView = () => {
             if (isMounted) setLoading(false);
         });
 
-        // 3. Realtime listener for transactions
         const txQuery = query(ref(db, 'transactions'), orderByChild('customerId'), equalTo(id));
         const unsubTransactions = onValue(txQuery, (snapshot) => {
             if (!isMounted) return;
@@ -225,7 +219,6 @@ const CustomerShareableView = () => {
             if (isMounted) setLoading(false);
         });
 
-        // 4. Safety Timeout (5s) to guarantee spinner never hangs indefinitely
         const timer = setTimeout(() => {
             if (isMounted && loading) {
                 setLoading(false);
@@ -240,7 +233,6 @@ const CustomerShareableView = () => {
         };
     }, [id, retryCount]);
 
-    // Compute running balances cleanly
     const transactions = useMemo(() => {
         if (!rawTransactions.length) return [];
         const sorted = [...rawTransactions].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -317,7 +309,6 @@ const CustomerShareableView = () => {
 
     const cleanText = (text) => {
         if (!text) return '';
-        // Keep only standard printable ASCII characters (32-126) to prevent PDF rendering junk
         return text.toString().replace(/[^\x20-\x7E]/g, '');
     };
 
@@ -326,7 +317,6 @@ const CustomerShareableView = () => {
         const autoTable = (await import('jspdf-autotable')).default;
         const doc = new jsPDF();
 
-        // Premium Header
         doc.setFontSize(24);
         doc.setTextColor(0, 87, 187); // #0057BB
         doc.text("HisabKhata", 14, 20);
@@ -344,35 +334,28 @@ const CustomerShareableView = () => {
         doc.text(`Statement for: ${cleanText(customer.name)}`, 14, 30);
         doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 35);
 
-        // Merchant Details (Right Aligned)
         if (owner) {
             doc.setFontSize(9);
             doc.setTextColor(100);
 
-            // Merchant Name row
             const nameLabel = "Merchant Name: ";
             const nameVal = cleanText(owner.name || 'HisabKhata Merchant');
             doc.text(nameLabel + nameVal, 196, 20, { align: 'right' });
-            // Draw a small icon-like circle
             doc.setFillColor(0, 87, 187);
             doc.circle(196 - doc.getTextWidth(nameLabel + nameVal) - 3, 19.2, 0.8, 'F');
 
             if (owner.phone) {
-                // Merchant Mobile row
                 const phoneLabel = "Merchant Mobile: ";
                 const phoneVal = cleanText(owner.phone);
                 doc.text(phoneLabel + phoneVal, 196, 26, { align: 'right' });
-                // Draw a small icon-like circle
                 doc.setFillColor(255, 107, 0);
                 doc.circle(196 - doc.getTextWidth(phoneLabel + phoneVal) - 3, 25.2, 0.8, 'F');
             }
         }
 
-        // Horizontal Separator
         doc.setDrawColor(241, 245, 249);
         doc.line(14, 45, 196, 45);
 
-        // Summary Boxes
         doc.setDrawColor(226, 232, 240); // #E2E8F0
         doc.setFillColor(248, 250, 252); // #F8FAFC
         doc.roundedRect(14, 52, 58, 22, 3, 3, 'FD');
@@ -393,7 +376,6 @@ const CustomerShareableView = () => {
         doc.setTextColor(balance < 0 ? 239 : 34, balance < 0 ? 68 : 197, balance < 0 ? 68 : 94);
         doc.text(`Rs. ${balanceAbsolute}`, 144, 68);
 
-        // Table Data Preparation - Match page sorting (Latest First)
         const tableData = transactions.map((tx) => [
             new Date(tx.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             cleanText(tx.description || 'General Entry'),
@@ -402,7 +384,6 @@ const CustomerShareableView = () => {
             `${Math.abs(tx.runningBalance || 0).toLocaleString('en-IN')} ${tx.runningBalance < 0 ? 'Dr' : 'Cr'}`
         ]);
 
-        // Transaction Table
         autoTable(doc, {
             startY: 85,
             head: [['Date', 'Description', 'Debit(-)', 'Credit(+)', 'Balance']],
@@ -433,17 +414,14 @@ const CustomerShareableView = () => {
                 if (data.section === 'body') {
                     const tx = transactions[data.row.index];
                     if (tx && tx.amount < 0) {
-                        // Debit row - Subtle Red
                         data.cell.styles.fillColor = [255, 242, 242];
                     } else if (tx && tx.amount > 0) {
-                        // Credit row - Subtle Green
                         data.cell.styles.fillColor = [242, 255, 242];
                     }
                 }
             }
         });
 
-        // Footer
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -529,7 +507,6 @@ const CustomerShareableView = () => {
     const handleLaunchUpiApp = (appScheme = 'upi') => {
         const url = getUpiIntentUrl(appScheme);
         window.location.href = url;
-        // Automatically switch to confirm step so when user returns from app, they are on proof submission
         setTimeout(() => {
             setPaymentModal(prev => ({ ...prev, step: 'confirm' }));
         }, 1200);
@@ -545,11 +522,9 @@ const CustomerShareableView = () => {
             canvas.width = 800;
             canvas.height = 1400;
 
-            // Background Layer
             ctx.fillStyle = '#F8FAFC';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Header Banner
             ctx.fillStyle = '#0057BB';
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -558,7 +533,6 @@ const CustomerShareableView = () => {
             ctx.lineTo(0, 450);
             ctx.fill();
 
-            // Header Text
             ctx.textAlign = 'center';
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 30px "Roboto", Arial';
@@ -568,7 +542,6 @@ const CustomerShareableView = () => {
             ctx.font = 'bold 22px "Roboto", Arial';
             ctx.fillText('a SumanOnline Website', 400, 210);
 
-            // White QR Card with Shadow
             ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
             ctx.shadowBlur = 30;
             ctx.shadowOffsetY = 15;
@@ -687,7 +660,6 @@ const CustomerShareableView = () => {
 
             await set(ref(db, `pending_payments/${pendingPaymentId}`), pendingData);
 
-            // Send Email to Merchant
             if (owner?.email) {
                 const verificationUrl = `${window.location.origin}/verify-payment?id=${pendingPaymentId}`;
 
@@ -749,11 +721,9 @@ const CustomerShareableView = () => {
                 `}
             </style>
 
-            {/* Payment Modal System */}
             {paymentModal.isOpen && (
                 <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200 no-print">
                     <div className="bg-white w-full max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[92vh] flex flex-col">
-                        {/* Header */}
                         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/70">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
@@ -789,7 +759,6 @@ const CustomerShareableView = () => {
                                 </button>
                             </div>
 
-                            {/* Step Indicator Pills */}
                             {paymentModal.step !== 'no_upi' && paymentModal.step !== 'success' && (
                                 <div className="grid grid-cols-3 gap-1.5 mt-3">
                                     <div className={`h-1.5 rounded-full transition-all ${paymentModal.step === 'amount' ? 'bg-[#0057BB]' : 'bg-[#0057BB]/40'}`} />
@@ -799,9 +768,7 @@ const CustomerShareableView = () => {
                             )}
                         </div>
 
-                        {/* Modal Body */}
                         <div className="p-5 overflow-y-auto custom-scrollbar">
-                            {/* No UPI Configured */}
                             {paymentModal.step === 'no_upi' && (
                                 <div className="text-center py-4 space-y-4">
                                     <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
@@ -823,10 +790,8 @@ const CustomerShareableView = () => {
                                 </div>
                             )}
 
-                            {/* Step 1: Select Amount */}
                             {paymentModal.step === 'amount' && (
                                 <div className="space-y-4">
-                                    {/* Full Balance Button */}
                                     {Math.abs(balance) > 0 && (
                                         <button
                                             onClick={() => handleAmountSelect(Math.abs(balance))}
@@ -842,7 +807,6 @@ const CustomerShareableView = () => {
                                         </button>
                                     )}
 
-                                    {/* Preset Quick Chips */}
                                     <div>
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Preset Amounts</label>
                                         <div className="grid grid-cols-4 gap-2">
@@ -864,7 +828,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     </div>
 
-                                    {/* Custom Amount Field */}
                                     <div>
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Custom Amount</label>
                                         <div className="relative">
@@ -891,10 +854,8 @@ const CustomerShareableView = () => {
                                 </div>
                             )}
 
-                            {/* Step 2: Choose Method / Perform Payment */}
                             {paymentModal.step === 'method' && (
                                 <div className="space-y-4">
-                                    {/* Amount Summary Bar */}
                                     <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-2xl flex items-center justify-between">
                                         <div>
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Paying To: {owner?.name || 'Merchant'}</p>
@@ -908,7 +869,6 @@ const CustomerShareableView = () => {
                                         </button>
                                     </div>
 
-                                    {/* Sub-tabs for Payment Method */}
                                     <div className="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs font-bold">
                                         {owner?.upiId && (
                                             <button
@@ -956,12 +916,10 @@ const CustomerShareableView = () => {
                                         )}
                                     </div>
 
-                                    {/* TAB 1: 1-Tap UPI Apps Grid */}
                                     {activeMethodTab === 'upi' && (
                                         <div className="space-y-2.5">
                                             <p className="text-[11px] font-semibold text-slate-500">Tap your preferred app to initiate payment:</p>
                                             <div className="grid grid-cols-2 gap-2.5">
-                                                {/* PhonePe */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('phonepe')}
                                                     className="p-3 bg-white hover:bg-purple-50/60 border border-slate-200 hover:border-purple-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
@@ -978,7 +936,6 @@ const CustomerShareableView = () => {
                                                     </div>
                                                 </button>
 
-                                                {/* Google Pay */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('gpay')}
                                                     className="p-3 bg-white hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
@@ -997,7 +954,6 @@ const CustomerShareableView = () => {
                                                     </div>
                                                 </button>
 
-                                                {/* Paytm */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('paytm')}
                                                     className="p-3 bg-white hover:bg-sky-50/60 border border-slate-200 hover:border-sky-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
@@ -1014,7 +970,6 @@ const CustomerShareableView = () => {
                                                     </div>
                                                 </button>
 
-                                                {/* BHIM / Any UPI */}
                                                 <button
                                                     onClick={() => handleLaunchUpiApp('upi')}
                                                     className="p-3 bg-white hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer group shadow-xs"
@@ -1037,7 +992,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     )}
 
-                                    {/* TAB 2: Dynamic QR Code */}
                                     {activeMethodTab === 'qr' && (
                                         <div className="flex flex-col items-center gap-3 text-center">
                                             <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-sm">
@@ -1070,7 +1024,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     )}
 
-                                    {/* TAB 3: Copy UPI ID */}
                                     {activeMethodTab === 'copy' && (
                                         <div className="space-y-3">
                                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
@@ -1098,7 +1051,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     )}
 
-                                    {/* TAB 4: Bank Account Details */}
                                     {activeMethodTab === 'bank' && (
                                         <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                                             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -1145,7 +1097,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     )}
 
-                                    {/* Action to proceed to Confirmation */}
                                     <div className="pt-2">
                                         <button
                                             onClick={() => setPaymentModal(prev => ({ ...prev, step: 'confirm' }))}
@@ -1158,7 +1109,6 @@ const CustomerShareableView = () => {
                                 </div>
                             )}
 
-                            {/* Step 3: Confirm Payment with Proof */}
                             {paymentModal.step === 'confirm' && (
                                 <div className="space-y-4">
                                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -1169,7 +1119,6 @@ const CustomerShareableView = () => {
                                         <span className="text-xs font-semibold text-slate-500">To: {owner?.name || 'Merchant'}</span>
                                     </div>
 
-                                    {/* UTR / Transaction ID */}
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
                                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -1204,7 +1153,6 @@ const CustomerShareableView = () => {
                                         </div>
                                     </div>
 
-                                    {/* Screenshot Proof */}
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
                                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -1269,7 +1217,6 @@ const CustomerShareableView = () => {
                                 </div>
                             )}
 
-                            {/* Step 4: Success Confirmation */}
                             {paymentModal.step === 'success' && (
                                 <div className="text-center py-4 space-y-4">
                                     <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
@@ -1310,13 +1257,11 @@ const CustomerShareableView = () => {
                 </div>
             )}
 
-            {/* Image Preview Modal Gallery */}
             {viewImages.length > 0 && (
                 <div
                     className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 no-print"
                     onClick={() => setViewImages([])}
                 >
-                    {/* Top bar */}
                     <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10 max-w-4xl mx-auto">
                         <div className="text-white text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
                             {viewImages.length > 1 ? `${viewIndex + 1} / ${viewImages.length} Bills` : 'Bill Attachment'}
@@ -1329,7 +1274,6 @@ const CustomerShareableView = () => {
                         </button>
                     </div>
 
-                    {/* Main image with left/right buttons */}
                     <div className="relative max-w-4xl max-h-[75vh] flex items-center justify-center">
                         {viewImages.length > 1 && (
                             <button
@@ -1363,7 +1307,6 @@ const CustomerShareableView = () => {
                         )}
                     </div>
 
-                    {/* Bottom thumbnail strip */}
                     {viewImages.length > 1 && (
                         <div 
                             className="mt-4 flex gap-2 overflow-x-auto max-w-full p-2 bg-black/40 rounded-2xl backdrop-blur-md z-10 custom-scrollbar"
@@ -1383,7 +1326,6 @@ const CustomerShareableView = () => {
                 </div>
             )}
 
-            {/* Desktop Header */}
             <header className="hidden md:flex no-print sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-16 items-center justify-between shadow-xs">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
@@ -1441,7 +1383,6 @@ const CustomerShareableView = () => {
                 </div>
             </header>
 
-            {/* Mobile Header */}
             <header className="md:hidden no-print sticky top-0 z-50 bg-[#0057BB] text-white px-4 py-3 flex items-center justify-between shadow-xs border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-white shrink-0 border border-white/20">
@@ -1481,9 +1422,7 @@ const CustomerShareableView = () => {
 
             <main className="flex-1 w-full max-w-5xl mx-auto p-0 md:p-8 space-y-4 md:space-y-6 print-container">
 
-                {/* Mobile Identity / Balance Card */}
                 <div className="md:hidden bg-gradient-to-b from-[#0057BB] via-[#004ea7] to-[#00418c] text-white px-4 pt-4 pb-10 rounded-b-3xl shadow-sm">
-                    {/* Customer Profile Pill */}
                     <div className="flex items-center justify-between mb-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/15">
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white text-base border border-white/30 uppercase overflow-hidden shrink-0 shadow-inner">
@@ -1512,7 +1451,6 @@ const CustomerShareableView = () => {
                         </div>
                     </div>
 
-                    {/* Net Balance Centerpiece */}
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
                         <div className="flex items-center justify-between mb-1.5">
                             <span className="text-[11px] font-bold text-blue-200 uppercase tracking-wider">
@@ -1548,9 +1486,7 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Identity & Statement Card (Desktop Only) */}
                 <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden print-rounded">
-                    {/* Statement Meta Header */}
                     <div className="bg-slate-50/75 border-b border-slate-200/80 px-8 py-3 flex items-center justify-between text-xs text-slate-500 font-medium">
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-slate-400 text-[16px]">verified</span>
@@ -1563,10 +1499,8 @@ const CustomerShareableView = () => {
                         </div>
                     </div>
 
-                    {/* Main Statement Details */}
                     <div className="p-8">
                         <div className="grid grid-cols-12 gap-8 items-center">
-                            {/* Left Column: Account Holder */}
                             <div className="col-span-7 flex items-start gap-5">
                                 <div className="h-16 w-16 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center font-bold text-slate-700 text-2xl uppercase overflow-hidden shrink-0 shadow-xs">
                                     {customer.photoURL ? (
@@ -1604,7 +1538,6 @@ const CustomerShareableView = () => {
                                 </div>
                             </div>
 
-                            {/* Right Column: Net Balance Widget (Clean Fintech Aesthetic) */}
                             <div className="col-span-5 border-l border-slate-100 pl-8 text-right flex flex-col justify-center items-end">
                                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
                                     {isReceivable ? 'Total Amount Due' : 'Account Balance'}
@@ -1645,7 +1578,6 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Desktop 3-Metric Summary Strip (Clean & Understated) */}
                 <div className="hidden md:grid grid-cols-3 bg-white rounded-2xl border border-slate-200/80 divide-x divide-slate-100 shadow-xs no-print">
                     <div className="p-5 flex items-center justify-between">
                         <div>
@@ -1683,7 +1615,6 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Summary Row (Mobile Floating Metric Cards) */}
                 <div className="px-4 -mt-6 md:hidden z-10 relative">
                     <div className="grid grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl shadow-lg border border-slate-100/90">
                         <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-100/80 flex flex-col justify-between">
@@ -1705,7 +1636,6 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Mobile Transactions Feed */}
                 <div className="md:hidden px-4 pt-2 space-y-3">
                     <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-1.5">
@@ -1791,7 +1721,6 @@ const CustomerShareableView = () => {
                     )}
                 </div>
 
-                {/* Desktop Ledger Transactions Table Container */}
                 <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden print-rounded">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-slate-50/50">
                         <div className="flex items-center gap-2">
@@ -1832,7 +1761,6 @@ const CustomerShareableView = () => {
 
                                     return (
                                         <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors group">
-                                            {/* Date & Details Column */}
                                             <td className="px-6 py-4 align-top">
                                                 <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                                                     <span className="text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">
@@ -1865,7 +1793,6 @@ const CustomerShareableView = () => {
                                                 })()}
                                             </td>
 
-                                            {/* Debit Column */}
                                             <td className="px-6 py-4 text-right align-top">
                                                 {isGave ? (
                                                     <span className="text-sm font-extrabold text-rose-600 whitespace-nowrap">
@@ -1876,7 +1803,6 @@ const CustomerShareableView = () => {
                                                 )}
                                             </td>
 
-                                            {/* Credit Column */}
                                             <td className="px-6 py-4 text-right align-top">
                                                 {!isGave ? (
                                                     <span className="text-sm font-extrabold text-emerald-600 whitespace-nowrap">
@@ -1887,7 +1813,6 @@ const CustomerShareableView = () => {
                                                 )}
                                             </td>
 
-                                            {/* Balance Column */}
                                             <td className="px-6 py-4 text-right align-top">
                                                 <div className="flex items-end justify-end gap-1 font-bold">
                                                     <span className={`text-sm whitespace-nowrap ${isBalanceDebit ? 'text-rose-600' : 'text-emerald-700'}`}>
@@ -1908,7 +1833,6 @@ const CustomerShareableView = () => {
                     </div>
                 </div>
 
-                {/* Secure Footer */}
                 <footer className="text-center pt-5 pb-20 md:pb-8 px-4 space-y-2.5 max-w-md mx-auto border-t border-slate-200/60 mt-4 no-print">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-2xs">
                         <span className="material-symbols-outlined text-[14px] text-emerald-600">verified_user</span>
@@ -1940,7 +1864,6 @@ const CustomerShareableView = () => {
                 </footer>
             </main>
 
-            {/* Mobile Fixed Bottom Bar — High Fidelity Action Hub */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-3 flex items-center gap-3 no-print z-50 safe-bottom shadow-[0_-8px_20px_rgba(0,0,0,0.08)]">
                 <button
                     onClick={handleDownloadStatement}

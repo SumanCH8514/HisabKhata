@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 const AdminRoute = ({ children }) => {
     const { currentUser, isAdmin, userDataLoading } = useAuth();
 
-    // If still loading user data
     if (currentUser && userDataLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">

@@ -39,7 +39,6 @@ const More = () => {
 
     const strength = calculateProfileStrength(userData);
 
-    // Business Tools & Apps
     const coreApps = [
         {
             id: 'pos',
@@ -91,7 +90,6 @@ const More = () => {
         },
     ];
 
-    // Finance & Growth Tools
     const growthTools = [
         {
             id: 'loans',
@@ -165,15 +163,12 @@ const More = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
-            {/* Sidebar Desktop */}
             <Sidebar />
 
             <div className="flex-1 md:ml-[260px] pb-16 md:pb-0 flex flex-col min-w-0 overflow-x-hidden">
-                {/* Mobile Header */}
                 <AppMobileHeader />
 
                 <main className="flex-1 w-full max-w-6xl mx-auto p-3.5 pt-3 md:p-8 lg:p-10">
-                    {/* Desktop Page Title Header */}
                     <div className="hidden md:flex items-center justify-between pb-4 mb-8 border-b border-slate-200/80">
                         <div>
                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -207,11 +202,8 @@ const More = () => {
                         </div>
                     </div>
 
-                    {/* =========================================================================
-                        MOBILE ONLY HEADER & STRENGTH BAR (< md)
-                       ========================================================================= */}
+                    
                     <div className="md:hidden space-y-3.5">
-                        {/* Profile Card */}
                         <div className="bg-white rounded-2xl p-4 shadow-xs border border-slate-100 flex items-center justify-between w-full overflow-hidden">
                             <div className="flex items-center gap-3.5 min-w-0">
                                 <div className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-lg font-black overflow-hidden shadow-xs shrink-0 aspect-square">
@@ -239,7 +231,6 @@ const More = () => {
                             </button>
                         </div>
 
-                        {/* Profile Strength */}
                         <div className="space-y-1.5 px-0.5">
                             <div className="flex items-center justify-between text-xs">
                                 <span className="font-bold text-slate-500">Profile strength : <span className={strength.color}>{strength.label}</span></span>
@@ -250,7 +241,6 @@ const More = () => {
                             </div>
                         </div>
 
-                        {/* Mobile Grid */}
                         <div className="grid grid-cols-3 gap-2.5 pt-1">
                             {allMobileItems.map((item) => (
                                 <div
@@ -278,7 +268,6 @@ const More = () => {
                             ))}
                         </div>
 
-                        {/* Mobile Settings Row */}
                         <button
                             onClick={() => navigate('/settings')}
                             className="w-full bg-white px-4 py-3.5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between active:bg-slate-50 transition-colors"
@@ -293,14 +282,10 @@ const More = () => {
                         </button>
                     </div>
 
-                    {/* =========================================================================
-                        DESKTOP VIEW (md:grid 2-Column Responsive SaaS Dashboard)
-                       ========================================================================= */}
+                    
                     <div className="hidden md:grid md:grid-cols-12 gap-8 items-start">
-                        {/* LEFT COLUMN: 8 Columns - Service Cards */}
                         <div className="md:col-span-7 lg:col-span-8 space-y-8">
                             
-                            {/* Section 1: Billing & Retail Operations */}
                             <div>
                                 <div className="flex items-center justify-between mb-3.5">
                                     <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -346,7 +331,6 @@ const More = () => {
                                 </div>
                             </div>
 
-                            {/* Section 2: Financial Growth & Store Management */}
                             <div>
                                 <div className="flex items-center justify-between mb-3.5">
                                     <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -390,10 +374,8 @@ const More = () => {
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: 4 Columns - Pro App & Account Status Cards */}
                         <div className="md:col-span-5 lg:col-span-4 space-y-6">
                             
-                            {/* Pro Desktop App Card */}
                             <div className="bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0057BB] text-white rounded-2xl p-6 border border-slate-800 shadow-sm relative overflow-hidden">
                                 <div className="relative z-10 space-y-4">
                                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-wider text-blue-200 border border-white/10">
@@ -436,7 +418,6 @@ const More = () => {
                                 <Wallet size={120} className="absolute -right-8 -bottom-8 opacity-5 rotate-12 pointer-events-none" />
                             </div>
 
-                            {/* Account Health & Strength Card */}
                             <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
@@ -481,7 +462,6 @@ const More = () => {
                                 </button>
                             </div>
 
-                            {/* Quick Preferences Shortcut */}
                             <div className="bg-slate-100/70 rounded-2xl p-4 border border-slate-200/60 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600">
@@ -502,7 +482,6 @@ const More = () => {
                         </div>
                     </div>
 
-                    {/* Mobile Pro Banner */}
                     <div className="md:hidden bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white flex items-center justify-between overflow-hidden relative shadow-xs">
                         <div className="relative z-10">
                             <h3 className="text-xs font-black uppercase tracking-widest text-blue-100">HisabKhata Pro</h3>
@@ -519,11 +498,9 @@ const More = () => {
                     </div>
                 </main>
 
-                {/* Modern Bottom-Anchored Footer */}
                 <Footer className="py-4 md:py-5 mt-auto" />
             </div>
 
-            {/* Mobile Nav */}
             <BottomNav />
         </div>
     );

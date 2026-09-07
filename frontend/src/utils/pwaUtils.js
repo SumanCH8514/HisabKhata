@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// Global holder for install prompt event
 let deferredInstallPrompt = null;
 const installListeners = new Set();
 
@@ -18,9 +17,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-/**
- * Register Service Worker in production / supported browsers
- */
 export const registerServiceWorker = () => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return;
@@ -30,7 +26,6 @@ export const registerServiceWorker = () => {
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
-        // Check for updates
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
@@ -48,15 +43,11 @@ export const registerServiceWorker = () => {
   });
 };
 
-/**
- * React hook to manage PWA installation state
- */
 export const usePWAInstall = () => {
   const [canInstall, setCanInstall] = useState(Boolean(deferredInstallPrompt));
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if running in standalone mode (already installed)
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone ||
@@ -93,9 +84,6 @@ export const usePWAInstall = () => {
   return { canInstall, isInstalled, triggerInstall };
 };
 
-/**
- * React hook to monitor online/offline connectivity
- */
 export const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 

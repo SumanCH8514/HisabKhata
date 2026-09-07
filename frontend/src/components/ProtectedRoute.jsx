@@ -4,13 +4,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/firebase';
 
 const ProtectedRoute = ({ children }) => {
-    const { currentUser, isAdmin, isBlocked, globalSettings } = useAuth();
+    const { currentUser, isSecurityVerified, userDataLoading, isAdmin, isBlocked, globalSettings } = useAuth();
 
-    if (!currentUser) {
+    if (userDataLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+                <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#0057BB] border-t-transparent"></div>
+            </div>
+        );
+    }
+
+    if (!currentUser || !isSecurityVerified) {
         return <Navigate to="/login" replace />;
     }
 
-    // Blocked user enforcement
     if (isBlocked && !isAdmin) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -31,7 +38,6 @@ const ProtectedRoute = ({ children }) => {
         );
     }
 
-    // Maintenance mode enforcement (Admins bypass)
     if (globalSettings?.maintenanceMode && !isAdmin) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-900 p-6 text-white text-center">

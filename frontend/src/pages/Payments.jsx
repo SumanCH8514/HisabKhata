@@ -91,7 +91,8 @@ const PaymentsDashboard = () => {
         try {
             const txData = {
                 customerId: payment.customerId,
-                amount: Number(payment.amount),
+                amount: Math.abs(Number(payment.amount)),
+                type: 'GOT',
                 description: `Online Payment Received (Ref: ${payment.transactionId || 'N/A'})`,
                 date: new Date(payment.timestamp).toISOString().split('T')[0],
                 timestamp: payment.timestamp,
@@ -118,7 +119,6 @@ const PaymentsDashboard = () => {
         
         setProcessing(payment.id);
         try {
-            // Queue email notification
             if (payment.customerEmail) {
                 await set(ref(db, `services/email_queue/${push(ref(db, 'services/email_queue')).key}`), {
                     to_email: payment.customerEmail, 
@@ -142,7 +142,6 @@ const PaymentsDashboard = () => {
         }
     };
 
-    // Metrics calculations
     const pendingList = payments.filter(p => p.status === 'pending');
     const approvedList = payments.filter(p => p.status === 'approved');
     const rejectedList = payments.filter(p => p.status === 'rejected');
@@ -180,10 +179,8 @@ const PaymentsDashboard = () => {
             <Sidebar />
 
             <div className="flex flex-1 ml-0 md:ml-[260px] flex-col overflow-hidden">
-                {/* Mobile Header */}
                 <AppMobileHeader />
 
-                {/* Desktop Top Header */}
                 <header className="hidden md:flex bg-white border-b border-slate-200/80 px-8 py-4 items-center justify-between flex-shrink-0">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
@@ -221,13 +218,10 @@ const PaymentsDashboard = () => {
                     </div>
                 </header>
 
-                {/* Main Content Area */}
                 <main className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-5 md:p-8 pb-28 md:pb-12">
                     <div className="max-w-6xl mx-auto space-y-3.5 sm:space-y-4 md:space-y-6">
 
-                        {/* Top Metrics Cards - 3 Equal Columns */}
                         <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-                            {/* Pending Review Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
                                 className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'pending' 
@@ -244,7 +238,6 @@ const PaymentsDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Approved Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
                                 className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'approved' 
@@ -261,7 +254,6 @@ const PaymentsDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Rejected Card */}
                             <div 
                                 onClick={() => setStatusFilter(statusFilter === 'rejected' ? 'all' : 'rejected')}
                                 className={`cursor-pointer rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 md:p-4 border transition-all select-none ${statusFilter === 'rejected' 
@@ -279,9 +271,7 @@ const PaymentsDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Filter Tabs & Mobile Search */}
                         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
-                            {/* Filter Pills */}
                             <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl overflow-x-auto no-scrollbar scroll-smooth">
                                 {[
                                     { id: 'all', label: 'All', fullLabel: 'All Submissions', count: payments.length },
@@ -309,7 +299,6 @@ const PaymentsDashboard = () => {
                                 ))}
                             </div>
 
-                            {/* Mobile Search Bar */}
                             <div className="md:hidden relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
                                 <input 
@@ -330,7 +319,6 @@ const PaymentsDashboard = () => {
                             </div>
                         </div>
 
-                        {/* List Section */}
                         {loading ? (
                             <div className="bg-white rounded-xl border border-slate-200/80 p-16 flex flex-col items-center justify-center gap-3">
                                 <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -370,10 +358,8 @@ const PaymentsDashboard = () => {
                                         >
                                             <div className="p-3.5 sm:p-4 md:p-5 flex flex-col gap-3">
                                                 
-                                                {/* Top Row: Avatar + Info + Amount & Status */}
                                                 <div className="flex items-center justify-between gap-3">
                                                     
-                                                    {/* Avatar & Customer Details */}
                                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                                         <div 
                                                             className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs overflow-hidden border border-slate-100"
@@ -406,7 +392,6 @@ const PaymentsDashboard = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Amount & Status Badge */}
                                                     <div className="flex flex-col items-end shrink-0 pl-1">
                                                         <span className="text-base sm:text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight">
                                                             ₹{Number(payment.amount).toLocaleString('en-IN')}
@@ -435,9 +420,7 @@ const PaymentsDashboard = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Middle Row: Ref ID Chip & Receipt Preview */}
                                                 <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100 bg-slate-50/60 -mx-3.5 -mb-3.5 p-3 sm:-mx-4 sm:-mb-4 sm:p-3 md:-mx-5 md:-mb-5 md:p-3.5 rounded-b-2xl">
-                                                    {/* Ref / UTR */}
                                                     <div className="flex items-center gap-1.5 min-w-0">
                                                         <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Ref:</span>
                                                         {payment.transactionId && payment.transactionId !== 'NOT_PROVIDED' ? (
@@ -459,7 +442,6 @@ const PaymentsDashboard = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Screenshot / Ledger Link / Actions */}
                                                     <div className="flex items-center gap-2 shrink-0">
                                                         {payment.screenshot ? (
                                                             <button
@@ -491,7 +473,6 @@ const PaymentsDashboard = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Bottom Actions if Pending */}
                                                 {isPending && (
                                                     <div className="flex items-center gap-2 pt-2 border-t border-slate-100 mt-1">
                                                         <button
@@ -524,7 +505,6 @@ const PaymentsDashboard = () => {
 
             <BottomNav />
 
-            {/* Proof Preview Modal */}
             {viewImage && (
                 <div 
                     className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"

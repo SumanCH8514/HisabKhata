@@ -5,7 +5,6 @@ import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { registerServiceWorker } from './utils/pwaUtils'
 
-// Register PWA Service Worker
 registerServiceWorker()
 
 createRoot(document.getElementById('root')).render(

@@ -8,6 +8,7 @@ import ImportTransactionsModal from '../components/ImportTransactionsModal';
 import AppMobileHeader from '../components/AppMobileHeader';
 import BottomNav from '../components/BottomNav';
 import FilterDrawer from '../components/FilterDrawer';
+import CustomDatePicker from '../components/CustomDatePicker';
 import { dbService, sendEmailNotification } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -56,7 +57,6 @@ const Customers = () => {
         }
     };
     
-    // Side Panel Report States
     const [panelSearchQuery, setPanelSearchQuery] = useState('');
     const [panelFilterType, setPanelFilterType] = useState('ALL');
     const today = new Date();
@@ -105,24 +105,20 @@ const Customers = () => {
         setLastScrollY(currentScrollY);
     };
 
-    // Handle returning from report page with a selected customer
     useEffect(() => {
         if (location.state?.selectedCustomerId && customers.length > 0) {
             const customer = customers.find(c => c.id === location.state.selectedCustomerId);
             if (customer) {
                 setSelectedCustomer(customer);
-                // Clear state so it doesn't re-select if they refresh or navigate back again
                 navigate(location.pathname, { replace: true, state: {} });
             }
         }
     }, [location.state, customers]);
 
-    // Keep selectedCustomer in sync with real-time updates
     useEffect(() => {
         if (selectedCustomer && customers.length > 0) {
             const updated = customers.find(c => c.id === selectedCustomer.id);
             if (updated) {
-                // Only update if something actually changed to avoid infinite loops
                 if (updated.photoURL !== selectedCustomer.photoURL || 
                     updated.balance !== selectedCustomer.balance || 
                     updated.name !== selectedCustomer.name ||
@@ -153,19 +149,15 @@ const Customers = () => {
         return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
     }, [currentUser]);
 
-    // Load transactions for selected customer
     useEffect(() => {
         if (!selectedCustomer) return;
         setTxLoading(true);
         const unsub = dbService.listenCustomerTransactions(selectedCustomer.id, (data) => {
-            // Sort by timestamp descending (latest first)
             const sorted = data.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            // Calculate running balances for display if missing in DB
             let currentRunning = selectedCustomer.balance || 0;
             const withBalance = sorted.map(tx => {
                 const txWithBal = { ...tx, balance: currentRunning };
-                // Subtract this transaction's amount to get the balance BEFORE this transaction
                 currentRunning -= (tx.amount || 0);
                 return txWithBal;
             });
@@ -176,7 +168,6 @@ const Customers = () => {
         return () => { if (typeof unsub === 'function') unsub(); };
     }, [selectedCustomer]);
 
-    // Apply search/filter/sort
     let filteredCustomers = customers.filter(c =>
         c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.phone?.includes(searchQuery)
@@ -187,7 +178,6 @@ const Customers = () => {
     if (filterBy === 'due_today') filteredCustomers = filteredCustomers.filter(c => isDueToday(c.dueDate));
     if (filterBy === 'upcoming') filteredCustomers = filteredCustomers.filter(c => isUpcomingDue(c.dueDate));
     if (filterBy === 'no_due_date') filteredCustomers = filteredCustomers.filter(c => !c.dueDate);
-    // Sort logic
     if (sortBy === 'name') filteredCustomers = [...filteredCustomers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (sortBy === 'amount-high') filteredCustomers = [...filteredCustomers].sort((a, b) => Math.abs(b.balance || 0) - Math.abs(a.balance || 0));
     if (sortBy === 'amount-low') filteredCustomers = [...filteredCustomers].sort((a, b) => Math.abs(a.balance || 0) - Math.abs(b.balance || 0));
@@ -333,7 +323,8 @@ const Customers = () => {
                     tx_type: isReceivable ? 'Payment Reminder' : 'Statement Update',
                     status: 'Active',
                     action_url: shareLink,
-                    type: 'TRANSACTION'
+                    due_date: dueStr,
+                    type: isReceivable ? 'PAYMENT_REMINDER' : 'TRANSACTION'
                 });
                 alert(`Reminder email sent successfully to ${selectedCustomer.email}! ✅`);
             } catch (err) {
@@ -404,10 +395,8 @@ const Customers = () => {
         <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
             <Sidebar />
 
-            {/* Main content area */}
             <div className="flex flex-col flex-1 ml-0 md:ml-[260px] overflow-hidden relative">
                 
-                {/* Email Verification Banner */}
                 {currentUser && !currentUser.emailVerified && !currentUser.providerData?.some(p => p.providerId === 'google.com') && (
                     <div className="bg-orange-50 border-b border-orange-100 px-4 py-2 flex items-center justify-between z-30">
                         <div className="flex items-center gap-2">
@@ -432,16 +421,13 @@ const Customers = () => {
 
                 <div className="flex flex-1 overflow-hidden relative">
 
-                {/* Middle pane: Customer List — ~640px like Khatabook */}
                 <div 
                     onScroll={handleScroll}
                     className={`flex flex-col w-full md:w-[640px] bg-white border-r border-gray-200 flex-shrink-0 h-full overflow-y-auto md:overflow-y-hidden ${selectedCustomer ? 'hidden md:flex' : 'flex'}`}
                 >
 
-                    {/* Mobile Header — Branding (scrolls away on scroll) */}
                     <AppMobileHeader sticky={false} />
 
-                    {/* Tab bar — Desktop only */}
                     <div className="hidden md:flex items-center h-[56px] border-b border-gray-200 bg-white px-4">
                         <button
                             onClick={() => setActiveTab('customers')}
@@ -456,7 +442,6 @@ const Customers = () => {
                         </button>
                     </div>
 
-                    {/* Summary bar — Desktop View */}
                     {globalSettings?.analytics !== false && (
                         <div className="hidden md:flex items-center justify-between h-[48px] px-4 bg-white border-b border-gray-100 gap-4 flex-wrap">
                             <div className="flex items-center gap-4">
@@ -468,7 +453,6 @@ const Customers = () => {
                                 <div className="flex items-center gap-1.5">
                                     <span className="text-gray-700 text-xs sm:text-sm font-medium">You'll Get:</span>
                                     <span className="text-red-500 font-bold text-xs sm:text-sm">₹{totalGet.toLocaleString('en-IN')}</span>
-                                    {/* SW arrow — rendered as SVG to avoid font substitution */}
                                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="inline-block">
                                         <path d="M9 3L3 9M3 9H7.5M3 9V4.5" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
@@ -481,7 +465,6 @@ const Customers = () => {
                         </div>
                     )}
 
-                    {/* Summary Cards — Mobile View */}
                     {globalSettings?.analytics !== false && (
                         <div className="md:hidden grid grid-cols-2 gap-3 px-4 py-4 bg-gray-50 border-b border-gray-100">
                             <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center">
@@ -495,9 +478,7 @@ const Customers = () => {
                         </div>
                     )}
 
-                    {/* Search + Filter + Sort Section */}
                     <div className="sticky top-0 z-30 px-4 py-2.5 bg-white border-b border-gray-200/80 shadow-xs md:shadow-none md:h-[62px] md:flex md:flex-col md:justify-center">
-                        {/* Mobile View: Modern Single Bar */}
                         <div className="md:hidden flex items-center gap-3">
                             <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-xs">
                                 <span className="material-symbols-outlined text-[#0051bb] text-[22px] font-bold">search</span>
@@ -519,17 +500,13 @@ const Customers = () => {
                             </div>
                         </div>
 
-                        {/* Desktop View: Khatabook 2-row layout */}
                         <div className="hidden md:block">
-                            {/* Top row: label texts */}
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="flex-1 text-[11px] text-gray-500 font-medium">Search for customers</span>
                                 <span className="text-[11px] text-gray-500 font-medium" style={{ minWidth: '120px' }}>Filter By</span>
                                 <span className="text-[11px] text-gray-500 font-medium" style={{ minWidth: '110px' }}>Sort By</span>
                             </div>
-                            {/* Bottom row: inputs */}
                             <div className="flex items-center gap-2">
-                                {/* Search input */}
                                 <div className="relative flex-1">
                                     <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">search</span>
                                     <input
@@ -540,7 +517,6 @@ const Customers = () => {
                                         onChange={e => setSearchQuery(e.target.value)}
                                     />
                                 </div>
-                                {/* Filter By */}
                                 <div className="relative">
                                     <select
                                         className="pl-6 pr-5 py-1 text-xs border border-gray-300 rounded bg-white text-gray-600 outline-none appearance-none cursor-pointer bg-none"
@@ -559,7 +535,6 @@ const Customers = () => {
                                     <span className="material-symbols-outlined absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">filter_list</span>
                                     <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none">expand_more</span>
                                 </div>
-                                {/* Sort By */}
                                 <div className="relative">
                                     <select
                                         className="pl-6 pr-5 py-1 text-xs border border-gray-300 rounded bg-white text-gray-600 outline-none appearance-none cursor-pointer bg-none"
@@ -580,13 +555,11 @@ const Customers = () => {
                         </div>
                     </div>
 
-                    {/* Column headers */}
                     <div className="flex items-center h-[38px] px-4 bg-gray-50 border-b border-gray-200">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1">Name</span>
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</span>
                     </div>
 
-                    {/* Customer list */}
                     <div className="flex-1 overflow-y-visible md:overflow-y-auto custom-scrollbar pb-24 md:pb-0">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-32 text-gray-400 gap-2">
@@ -612,7 +585,6 @@ const Customers = () => {
                                     onClick={() => setSelectedCustomer(customer)}
                                     className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-gray-50 transition-all hover:bg-gray-50 active:bg-gray-100 ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}
                                 >
-                                    {/* Avatar with dynamic initial or photo */}
                                     <div
                                         className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm overflow-hidden"
                                         style={{ backgroundColor: customer.photoURL ? 'transparent' : bgColor }}
@@ -624,7 +596,6 @@ const Customers = () => {
                                         )}
                                     </div>
 
-                                    {/* Name, Time and Due Date */}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[15px] font-semibold text-gray-900 truncate mb-0.5">
                                             {customer.name}
@@ -654,7 +625,6 @@ const Customers = () => {
                                         </div>
                                     </div>
 
-                                    {/* Amount and Status */}
                                     <div className="text-right flex-shrink-0">
                                         {isZero ? (
                                             <p className="text-sm font-bold text-gray-400">₹0</p>
@@ -679,7 +649,6 @@ const Customers = () => {
                         })}
                     </div>
 
-                    {/* Mobile Add Customer FAB — Matches Khatabook perfectly */}
                     <div className="md:hidden fixed bottom-20 right-4 z-20">
                         <button
                             onClick={() => setIsCustomerDrawerOpen(true)}
@@ -696,7 +665,6 @@ const Customers = () => {
                         </button>
                     </div>
 
-                    {/* Bottom actions — Desktop only */}
                     <div className="hidden md:flex h-[68px] items-center px-4 bg-white border-t border-gray-200 gap-3 shrink-0">
                         <button
                             className="flex-1 h-[42px] border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
@@ -715,12 +683,10 @@ const Customers = () => {
 
                 </div>
 
-                {/* Right pane: Ledger detail */}
-                <div className={`flex-1 flex flex-col h-full bg-white overflow-hidden ${!selectedCustomer ? 'hidden md:flex' : 'flex'}`}>
+                <div className={`flex-1 flex flex-col h-full bg-[#0057BB] md:bg-white overflow-hidden ${!selectedCustomer ? 'hidden md:flex' : 'flex'}`}>
                     {!selectedCustomer ? (
-                        /* Empty state — matches Khatabook's two-person placeholder */
-                        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#eff2f5' }}>
-                            <div className="mb-3" style={{ color: '#b0bec5' }}>
+                        <div className="flex-1 flex flex-col items-center justify-center bg-[#eff2f5]">
+                            <div className="mb-3 text-[#b0bec5]">
                                 <svg width="72" height="64" viewBox="0 0 72 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="26" cy="20" r="14" stroke="#b0bec5" strokeWidth="3" />
                                     <path d="M4 58c0-12.15 9.85-22 22-22s22 9.85 22 22" stroke="#b0bec5" strokeWidth="3" strokeLinecap="round" />
@@ -732,10 +698,8 @@ const Customers = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Scrollable Ledger Body (Blue Header -> Sticky Action Bar -> Transactions) */}
-                            <div className="flex-1 flex flex-col overflow-y-auto min-h-0 bg-[#F5F7F9] custom-scrollbar">
-                                {/* Mobile-Only Blue Header (scrolls away on mobile scroll) */}
-                                <div className="md:hidden flex flex-col bg-[#0057BB] text-white shrink-0">
+                            <div className="flex-1 flex flex-col overflow-y-auto min-h-0 bg-[#F5F7F9] custom-scrollbar w-full">
+                                <div className="md:hidden flex flex-col bg-[#0057BB] text-white shrink-0 w-full">
                                     <div className="flex items-center justify-between px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <button onClick={() => setSelectedCustomer(null)} className="p-1 -ml-1 text-white">
@@ -767,7 +731,6 @@ const Customers = () => {
                                     </button>
                                 </div>
 
-                                {/* Summary Card — White box inside blue header area on mobile */}
                                 <div className="px-4 pb-4">
                                     <div className="bg-white rounded-lg shadow-sm overflow-hidden text-gray-900">
                                         <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100">
@@ -778,7 +741,6 @@ const Customers = () => {
                                                 ₹{Math.abs(selectedCustomer.balance || 0).toLocaleString('en-IN')}
                                             </span>
                                         </div>
-                                        {/* Set Due Date / Collection Reminder */}
                                         {selectedCustomer.dueDate ? (
                                             (() => {
                                                 const status = getDueDateStatus(selectedCustomer.dueDate);
@@ -801,31 +763,38 @@ const Customers = () => {
                                                 );
                                             })()
                                         ) : (
-                                            <label className="px-4 py-2.5 flex items-center justify-between bg-blue-50/40 hover:bg-blue-50 active:bg-blue-100 transition-colors cursor-pointer border-t border-gray-100 relative group">
-                                                <input
-                                                    type="date"
-                                                    min={getFutureDateString(0)}
-                                                    value=""
-                                                    onChange={(e) => handleCustomDueDate(e.target.value)}
-                                                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                                                    id="mobile-customer-due-date-picker"
-                                                />
-                                                <div className="flex items-center gap-2 text-[#0057BB]">
-                                                    <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                                                    <span className="text-[11px] font-bold uppercase tracking-wide">Set collection reminder</span>
-                                                </div>
-                                                <span className="text-[11px] font-black text-[#0057BB] uppercase tracking-wide group-active:scale-95 transition-transform">
-                                                    SET DATE
-                                                </span>
-                                            </label>
+                                            <CustomDatePicker
+                                                value={selectedCustomer.dueDate || ''}
+                                                onChange={handleCustomDueDate}
+                                                minDate={getFutureDateString(0)}
+                                                presets={[
+                                                    { label: 'Today', value: getFutureDateString(0) },
+                                                    { label: '+7 Days', value: getFutureDateString(7) },
+                                                    { label: '+14 Days', value: getFutureDateString(14) },
+                                                    { label: '+30 Days', value: getFutureDateString(30) }
+                                                ]}
+                                                renderTrigger={({ open }) => (
+                                                    <button
+                                                        type="button"
+                                                        onClick={open}
+                                                        className="w-full px-4 py-2.5 flex items-center justify-between bg-blue-50/40 hover:bg-blue-50 active:bg-blue-100 transition-colors cursor-pointer border-t border-gray-100 relative group text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2 text-[#0057BB]">
+                                                            <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                                                            <span className="text-[11px] font-bold uppercase tracking-wide">Set collection reminder</span>
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-[#0057BB] uppercase tracking-wide group-active:scale-95 transition-transform">
+                                                            SET DATE
+                                                        </span>
+                                                    </button>
+                                                )}
+                                            />
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Mobile Sticky Bar: Actions + Table Column Headers */}
                             <div className="md:hidden sticky top-0 z-30 bg-white shadow-xs">
-                                {/* Mobile Action Buttons (Report, WhatsApp, SMS, Email, Copy Link) */}
                                 <div className="grid grid-cols-5 bg-white border-b border-gray-100 py-3">
                                     <Link 
                                         to={`/reports/customer/${selectedCustomer.id}`}
@@ -878,7 +847,6 @@ const Customers = () => {
                                     )}
                                 </div>
 
-                                {/* Entries column headers — Mobile Styled */}
                                 <div className="grid grid-cols-[1fr_80px_80px] bg-[#F8F9FA] border-b border-gray-100 py-3 px-4">
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ENTRIES</span>
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">YOU GAVE</span>
@@ -886,9 +854,7 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            {/* Desktop Headers Wrapper (sticky on desktop) */}
                             <div className="hidden md:flex md:flex-col md:sticky md:top-0 md:z-20 md:bg-white md:shrink-0">
-                                {/* Desktop Detail Header */}
                                 <div className="flex items-center justify-between h-[56px] px-6 border-b border-gray-200 bg-white">
                                     <div className="flex items-center gap-3">
                                         <div
@@ -940,11 +906,9 @@ const Customers = () => {
                                     </div>
                                 </div>
 
-                                {/* Set Due Date row — Desktop only */}
                                 <div className="flex items-center justify-between h-[48px] px-6 bg-white border-b border-gray-100 gap-4">
                                     <div className="flex items-center gap-2 flex-1 flex-wrap">
                                         {selectedCustomer.dueDate ? (
-                                            /* Only show due date chip when date is selected */
                                             (() => {
                                                 const status = getDueDateStatus(selectedCustomer.dueDate);
                                                 if (!status) return null;
@@ -964,12 +928,10 @@ const Customers = () => {
                                                 );
                                             })()
                                         ) : (
-                                            /* Show presets & Select Date when no due date is set */
                                             <>
                                                 <span className="material-symbols-outlined text-gray-400 text-[16px]">timer</span>
                                                 <span className="text-xs text-gray-600 font-bold">Set Due Date:</span>
                                                 
-                                                {/* Quick Preset Buttons */}
                                                 {[
                                                     { label: '7 days', days: 7 },
                                                     { label: '14 days', days: 14 },
@@ -985,29 +947,29 @@ const Customers = () => {
                                                     </button>
                                                 ))}
 
-                                                {/* Custom Date Picker */}
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="date"
-                                                        min={getFutureDateString(0)}
-                                                        value=""
-                                                        onChange={(e) => handleCustomDueDate(e.target.value)}
-                                                        className="sr-only"
-                                                        id="customer-due-date-picker"
-                                                    />
-                                                    <span 
-                                                        onClick={() => {
-                                                            const el = document.getElementById('customer-due-date-picker');
-                                                            if (el && typeof el.showPicker === 'function') {
-                                                                el.showPicker();
-                                                            }
-                                                        }}
-                                                        className="px-2.5 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white shadow-2xs"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-                                                        Select Date
-                                                    </span>
-                                                </label>
+                                                <CustomDatePicker
+                                                    value={selectedCustomer.dueDate || ''}
+                                                    onChange={handleCustomDueDate}
+                                                    minDate={getFutureDateString(0)}
+                                                    placement="bottom"
+                                                    align="right"
+                                                    presets={[
+                                                        { label: 'Today', value: getFutureDateString(0) },
+                                                        { label: '+7 Days', value: getFutureDateString(7) },
+                                                        { label: '+14 Days', value: getFutureDateString(14) },
+                                                        { label: '+30 Days', value: getFutureDateString(30) }
+                                                    ]}
+                                                    renderTrigger={({ open }) => (
+                                                        <button
+                                                            type="button"
+                                                            onClick={open}
+                                                            className="px-2.5 py-1 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1 cursor-pointer bg-white shadow-2xs"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                                                            Select Date
+                                                        </button>
+                                                    )}
+                                                />
                                             </>
                                         )}
                                     </div>
@@ -1023,7 +985,6 @@ const Customers = () => {
                                     </div>
                                 </div>
 
-                                {/* Desktop Action Bar — Professional & Modern */}
                                 <div className="flex items-center justify-between h-[62px] px-5 sm:px-6 bg-white border-b border-gray-200 gap-3">
                                     <div className="flex items-center gap-1 text-xs text-gray-600 font-bold uppercase tracking-wider shrink-0 whitespace-nowrap">
                                         <span>Send Reminder</span>
@@ -1048,25 +1009,21 @@ const Customers = () => {
 
                                         {globalSettings?.shareLinks !== false && (
                                             <>
-                                                {/* WhatsApp */}
                                                 <button onClick={handleWhatsappReminder} className="flex items-center gap-1 px-2.5 py-1.5 bg-green-50 border border-green-200 rounded-lg text-xs font-semibold text-green-700 hover:bg-green-100 transition-all shadow-2xs whitespace-nowrap shrink-0">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                                     WhatsApp
                                                 </button>
 
-                                                {/* SMS */}
                                                 <button onClick={handleSMSReminder} className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-xs font-semibold text-orange-700 hover:bg-orange-100 transition-all shadow-2xs whitespace-nowrap shrink-0">
                                                     <span className="material-symbols-outlined text-[15px]">sms</span>
                                                     SMS
                                                 </button>
 
-                                                {/* Email */}
                                                 <button onClick={handleEmailReminder} className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-all shadow-2xs whitespace-nowrap shrink-0">
                                                     <span className="material-symbols-outlined text-[15px]">mail</span>
                                                     Email
                                                 </button>
 
-                                                {/* Copy Link */}
                                                 <button onClick={handleCopyLink} className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all shadow-2xs whitespace-nowrap shrink-0">
                                                     <span className="material-symbols-outlined text-[15px]">link</span>
                                                     Copy Link
@@ -1076,7 +1033,6 @@ const Customers = () => {
                                     </div>
                                 </div>
 
-                                {/* Entries column headers — Desktop Styled */}
                                 <div className="grid grid-cols-12 px-6 h-[38px] items-center bg-gray-50 border-b border-gray-200">
                                     <div className="col-span-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entries</div>
                                     <div className="col-span-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">You Gave</div>
@@ -1084,7 +1040,6 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            {/* Transaction list */}
                             <div className="flex-1 min-h-0 md:overflow-y-auto custom-scrollbar bg-[#F5F7F9]">
                                 {txLoading ? (
                                     <div className="flex items-center justify-center h-32">
@@ -1096,7 +1051,6 @@ const Customers = () => {
                                         <p className="text-gray-400 text-sm">No entries yet</p>
                                     </div>
                                 ) : selectedCustomerTransactions.map(tx => {
-                                    // Determine if "gave" or "got"
                                     const isGave = tx.amount < 0 || tx.type === 'GAVE' || tx.type === 'credit';
                                     const absAmount = Math.abs(tx.amount);
                                     const txDate = tx.timestamp
@@ -1105,7 +1059,6 @@ const Customers = () => {
                                             ? new Date(tx.date)
                                             : null;
 
-                                    // Format date like Khatabook: "12 May 2026 • 02:14 AM" (bullet separator)
                                     const formattedDate = txDate ? (() => {
                                         const d = txDate;
                                         const day = d.getDate().toString().padStart(2, '0');
@@ -1118,7 +1071,6 @@ const Customers = () => {
 
                                     return (
                                         <div key={tx.id}>
-                                            {/* Date Header for Mobile — Center Pill */}
                                             <div className="md:hidden flex justify-center py-4 bg-[#F5F7F9]">
                                                 <div className="px-4 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm">
                                                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -1134,12 +1086,10 @@ const Customers = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Transaction Card */}
                                             <div
                                                 onClick={() => handleEntryClick(tx)}
                                                 className="md:grid md:grid-cols-12 px-0 md:px-6 py-0 md:py-3.5 border-b border-gray-100 hover:bg-gray-50/50 transition-colors items-start cursor-pointer group bg-white mx-0 md:mx-0 shadow-sm md:shadow-none"
                                             >
-                                                {/* Desktop Layout */}
                                                 <div className="hidden md:block col-span-6">
                                                     <p className="text-sm font-medium text-gray-800">{formattedDate}</p>
                                                     <div className="flex items-center gap-2 mt-0.5">
@@ -1178,9 +1128,7 @@ const Customers = () => {
                                                     }
                                                 </div>
 
-                                                {/* Mobile Layout — Pixel Perfect Three Column */}
                                                 <div className="md:hidden grid grid-cols-[1fr_80px_80px] min-h-[85px] border-b border-gray-50 bg-white">
-                                                    {/* Info Column */}
                                                     <div className="p-4 flex flex-col justify-center gap-1.5 min-w-0">
                                                         <p className="text-[11px] font-bold text-gray-400 leading-none">
                                                             {formattedDate}
@@ -1195,7 +1143,6 @@ const Customers = () => {
                                                         </p>
                                                     </div>
 
-                                                    {/* Gave Column */}
                                                     <div className={`flex flex-col items-center justify-center border-l border-gray-50 ${isGave ? 'bg-red-50/40' : ''}`}>
                                                         {isGave && (
                                                             <>
@@ -1217,7 +1164,6 @@ const Customers = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Got Column */}
                                                     <div className={`flex flex-col items-center justify-center border-l border-gray-50 ${!isGave ? 'bg-green-50/40' : ''}`}>
                                                         {!isGave && (
                                                             <>
@@ -1246,7 +1192,6 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            {/* Entry buttons — Pixel Perfect Mobile (Anchored at bottom) */}
                             <div className="md:hidden shrink-0 p-3 bg-white border-t border-gray-100 flex gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
                                 <button
                                     onClick={() => handleAddEntry('gave')}
@@ -1262,7 +1207,6 @@ const Customers = () => {
                                 </button>
                             </div>
 
-                            {/* Entry buttons — Desktop Styled */}
                             <div className="hidden md:flex h-[68px] items-center px-4 bg-white border-t border-gray-200 gap-3 shrink-0">
                                 <button
                                     onClick={() => handleAddEntry('gave')}
@@ -1285,7 +1229,6 @@ const Customers = () => {
                 </div>
             </div>
 
-            {/* Drawers */}
             <CustomerDrawer
                 isOpen={isCustomerDrawerOpen}
                 onClose={() => setIsCustomerDrawerOpen(false)}
@@ -1301,7 +1244,6 @@ const Customers = () => {
                 type={transactionType}
                 transaction={selectedTransaction}
                 onSuccess={() => {
-                    // Refresh selected customer balance
                     if (selectedCustomer?.id) {
                         dbService.getCustomer(selectedCustomer.id).then(c => {
                             if (c) setSelectedCustomer(c);
@@ -1340,16 +1282,13 @@ const Customers = () => {
                 onApply={() => setIsFilterDrawerOpen(false)}
             />
 
-            {/* Bottom Nav — Mobile only (hide when ledger is open) */}
             {!selectedCustomer && <BottomNav />}
 
-            {/* Image Preview Modal Gallery */}
             {previewImages.length > 0 && (
                 <div 
                     className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
                     onClick={() => setPreviewImages([])}
                 >
-                    {/* Top bar */}
                     <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10 max-w-4xl mx-auto">
                         <div className="text-white text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
                             {previewImages.length > 1 ? `${previewIndex + 1} / ${previewImages.length} Bills` : 'Bill Attachment'}
@@ -1362,7 +1301,6 @@ const Customers = () => {
                         </button>
                     </div>
 
-                    {/* Main image with left/right buttons */}
                     <div className="relative max-w-4xl max-h-[75vh] flex items-center justify-center">
                         {previewImages.length > 1 && (
                             <button
@@ -1396,7 +1334,6 @@ const Customers = () => {
                         )}
                     </div>
 
-                    {/* Bottom thumbnail strip */}
                     {previewImages.length > 1 && (
                         <div 
                             className="mt-4 flex gap-2 overflow-x-auto max-w-full p-2 bg-black/40 rounded-2xl backdrop-blur-md z-10 custom-scrollbar"
@@ -1415,11 +1352,9 @@ const Customers = () => {
                     )}
                 </div>
             )}
-            {/* Customer Report Side Panel (Desktop) */}
             {isReportPanelOpen && selectedCustomer && (
                 <div className="hidden md:flex fixed inset-0 z-[110] justify-end bg-black/20">
                     <div className="w-[450px] h-full bg-[#0057BB] flex flex-col shadow-2xl animate-slide-left relative">
-                        {/* Header */}
                         <div className="px-4 py-6 flex items-center gap-4">
                             <button 
                                 onClick={() => setIsReportPanelOpen(false)}
@@ -1430,54 +1365,55 @@ const Customers = () => {
                             <h2 className="text-[18px] font-bold text-white truncate">Report of {selectedCustomer.name}</h2>
                         </div>
 
-                        {/* White Content Area */}
                         <div className="flex-1 bg-[#F5F7F9] rounded-t-[20px] overflow-hidden flex flex-col relative">
                             <div className="p-4 space-y-3 bg-[#0057BB] pb-6 sticky top-0 z-20 shadow-md">
-                                {/* Date Range */}
                                 <div className="flex bg-white rounded shadow-sm h-[48px] text-slate-800">
-                                    <div 
-                                        onClick={(e) => {
-                                            try { e.currentTarget.querySelector('input').showPicker(); } catch (err) {}
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 border-r border-slate-100 relative cursor-pointer hover:bg-slate-50 transition-colors rounded-l"
-                                    >
-                                        <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
-                                        <span className="text-[14px] font-bold text-[#0057BB] uppercase">
-                                            {isPanelStartDateChanged ? new Date(panelStartDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'START DATE'}
-                                        </span>
-                                        <input
-                                            type="date"
+                                    <div className="flex-1 border-r border-slate-100">
+                                        <CustomDatePicker
                                             value={panelStartDate}
-                                            onChange={(e) => {
-                                                setPanelStartDate(e.target.value);
+                                            onChange={(val) => {
+                                                setPanelStartDate(val);
                                                 setIsPanelStartDateChanged(true);
                                             }}
-                                            className="absolute inset-0 opacity-0 pointer-events-none"
+                                            className="h-full"
+                                            renderTrigger={({ open }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={open}
+                                                    className="w-full h-full flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors rounded-l"
+                                                >
+                                                    <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
+                                                    <span className="text-[14px] font-bold text-[#0057BB] uppercase">
+                                                        {isPanelStartDateChanged ? new Date(panelStartDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'START DATE'}
+                                                    </span>
+                                                </button>
+                                            )}
                                         />
                                     </div>
-                                    <div
-                                        onClick={(e) => {
-                                            try { e.currentTarget.querySelector('input').showPicker(); } catch (err) { }
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 relative cursor-pointer hover:bg-slate-50 transition-colors rounded-r"
-                                    >
-                                        <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
-                                        <span className="text-[14px] font-bold text-[#0057BB] uppercase">
-                                            {isPanelEndDateChanged ? new Date(panelEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'END DATE'}
-                                        </span>
-                                        <input
-                                            type="date"
+                                    <div className="flex-1">
+                                        <CustomDatePicker
                                             value={panelEndDate}
-                                            onChange={(e) => {
-                                                setPanelEndDate(e.target.value);
+                                            onChange={(val) => {
+                                                setPanelEndDate(val);
                                                 setIsPanelEndDateChanged(true);
                                             }}
-                                            className="absolute inset-0 opacity-0 pointer-events-none"
+                                            className="h-full"
+                                            renderTrigger={({ open }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={open}
+                                                    className="w-full h-full flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors rounded-r"
+                                                >
+                                                    <span className="material-symbols-outlined text-slate-500 text-[18px]">calendar_today</span>
+                                                    <span className="text-[14px] font-bold text-[#0057BB] uppercase">
+                                                        {isPanelEndDateChanged ? new Date(panelEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, ' ') : 'END DATE'}
+                                                    </span>
+                                                </button>
+                                            )}
                                         />
                                     </div>
                                 </div>
 
-                                {/* Search & Duration */}
                                 <div className="flex bg-white rounded shadow-sm h-[48px] text-slate-800 items-center px-2 gap-2">
                                     <span className="material-symbols-outlined text-[#0057BB] text-[24px]">search</span>
                                     <div className="flex-1 h-[34px] border border-slate-300 rounded flex items-center px-2">
@@ -1500,9 +1436,7 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            {/* Scrollable Report Content */}
                             <div className="flex-1 overflow-y-auto px-0 custom-scrollbar">
-                                {/* Balance Summary */}
                                 <div className="py-4 px-4 flex items-center justify-between bg-white border-b border-slate-100">
                                     <span className="text-[16px] font-semibold text-slate-900">Net Balance</span>
                                     <span className={`text-[16px] font-bold ${selectedCustomer.balance <= 0 ? 'text-green-600' : 'text-[#ef4444]'}`}>
@@ -1510,7 +1444,6 @@ const Customers = () => {
                                     </span>
                                 </div>
 
-                                {/* Entries List */}
                                 <div className="bg-white">
                                     {selectedCustomerTransactions
                                         .filter(tx => {
@@ -1556,7 +1489,6 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            {/* Footer Actions */}
                             <div className="p-4 bg-white border-t border-slate-100 flex gap-3">
                                 <button className="flex-1 h-[44px] border border-[#0057BB] rounded-lg text-[#0057BB] font-bold text-[14px] flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined text-[20px]">picture_as_pdf</span>
@@ -1568,7 +1500,6 @@ const Customers = () => {
                                 </button>
                             </div>
 
-                            {/* Panel Duration Modal - Integrated into Side Panel */}
                             {showPanelDurationModal && (
                                 <div className="absolute inset-0 z-[120] flex items-end bg-black/40">
                                     <div className="w-full bg-white rounded-t-2xl p-6 animate-slide-up shadow-2xl">
@@ -1591,7 +1522,6 @@ const Customers = () => {
                 </div>
             )}
 
-            {/* Party Profile Drawer */}
             {selectedCustomer && (
                 <PartyProfileDrawer
                     isOpen={isPartyProfileOpen}
@@ -1604,14 +1534,12 @@ const Customers = () => {
                 />
             )}
 
-            {/* Import Transactions Modal */}
             {selectedCustomer && (
                 <ImportTransactionsModal
                     isOpen={isImportModalOpen}
                     onClose={() => setIsImportModalOpen(false)}
                     customer={selectedCustomer}
                     onSuccess={() => {
-                        // DB updates automatically sync via realtime listener
                     }}
                 />
             )}
@@ -1619,7 +1547,6 @@ const Customers = () => {
     );
 };
 
-// Helper: format time ago
 function formatTimeAgo(timestamp) {
     const now = Date.now();
     const diff = now - timestamp;

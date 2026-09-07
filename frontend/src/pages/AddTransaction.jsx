@@ -4,6 +4,7 @@ import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirebaseErrorMessage } from '../utils/errorHandlers';
 import { ArrowLeft, Calendar, Camera, ChevronDown } from 'lucide-react';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 const AddTransaction = () => {
     const navigate = useNavigate();
@@ -68,7 +69,6 @@ const AddTransaction = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-[#F0F2F5] text-slate-800 antialiased">
-            {/* Header */}
             <header className="bg-white px-4 py-6 flex items-start gap-4 border-b border-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                 <button 
                     onClick={() => navigate(-1)}
@@ -94,7 +94,6 @@ const AddTransaction = () => {
                     </div>
                 )}
 
-                {/* Amount Entry Section */}
                 <div className="space-y-4">
                     <label className="text-[14px] font-black text-slate-400 ml-2 tracking-wide">Amount (₹)</label>
                     <div className="bg-white px-5 py-4 border border-slate-300 rounded-[28px] shadow-sm flex items-center group focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50 transition-all duration-300">
@@ -116,7 +115,6 @@ const AddTransaction = () => {
                     </div>
                 </div>
 
-                {/* Details Entry Section */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between ml-2">
                         <label className="text-[14px] font-black text-slate-400 tracking-wide uppercase">Transaction Details (Optional)</label>
@@ -163,23 +161,12 @@ const AddTransaction = () => {
                     </div>
                 </div>
 
-                {/* Date & Bills Grid */}
                 <div className="grid grid-cols-2 gap-5">
-                    <div className="relative group">
-                        <input 
-                            type="date"
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-                        <div className="bg-white p-5 h-20 rounded-[24px] border border-slate-200 shadow-sm flex items-center justify-between pointer-events-none group-hover:border-slate-400 transition-all duration-300">
-                            <div className="flex items-center gap-4">
-                                <Calendar className="text-slate-500" size={28} />
-                                <span className="text-[16px] font-extrabold text-slate-700">{formatDate(date)}</span>
-                            </div>
-                            <ChevronDown size={20} className="text-slate-400" />
-                        </div>
-                    </div>
+                    <CustomDatePicker 
+                        value={date}
+                        onChange={(newDate) => setDate(newDate)}
+                        buttonClassName="h-20 rounded-[24px] px-5 text-base font-extrabold"
+                    />
 
                     <button className="bg-white p-5 h-20 rounded-[24px] border border-slate-200 shadow-sm flex items-center justify-center gap-4 group hover:border-slate-400 transition-all duration-300 active:scale-[0.98]">
                         <Camera style={{ color: headerRed }} size={28} />
@@ -188,7 +175,6 @@ const AddTransaction = () => {
                 </div>
             </div>
 
-            {/* Final SAVE Action */}
             <div className="p-6 bg-[#F0F2F5] mt-auto sticky bottom-0 border-t border-slate-200/50">
                 <button 
                     disabled={loading || !amount}

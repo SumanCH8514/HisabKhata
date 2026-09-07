@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
+import CustomDatePicker from '../components/CustomDatePicker';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-// Heavy libraries (jsPDF, autoTable, XLSX) will be imported dynamically
 
 const Reports = () => {
     const { currentUser, userData, globalSettings } = useAuth();
@@ -14,7 +14,6 @@ const Reports = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [period, setPeriod] = useState('This Month');
     
-    // Default date range: 1st of current month to today
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     
@@ -108,7 +107,6 @@ const Reports = () => {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
 
-        // --- HEADER & BRANDING ---
         doc.setFillColor(0, 87, 187); // Primary Blue
         doc.rect(0, 0, pageWidth, 45, 'F');
 
@@ -130,7 +128,6 @@ const Reports = () => {
         const dateRangeText = `Statement for: ${new Date(startDate).toLocaleDateString('en-GB')} to ${new Date(endDate).toLocaleDateString('en-GB')}`;
         doc.text(dateRangeText, 15, 34);
 
-        // Merchant Name (top right)
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         const merchantName = (userData?.businessName || currentUser?.displayName || 'Merchant').toUpperCase();
@@ -143,13 +140,11 @@ const Reports = () => {
         const pWidth = doc.getTextWidth(mPhone);
         if(mPhone) doc.text(mPhone, pageWidth - pWidth - 15, 24);
 
-        // --- SUMMARY BOX ---
         const summaryY = 52;
         doc.setDrawColor(220, 220, 220);
         doc.setFillColor(252, 252, 252);
         doc.roundedRect(10, summaryY, pageWidth - 20, 25, 2, 2, 'FD');
 
-        // Dividers
         doc.line(pageWidth * 0.33, summaryY + 5, pageWidth * 0.33, summaryY + 20);
         doc.line(pageWidth * 0.66, summaryY + 5, pageWidth * 0.66, summaryY + 20);
 
@@ -165,7 +160,6 @@ const Reports = () => {
         doc.text(`Rs. ${totalGive.toLocaleString('en-IN')}.00`, 15, summaryY + 15);
         doc.text(`Rs. ${totalGot.toLocaleString('en-IN')}.00`, pageWidth * 0.33 + 5, summaryY + 15);
         
-        // Net Balance Styling
         const isDr = netBalance < 0;
         if (isDr) {
             doc.setTextColor(185, 28, 28); // Deeper red for Dr
@@ -180,7 +174,6 @@ const Reports = () => {
         doc.text(`(Total Entries: ${filteredTx.length})`, 15, summaryY + 21);
         doc.text(`(Net ${isDr ? 'Debit' : 'Credit'})`, pageWidth * 0.66 + 5, summaryY + 21);
 
-        // --- TABLE ---
         const tableData = filteredTx.map(tx => {
             const isGave = tx.amount < 0 || tx.type === 'GAVE';
             const amount = Math.abs(tx.amount);
@@ -215,7 +208,6 @@ const Reports = () => {
             }
         });
 
-        // --- FOOTER ---
         const footerY = pageHeight - 15;
         doc.setFillColor(0, 50, 120);
         doc.rect(0, footerY, pageWidth, 15, 'F');
@@ -223,7 +215,6 @@ const Reports = () => {
         doc.setFontSize(8);
         doc.text("Start Using HisabKhata.", 10, footerY + 8);
 
-        // Help and T&C
         doc.text(`Need Help: +91-8918153949`, pageWidth - 65, footerY + 6);
         const tcText = "T&C Apply";
         const tcWidth = doc.getTextWidth(tcText);
@@ -254,7 +245,6 @@ const Reports = () => {
             <Sidebar />
 
             <div className="flex flex-1 ml-0 md:ml-[260px] overflow-hidden">
-                {/* Sub-sidebar (Reports List) — Hidden on mobile */}
                 <div className="hidden md:flex w-[280px] bg-white border-r border-gray-200 flex-col flex-shrink-0">
                     <div className="px-6 py-5">
                         <h1 className="text-xl font-bold text-gray-800">Reports</h1>
@@ -277,9 +267,7 @@ const Reports = () => {
                     </div>
                 </div>
 
-                {/* Main Content Pane */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white">
-                    {/* Mobile Header — Branding */}
                     <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-[#0057BB] rounded flex items-center justify-center">
@@ -293,7 +281,6 @@ const Reports = () => {
                         </div>
                     </div>
 
-                    {/* Page Header — Desktop styled */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 py-4 border-b border-gray-200 gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-sm">
@@ -319,14 +306,12 @@ const Reports = () => {
                         </div>
                     </div>
 
-                    {/* Tabs */}
                     <div className="px-4 md:px-8 border-b border-gray-100 flex items-center gap-10">
                         <button className="py-4 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition-all">
                             Customers <span className="ml-1 px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded-full text-[10px]">{customers.length}</span>
                         </button>
                     </div>
 
-                    {/* Filters Row */}
                     <div className="px-4 md:px-8 py-5 border-b border-gray-100 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-end text-left">
                         <div className="col-span-1 md:col-span-3">
                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">Customer Name</p>
@@ -360,41 +345,33 @@ const Reports = () => {
                         </div>
                         <div className="col-span-1 md:col-span-3">
                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">Start</p>
-                            <div className="relative">
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">calendar_today</span>
-                                <input 
-                                    type="date"
-                                    className="w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-md text-sm outline-none focus:border-blue-400 transition-all text-gray-700 font-medium"
-                                    value={startDate}
-                                    onChange={e => {
-                                        setStartDate(e.target.value);
-                                        setPeriod('Custom Range');
-                                    }}
-                                />
-                            </div>
+                            <CustomDatePicker
+                                value={startDate}
+                                placement="bottom"
+                                buttonClassName="h-[38px] rounded-md border-gray-300 text-sm font-medium"
+                                onChange={val => {
+                                    setStartDate(val);
+                                    setPeriod('Custom Range');
+                                }}
+                            />
                         </div>
                         <div className="col-span-1 md:col-span-3">
                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">End</p>
-                            <div className="relative">
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">calendar_today</span>
-                                <input 
-                                    type="date"
-                                    className="w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-md text-sm outline-none focus:border-blue-400 transition-all text-gray-700 font-medium"
-                                    value={endDate}
-                                    onChange={e => {
-                                        setEndDate(e.target.value);
-                                        setPeriod('Custom Range');
-                                    }}
-                                />
-                            </div>
+                            <CustomDatePicker
+                                value={endDate}
+                                placement="bottom"
+                                buttonClassName="h-[38px] rounded-md border-gray-300 text-sm font-medium"
+                                onChange={val => {
+                                    setEndDate(val);
+                                    setPeriod('Custom Range');
+                                }}
+                            />
                         </div>
                     </div>
 
-                    {/* Scrollable Content Area */}
                     <div className="flex-1 overflow-y-auto p-4 md:p-8 pt-6 bg-white custom-scrollbar">
                         <p className="text-sm font-bold text-gray-800 mb-6 px-2 md:px-0 text-left">Total {filteredTx.length} entries</p>
                         
-                        {/* Summary Area — Responsive Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 px-2 md:px-0">
                             <div className="bg-[#FCE8E6]/40 p-5 md:p-6 rounded-xl border border-red-100 flex flex-col items-center shadow-sm">
                                 <span className="text-red-500 text-[10px] md:text-[11px] font-black uppercase tracking-widest mb-2">TOTAL GAVE</span>
@@ -412,7 +389,6 @@ const Reports = () => {
                             </div>
                         </div>
 
-                        {/* Desktop Table View */}
                         <div className="hidden md:block border border-gray-100 rounded-lg overflow-hidden shadow-sm">
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-[#f8f9fa] border-b border-gray-100">
@@ -454,7 +430,6 @@ const Reports = () => {
                             </table>
                         </div>
 
-                        {/* Mobile List View */}
                         <div className="md:hidden space-y-3 pb-20">
                             {filteredTx.length === 0 ? (
                                 <div className="px-6 py-20 text-center text-gray-400 font-medium">No transactions found for this period.</div>
@@ -494,7 +469,6 @@ const Reports = () => {
                 </div>
             </div>
 
-            {/* Bottom Nav — Mobile only */}
             <BottomNav />
         </div>
     );

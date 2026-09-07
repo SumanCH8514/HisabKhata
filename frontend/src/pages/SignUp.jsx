@@ -79,7 +79,6 @@ const SignUp = () => {
 
     return (
         <div className="min-h-screen flex" style={{ fontFamily: "'Noto Sans', sans-serif" }}>
-            {/* Left branding panel */}
             <div className="hidden lg:flex flex-col justify-between w-[520px] flex-shrink-0 p-12 text-white relative overflow-hidden"
                 style={{ backgroundColor: '#1c2b3a' }}>
                 <div className="flex items-center gap-2">
@@ -105,7 +104,6 @@ const SignUp = () => {
                 <p className="text-[#5a7a95] text-xs">© 2024-2026 HisabKhata. All rights reserved.</p>
             </div>
 
-            {/* Right signup panel */}
             <div className="flex-1 flex lg:items-center items-start lg:justify-center justify-start pt-8 pb-20 px-6 bg-white overflow-y-auto">
                 <div className="w-full max-w-[400px]">
                     <div className="lg:hidden flex items-center gap-2 mb-6 justify-center">

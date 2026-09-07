@@ -27,7 +27,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
         setIsUploading(true);
         try {
             const compressedBase64 = await compressImage(file, 500, 500, 0.8);
-            // Set temporary preview
             setPhoto(compressedBase64);
             try {
                 const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
@@ -140,12 +139,9 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
-            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity" onClick={onClose} />
 
-            {/* Drawer panel */}
             <div onPaste={handlePaste} className="relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-slate-800">
                         {customer ? 'Edit Party' : 'Add New Party'}
@@ -158,7 +154,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                     </button>
                 </div>
 
-                {/* Form Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-6">
                     <div className="space-y-5">
                         {error && (
@@ -168,7 +163,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             </div>
                         )}
 
-                        {/* Photo Upload */}
                         <div className="flex flex-col items-center pb-1">
                             <div 
                                 className="relative group cursor-pointer" 
@@ -205,7 +199,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             </p>
                         </div>
 
-                        {/* Party Name */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700">Party Name</label>
                             <input
@@ -218,7 +211,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             />
                         </div>
 
-                        {/* Phone Number */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-bold text-slate-700">Phone Number</label>
@@ -239,7 +231,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             </div>
                         </div>
 
-                        {/* Email */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-bold text-slate-700">Email</label>
@@ -254,7 +245,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             />
                         </div>
 
-                        {/* Opening Balance */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-bold text-slate-700">Opening Balance</label>
@@ -288,7 +278,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                             </div>
                         </div>
 
-                        {/* Who are they? */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700">Who are they?</label>
                             <div className="grid grid-cols-2 gap-3">
@@ -325,7 +314,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
 
                         <hr className="border-slate-100" />
 
-                        {/* Collapsible Section */}
                         <details className="group border border-slate-200 rounded-xl p-3.5 bg-slate-50/40 transition-all">
                             <summary className="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden font-bold text-sm text-[#0057BB]">
                                 <span className="flex items-center gap-2">
@@ -356,7 +344,6 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="p-5 bg-white border-t border-slate-100 mt-auto">
                     <button
                         disabled={loading || !name.trim()}

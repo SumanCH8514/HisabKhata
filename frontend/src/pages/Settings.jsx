@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AppMobileHeader from '../components/AppMobileHeader';
 import Footer from '../components/Footer';
+import TwoFactorModal from '../components/TwoFactorModal';
 import { useAuth } from '../contexts/AuthContext';
 import { dbService, authService } from '../services/firebase';
 import { 
@@ -22,29 +23,30 @@ import {
     AlertTriangle,
     Mail,
     FileSpreadsheet,
-    Loader2
+    Loader2,
+    CheckCircle2,
+    AlertCircle,
+    Info
 } from 'lucide-react';
 
 const Settings = () => {
     const { currentUser, userData, logout } = useAuth();
     const navigate = useNavigate();
 
-    // User preferences state (with persistence fallback)
     const [preferences, setPreferences] = useState({
         notifications: true,
         twoFactorAuth: false,
+        emailOtpLogin: false,
         currency: 'INR',
         language: 'en',
         autoBackup: true
     });
 
-    // Modals & UI States
     const [activeModal, setActiveModal] = useState(null); // 'password' | 'language' | 'currency' | '2fa' | 'delete' | null
     const [toast, setToast] = useState(null); // { type: 'success' | 'error' | 'info', message: string }
     const [loadingAction, setLoadingAction] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-    // Load initial preferences from userData or localStorage
     useEffect(() => {
         if (userData?.preferences) {
             setPreferences(prev => ({ ...prev, ...userData.preferences }));
@@ -60,13 +62,11 @@ const Settings = () => {
         }
     }, [userData]);
 
-    // Toast helper with auto dismiss
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3500);
     };
 
-    // Save preferences to DB and localStorage
     const updatePreference = async (key, value) => {
         const updated = { ...preferences, [key]: value };
         setPreferences(updated);
@@ -83,7 +83,6 @@ const Settings = () => {
         }
     };
 
-    // Toggle Notifications
     const handleToggleNotifications = async () => {
         const nextVal = !preferences.notifications;
         if (nextVal && 'Notification' in window && Notification.permission !== 'granted') {
@@ -100,18 +99,65 @@ const Settings = () => {
         await updatePreference('notifications', nextVal);
     };
 
-    // Toggle Two Factor Authentication
-    const handleToggle2FA = async () => {
-        const nextVal = !preferences.twoFactorAuth;
-        await updatePreference('twoFactorAuth', nextVal);
-        if (nextVal) {
-            showToast("Two-Factor Authentication is now enabled for this account.");
-        } else {
-            showToast("Two-Factor Authentication disabled.", "info");
+    const [is2FaModalOpen, setIs2FaModalOpen] = useState(false);
+
+    const handleOpen2FA = () => {
+        setIs2FaModalOpen(true);
+    };
+
+    const handleEnable2FA = async ({ secret, backupCodes, enabledAt }) => {
+        const updatedPrefs = { ...preferences, twoFactorAuth: true };
+        setPreferences(updatedPrefs);
+        localStorage.setItem('hk_user_preferences', JSON.stringify(updatedPrefs));
+
+        if (currentUser?.uid) {
+            try {
+                await dbService.updateUserProfile(currentUser.uid, {
+                    preferences: updatedPrefs,
+                    twoFactorAuth: true,
+                    twoFactorSecret: secret,
+                    twoFactorBackupCodes: backupCodes,
+                    twoFactorEnabledAt: enabledAt
+                });
+                showToast("Two-Factor Authentication is now enabled with Google Authenticator!");
+            } catch (error) {
+                console.error("Error enabling 2FA:", error);
+                showToast("Failed to save 2FA settings to server.", "error");
+            }
         }
     };
 
-    // Send Password Reset Email
+    const handleDisable2FA = async () => {
+        const updatedPrefs = { ...preferences, twoFactorAuth: false };
+        setPreferences(updatedPrefs);
+        localStorage.setItem('hk_user_preferences', JSON.stringify(updatedPrefs));
+
+        if (currentUser?.uid) {
+            try {
+                await dbService.updateUserProfile(currentUser.uid, {
+                    preferences: updatedPrefs,
+                    twoFactorAuth: false,
+                    twoFactorSecret: null,
+                    twoFactorBackupCodes: null
+                });
+                showToast("Two-Factor Authentication disabled.", "info");
+            } catch (error) {
+                console.error("Error disabling 2FA:", error);
+                showToast("Failed to update 2FA settings.", "error");
+            }
+        }
+    };
+
+    const handleToggleEmailOtp = async () => {
+        const nextVal = !preferences.emailOtpLogin;
+        await updatePreference('emailOtpLogin', nextVal);
+        if (nextVal) {
+            showToast("Email OTP verification enabled for login.");
+        } else {
+            showToast("Email OTP verification disabled.", "info");
+        }
+    };
+
     const handleSendPasswordReset = async () => {
         if (!currentUser?.email) {
             showToast("No email associated with this account.", "error");
@@ -130,12 +176,10 @@ const Settings = () => {
         }
     };
 
-    // Export All Ledger Data to CSV
     const handleExportAllData = async () => {
         if (!currentUser?.uid) return;
         setLoadingAction(true);
         try {
-            // Fetch customers
             const customers = await new Promise((resolve) => {
                 const unsub = dbService.listenUserCustomers(currentUser.uid, (data) => {
                     unsub();
@@ -143,7 +187,6 @@ const Settings = () => {
                 });
             });
 
-            // Prepare CSV Data
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Customer Name,Phone,Email,Current Balance (INR),Created At,Status\n";
 
@@ -175,7 +218,6 @@ const Settings = () => {
         }
     };
 
-    // Delete Account Handler
     const handleDeleteAccount = async () => {
         if (deleteConfirmText !== 'DELETE') {
             showToast("Please type 'DELETE' exactly to confirm.", "error");
@@ -183,7 +225,6 @@ const Settings = () => {
         }
         setLoadingAction(true);
         try {
-            // Clear user data or mark disabled
             if (currentUser?.uid) {
                 await dbService.updateUserProfile(currentUser.uid, {
                     isDeleted: true,
@@ -229,11 +270,19 @@ const Settings = () => {
                 { 
                     id: '2fa', 
                     label: 'Two-Factor Authentication', 
-                    desc: preferences.twoFactorAuth ? 'Enabled — Extra security active' : 'Disabled — Click to enable', 
+                    desc: (preferences.twoFactorAuth || userData?.twoFactorAuth) ? 'Google Authenticator Active — High Security' : 'Protect your account with Google Authenticator', 
                     icon: <ShieldCheck className="w-4 h-4" />, 
+                    type: 'action', 
+                    action: handleOpen2FA
+                },
+                { 
+                    id: 'email_otp', 
+                    label: 'Login Email OTP Verification', 
+                    desc: (preferences.emailOtpLogin || userData?.emailOtpLogin) ? 'Enabled — 6-digit OTP sent to email at login' : 'Disabled — Normal login without email OTP', 
+                    icon: <Mail className="w-4 h-4" />, 
                     type: 'toggle', 
-                    enabled: preferences.twoFactorAuth,
-                    action: handleToggle2FA
+                    enabled: Boolean(preferences.emailOtpLogin || userData?.emailOtpLogin),
+                    action: handleToggleEmailOtp
                 },
             ]
         },
@@ -315,28 +364,42 @@ const Settings = () => {
             <Sidebar />
             
             <main className="flex-1 ml-0 md:ml-[260px] pb-20 md:pb-0 flex flex-col min-h-screen min-w-0">
-                {/* Mobile Branded Header */}
                 <AppMobileHeader />
 
-                {/* Toast Notification */}
                 {toast && (
-                    <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-                        <div className={`px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-bold ${
-                            toast.type === 'error' 
-                                ? 'bg-rose-600 text-white' 
-                                : toast.type === 'info' 
-                                ? 'bg-slate-800 text-white' 
-                                : 'bg-emerald-600 text-white'
-                        }`}>
-                            <span>{toast.message}</span>
-                            <button onClick={() => setToast(null)} className="opacity-80 hover:opacity-100">
-                                <X size={14} />
+                    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[200] w-[calc(100%-2rem)] max-w-sm md:max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 shadow-2xl rounded-2xl p-3.5 flex items-center gap-3">
+                            <div className={`p-2 rounded-xl shrink-0 flex items-center justify-center ${
+                                toast.type === 'error'
+                                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                    : toast.type === 'info'
+                                    ? 'bg-blue-500/20 text-sky-400 border border-blue-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            }`}>
+                                {toast.type === 'error' ? (
+                                    <AlertCircle size={18} />
+                                ) : toast.type === 'info' ? (
+                                    <Info size={18} />
+                                ) : (
+                                    <CheckCircle2 size={18} />
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-slate-100 leading-snug">
+                                    {toast.message}
+                                </p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setToast(null)} 
+                                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
+                            >
+                                <X size={15} />
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Desktop Page Title Header */}
                 <div className="hidden md:flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200/80">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -363,7 +426,6 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Mobile Title — Compact Branding */}
                 <div className="md:hidden bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-100 shrink-0">
                         <span className="material-symbols-outlined text-white text-[22px]">settings</span>
@@ -374,13 +436,10 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* =========================================================================
-                    DESKTOP VIEW (md:block) — 2-Column Responsive Dashboard
-                   ========================================================================= */}
+                
                 <div className="hidden md:block flex-1 w-full max-w-6xl mx-auto p-8 lg:p-10">
                     <div className="grid grid-cols-12 gap-8 items-start">
                         
-                        {/* LEFT COLUMN: 8 cols — Settings Sections */}
                         <div className="col-span-12 lg:col-span-8 space-y-6">
                             {settingSections.filter(s => s.title !== 'Danger Zone').map((section, idx) => (
                                 <div key={idx} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -432,10 +491,8 @@ const Settings = () => {
                             ))}
                         </div>
 
-                        {/* RIGHT COLUMN: 4 cols — Account Snapshot & Danger Zone */}
                         <div className="col-span-12 lg:col-span-4 space-y-6">
                             
-                            {/* Account Status Card */}
                             <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
@@ -470,7 +527,6 @@ const Settings = () => {
                                 </Link>
                             </div>
 
-                            {/* Danger Zone Card */}
                             <div className="bg-white rounded-2xl border border-rose-200 shadow-xs overflow-hidden">
                                 <div className="px-6 py-4 border-b border-rose-100 bg-rose-50/50 flex items-center justify-between">
                                     <h3 className="text-xs font-black text-rose-700 uppercase tracking-wider flex items-center gap-2">
@@ -499,9 +555,7 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* =========================================================================
-                    MOBILE VIEW (< md) — Exact Existing Layout Preserved with Live Actions
-                   ========================================================================= */}
+                
                 <div className="md:hidden flex-1 max-w-4xl w-full mx-auto p-4 space-y-6">
                     <div className="grid grid-cols-1 gap-6">
                         {settingSections.map((section, idx) => (
@@ -547,11 +601,8 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* =========================================================================
-                    INTERACTIVE MODALS
-                   ========================================================================= */}
+                
 
-                {/* Password Reset Modal */}
                 {activeModal === 'password' && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -589,7 +640,6 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Language Selector Modal */}
                 {activeModal === 'language' && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -626,7 +676,6 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Currency Selector Modal */}
                 {activeModal === 'currency' && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -663,7 +712,6 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Delete Account Modal */}
                 {activeModal === 'delete' && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 border border-rose-100">
@@ -710,7 +758,17 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Modern Bottom-Anchored Footer */}
+                <TwoFactorModal
+                    isOpen={is2FaModalOpen}
+                    onClose={() => setIs2FaModalOpen(false)}
+                    isEnabled={Boolean(preferences.twoFactorAuth || userData?.twoFactorAuth)}
+                    userEmail={currentUser?.email || userData?.email || ''}
+                    currentSecret={userData?.twoFactorSecret}
+                    currentBackupCodes={userData?.twoFactorBackupCodes || []}
+                    onEnable={handleEnable2FA}
+                    onDisable={handleDisable2FA}
+                />
+
                 <Footer className="mt-auto" />
             </main>
 

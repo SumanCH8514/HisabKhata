@@ -1,17 +1,8 @@
-/**
- * Calculates the profile completion strength based on filled fields.
- * @param {Object} userData - The user profile data object.
- * @returns {Object} An object containing percentage, label, color, and barColor.
- */
 export const calculateProfileStrength = (userData) => {
     if (!userData) {
         return { percentage: 0, label: 'Weak', color: 'text-red-500', barColor: 'bg-red-500' };
     }
 
-    // Define the fields to check for completion
-    // Note: businessName is often defaulted to name in display, 
-    // but for strength calculation, we should check if it's explicitly set or just use name as fallback if that's the business rule.
-    // However, usually we want users to explicitly confirm their business name.
     const fields = [
         userData.photoURL,
         userData.name,

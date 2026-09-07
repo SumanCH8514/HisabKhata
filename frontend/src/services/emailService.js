@@ -1,7 +1,3 @@
-/**
- * Email Notification Service (Backend Nodemailer Client)
- * Replaces EmailJS by sending requests to our dedicated Node.js Nodemailer backend.
- */
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
 
@@ -13,9 +9,6 @@ export const getBackendEmailUrl = () => {
     ).replace(/\/+$/, '');
 };
 
-/**
- * Send an email notification via the backend Nodemailer service
- */
 export const sendEmailViaBackend = async (emailParams) => {
     const toEmail = emailParams.to || emailParams.to_email || emailParams.email;
 
@@ -28,14 +21,22 @@ export const sendEmailViaBackend = async (emailParams) => {
 
     try {
         const payload = {
+            ...emailParams,
             to: toEmail,
             subject: emailParams.subject,
-            customerName: emailParams.customer_name || emailParams.to_name || emailParams.customerName,
+            otp: emailParams.otp || emailParams.code || emailParams.otpCode || emailParams.loginOtp,
+            purpose: emailParams.purpose,
+            expiry: emailParams.expiry,
+            customerName: emailParams.customer_name || emailParams.to_name || emailParams.customerName || emailParams.userName,
             merchantName: emailParams.merchant_name || emailParams.business_name || emailParams.merchantName,
             merchantPhone: emailParams.merchant_phone || emailParams.phone || emailParams.merchantPhone,
             amount: emailParams.amount != null ? emailParams.amount : emailParams.transaction_amount,
             balance: emailParams.balance != null ? emailParams.balance : emailParams.current_balance,
             txType: emailParams.tx_type || emailParams.txType,
+            type: emailParams.type || emailParams.template || emailParams.tx_type || emailParams.txType,
+            template: emailParams.template || emailParams.type,
+            transactionId: emailParams.transaction_id || emailParams.transactionId || emailParams.utr,
+            dueDate: emailParams.due_date || emailParams.dueDate || emailParams.due_str,
             description: emailParams.description || emailParams.message,
             actionUrl: emailParams.action_url || emailParams.link || emailParams.actionUrl,
             customMessage: emailParams.message,
@@ -64,9 +65,6 @@ export const sendEmailViaBackend = async (emailParams) => {
     }
 };
 
-/**
- * Checks if the backend SMTP server is online and verified
- */
 export const checkSmtpStatus = async () => {
     const backendUrl = getBackendEmailUrl();
     try {
@@ -77,9 +75,6 @@ export const checkSmtpStatus = async () => {
     }
 };
 
-/**
- * Sends a test email to verify SMTP configuration
- */
 export const testSmtpConnection = async (testRecipient) => {
     const backendUrl = getBackendEmailUrl();
     const response = await fetch(`${backendUrl}/api/test-email`, {

@@ -2,7 +2,6 @@ import React from 'react';
 import { dbService } from '../services/firebase';
 
 const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, customerPhone, customerEmail, customerPhoto, userData, onDeleteSuccess, onEdit, onViewImage }) => {
-    // Local state to keep transaction data during closing animation
     const [displayTx, setDisplayTx] = React.useState(null);
     const [shouldRender, setShouldRender] = React.useState(false);
 
@@ -27,7 +26,6 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
     const isGave = tx.amount < 0 || tx.type === 'GAVE' || tx.type === 'credit';
     const absAmount = Math.abs(tx.amount);
 
-    // Format date  05 May 26 • 10:23 PM
     const txDate = tx.timestamp ? new Date(tx.timestamp) : (tx.date ? new Date(tx.date) : null);
     const formattedDate = txDate ? (() => {
         const d = txDate;
@@ -129,7 +127,6 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
 
             <div className={`relative w-full h-full md:max-w-[400px] bg-[#EEEEEE] shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}>
 
-                {/* Header */}
                 <div className="bg-[#0b5cba] text-white flex items-center px-4 h-14 shrink-0 shadow-sm z-10 relative">
                     <button onClick={onClose} className="p-2 -ml-2 mr-2 active:bg-white/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[24px]">arrow_back</span>
@@ -137,12 +134,10 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                     <h2 className="text-[19px] font-medium tracking-wide">Entry Details</h2>
                 </div>
 
-                {/* Main Content */}
                 <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     <style>{`.flex-1::-webkit-scrollbar { display: none; }`}</style>
                     <div className="bg-[#0b5cba] h-[160px] absolute top-14 left-0 right-0 z-0"></div>
 
-                    {/* Entry Info Card */}
                     <div className="relative z-10 mx-3 mt-3 bg-white rounded-md shadow-sm overflow-hidden border border-gray-200/50">
                         <div className="p-4 flex justify-between items-start">
                             <div className="flex gap-3">
@@ -220,7 +215,6 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                         </div>
                     </div>
 
-                    {/* Reminder Buttons Grid */}
                     <div className="mx-3 mt-3 grid grid-cols-3 gap-2">
                         <button onClick={() => { if (customerPhone) { const msg = `${userData?.businessName || 'HisabKhata User'} has requested ₹${absAmount} on HisabKhata. Details: ${window.location.origin}/customer/share/${tx.customerId}`; window.location.href = `sms:${customerPhone}?body=${encodeURIComponent(msg)}`; } else alert("No phone number"); }} className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-md shadow-sm border border-gray-200/50 text-blue-600">
                             <span className="material-symbols-outlined text-[24px]">sms</span>
@@ -260,7 +254,6 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                                         });
                                         alert(`Email sent successfully to ${customerEmail}! ✅`);
                                     } catch (err) {
-                                        // Fallback to mailto
                                         window.location.href = `mailto:${customerEmail}?subject=${encodeURIComponent(`Payment Reminder - ${businessName}`)}&body=${encodeURIComponent(msg)}`;
                                     }
                                 } else alert("No email");
@@ -272,7 +265,6 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                         </button>
                     </div>
 
-                    {/* Message Preview */}
                     <div className="mx-3 mt-3 p-4 bg-white rounded-md shadow-sm border border-gray-200/50 space-y-1">
                         <p className="text-[14px] text-gray-700">You {isGave ? 'gave' : 'got'}: ₹ {absAmount.toLocaleString('en-IN')}</p>
                         <p className="text-[14px] text-gray-700">Balance: {tx.balance < 0 ? '-' : ''}(₹ {Math.abs(tx.balance || 0).toLocaleString('en-IN')})</p>
@@ -280,20 +272,17 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                         <p className="text-[13px] text-gray-500 break-all leading-tight pt-1">Details: {window.location.origin}/customer/share/{tx.customerId}</p>
                     </div>
 
-                    {/* Backup Status */}
                     <div className="mx-3 mt-3 bg-white rounded-md shadow-sm border border-gray-200/50 p-3.5 flex items-center gap-3 text-gray-500">
                         <span className="material-symbols-outlined text-[22px]">cloud_done</span>
                         <span className="text-[14px]">Entry is backed up</span>
                     </div>
 
-                    {/* Trust Badge */}
                     <div className="flex justify-center items-center gap-2 my-6 text-[#43a047]">
                         <span className="material-symbols-outlined text-[28px] font-light">verified_user</span>
                         <span className="text-[14px] font-medium tracking-wide">100% Safe and Secure</span>
                     </div>
                 </div>
 
-                {/* Footer Fixed Buttons */}
                 <div className="flex gap-3 px-3 py-3 bg-white border-t border-gray-100">
                     <button onClick={handleDelete} className="flex-1 py-2.5 border border-[#e53935] text-[#e53935] rounded font-bold text-[13px] flex items-center justify-center gap-2">
                         <span className="material-symbols-outlined text-[18px]">delete</span>

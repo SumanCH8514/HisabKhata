@@ -26,7 +26,6 @@ const BottomNav = () => {
                         to={item.to}
                         className={`relative flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${active ? 'text-blue-600' : 'text-gray-400'}`}
                     >
-                        {/* Active Pill Background */}
                         {active && (
                             <div className="absolute inset-x-4 inset-y-1.5 bg-blue-50 rounded-xl -z-10 animate-in fade-in zoom-in-95 duration-200" />
                         )}

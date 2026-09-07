@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Calendar, Camera, ChevronDown, X, Check, Plus, Loader2 } from 'lucide-react';
 import { uploadToR2, deleteFromR2, R2_FOLDERS } from '../services/r2Storage';
 import { compressImage } from '../utils/imageUtils';
+import CustomDatePicker from './CustomDatePicker';
 
 const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = 'gave', onSuccess, transaction = null }) => {
     const { currentUser } = useAuth();
@@ -43,7 +44,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         setIsUploading(true);
         try {
             for (const file of files) {
-                // Resize to max 1200x1200 and compress to 80% JPEG
                 const compressed = await compressImage(file, 1200, 1200, 0.8);
                 setAttachments(prev => [...prev, compressed]); // Immediate preview
 
@@ -79,12 +79,10 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
         try {
             const finalAmount = type === 'got' ? Math.abs(Number(amount)) : -Math.abs(Number(amount));
 
-            // Combine selected date with current time for accurate sorting/display
             const selectedDateObj = new Date(date);
             const now = new Date();
             selectedDateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
-            // Ensure any remaining base64 attachments are uploaded to R2
             const finalAttachments = [];
             for (const att of attachments) {
                 if (att && att.startsWith('data:')) {
@@ -183,7 +181,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
 
             <div className="relative w-full h-full md:max-w-md md:ml-auto bg-[#F0F2F5] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
 
-                {/* Header */}
                 <header className="bg-white px-4 py-5 flex items-start gap-4 border-b border-slate-100 shadow-sm">
                     <button
                         onClick={onClose}
@@ -203,7 +200,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                 </header>
 
                 <div className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
-                    {/* Amount Entry Section */}
                     <div className="space-y-3">
                         <label className="text-[10px] font-bold text-slate-400 ml-1 tracking-wider uppercase">Amount (₹)</label>
                         <div className="bg-white px-4 py-2 border border-slate-300 rounded-[16px] shadow-sm flex items-center focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all duration-200">
@@ -225,7 +221,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         </div>
                     </div>
 
-                    {/* Details Entry Section */}
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between ml-1">
                             <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Transaction Details (Optional)</label>
@@ -239,7 +234,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
-                            {/* Format & Structure Toolbar */}
                             <div className="px-2.5 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar text-[11px]">
                                 <button
                                     type="button"
@@ -273,24 +267,12 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         </div>
                     </div>
 
-                    {/* Date & Bills Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="relative group cursor-pointer">
-                            <input
-                                ref={dateInputRef}
-                                type="date"
-                                className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                            />
-                            <div className="bg-white px-2.5 h-12 rounded-[14px] border border-slate-200 shadow-sm flex items-center justify-between pointer-events-none group-hover:border-slate-400 transition-all duration-300">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                    <Calendar className="text-slate-500 shrink-0" size={18} />
-                                    <span className="text-[13px] font-bold text-slate-700 truncate">{formatDate(date)}</span>
-                                </div>
-                                <ChevronDown size={14} className="text-slate-400 shrink-0" />
-                            </div>
-                        </div>
+                        <CustomDatePicker
+                            value={date}
+                            onChange={(newDate) => setDate(newDate)}
+                            align="left"
+                        />
 
                         <div className="relative">
                             <input
@@ -323,7 +305,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                         </div>
                     </div>
 
-                    {/* Image Preview Grid */}
                     {(attachments.length > 0 || isUploading) && (
                         <div className="space-y-2 animate-in fade-in zoom-in duration-300">
                             <div className="flex items-center justify-between">
@@ -377,7 +358,6 @@ const TransactionDrawer = ({ isOpen, onClose, customerId, customerName, type = '
                     )}
                 </div>
 
-                {/* Fixed Footer SAVE Action */}
                 <div className="p-4 bg-[#F0F2F5] mt-auto">
                     <button
                         disabled={loading || !amount}

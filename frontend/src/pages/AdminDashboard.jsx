@@ -256,10 +256,12 @@ const AdminDashboard = () => {
         }
     };
 
-    // Analytics Calculations
+    const isTxGot = (t) => t.type === 'GOT' || (!t.type && Number(t.amount) > 0) || t.type === 'credit' || t.type === 'payment';
+    const isTxGave = (t) => t.type === 'GAVE' || (!t.type && Number(t.amount) < 0) || t.type === 'debit';
+
     const stats = useMemo(() => {
-        const totalCredit = transactions.filter(t => t.type === 'GOT').reduce((sum, t) => sum + Math.abs(t.amount), 0);
-        const totalDebit = transactions.filter(t => t.type === 'GAVE').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const totalCredit = transactions.filter(t => isTxGot(t)).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const totalDebit = transactions.filter(t => isTxGave(t)).reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
@@ -271,8 +273,8 @@ const AdminDashboard = () => {
             const dayTxs = transactions.filter(t => new Date(t.timestamp).toISOString().split('T')[0] === date);
             return {
                 date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                credit: dayTxs.filter(t => t.type === 'GOT').reduce((sum, t) => sum + Math.abs(t.amount), 0),
-                debit: dayTxs.filter(t => t.type === 'GAVE').reduce((sum, t) => sum + Math.abs(t.amount), 0)
+                credit: dayTxs.filter(t => isTxGot(t)).reduce((sum, t) => sum + Math.abs(t.amount), 0),
+                debit: dayTxs.filter(t => isTxGave(t)).reduce((sum, t) => sum + Math.abs(t.amount), 0)
             };
         });
 
@@ -478,9 +480,11 @@ const AdminDashboard = () => {
                             <span className="text-sm">Maintenance Mode</span>
                             <button
                                 onClick={() => handleToggleSetting('maintenanceMode')}
-                                className={`w-10 md:w-12 h-5 md:h-6 rounded-full transition-colors relative ${globalSettings.maintenanceMode ? 'bg-red-500' : 'bg-slate-700'}`}
+                                role="switch"
+                                aria-checked={Boolean(globalSettings.maintenanceMode)}
+                                className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out shrink-0 cursor-pointer ${globalSettings.maintenanceMode ? 'bg-red-500' : 'bg-slate-700'}`}
                             >
-                                <div className={`absolute top-0.5 md:top-1 w-4 h-4 rounded-full bg-white transition-all ${globalSettings.maintenanceMode ? 'right-0.5 md:right-1' : 'left-0.5 md:left-1'}`} />
+                                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md transform transition duration-200 ease-in-out ${globalSettings.maintenanceMode ? 'translate-x-5' : 'translate-x-0'}`} />
                             </button>
                         </div>
                     </div>
@@ -504,7 +508,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Desktop Table View */}
             <div className="hidden md:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <table className="w-full text-left">
                     <thead>
@@ -584,71 +587,106 @@ const AdminDashboard = () => {
                 </table>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-4">
-                {filteredUsers.map(user => (
-                    <div key={user.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
-                                    {user.photoURL ? (
-                                        <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
-                                    ) : (user.name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-bold text-slate-900 truncate">{user.name || 'Anonymous'}</p>
-                                    <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
-                                </div>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                                {user.role || 'user'}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center justify-between py-3 border-y border-slate-50">
-                            <div className="flex gap-4">
-                                <div className="text-center">
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Parties</p>
-                                    <p className="text-sm font-bold text-slate-900">{customers.filter(c => c.userId === user.id).length}</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Txs</p>
-                                    <p className="text-sm font-bold text-slate-900">{transactions.filter(t => t.userId === user.id).length}</p>
-                                </div>
-                            </div>
-                            <div>
-                                {user.isBlocked ? (
-                                    <span className="bg-red-50 text-red-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
-                                        <UserX size={12} /> Blocked
-                                    </span>
-                                ) : (
-                                    <span className="bg-green-50 text-green-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
-                                        <CheckCircle2 size={12} /> Active
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => handleUpdateUserStatus(user.id, !user.isBlocked)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${user.isBlocked ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-orange-100 text-orange-600'}`}
-                            >
-                                {user.isBlocked ? (
-                                    <><CheckCircle2 size={14} /> Activate</>
-                                ) : (
-                                    <><UserX size={14} /> Block</>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 text-red-600"
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
+            <div className="md:hidden space-y-3">
+                {filteredUsers.length === 0 ? (
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
+                        <Users size={32} className="mx-auto text-slate-300" />
+                        <p className="text-sm font-bold text-slate-700">No users found</p>
+                        <p className="text-xs text-slate-400">Try adjusting your search query</p>
                     </div>
-                ))}
+                ) : (
+                    filteredUsers.map(user => {
+                        const userParties = customers.filter(c => c.userId === user.id).length;
+                        const userTxs = transactions.filter(t => t.userId === user.id).length;
+                        const initialChar = (user.name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase();
+
+                        return (
+                            <div key={user.id} className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+                                <div className="flex items-center justify-between gap-2.5">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0 overflow-hidden shadow-xs ring-2 ring-blue-50">
+                                            {user.photoURL ? (
+                                                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                initialChar
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-slate-900 text-sm truncate leading-tight">{user.name || 'Anonymous'}</p>
+                                            <p className="text-xs text-slate-400 truncate mt-0.5 font-mono">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0 border ${
+                                        user.role === 'admin' 
+                                            ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    }`}>
+                                        {user.role || 'user'}
+                                    </span>
+                                </div>
+
+                                <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1.5 text-slate-600">
+                                            <span className="text-[11px] text-slate-400 font-semibold uppercase">Parties:</span>
+                                            <span className="font-bold text-slate-900">{userParties}</span>
+                                        </div>
+                                        <span className="text-slate-300">•</span>
+                                        <div className="flex items-center gap-1.5 text-slate-600">
+                                            <span className="text-[11px] text-slate-400 font-semibold uppercase">Txs:</span>
+                                            <span className="font-bold text-slate-900">{userTxs}</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {user.isBlocked ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-md text-[10px] font-bold">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                                Blocked
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-bold">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-0.5">
+                                    <button
+                                        onClick={() => handleUpdateUserStatus(user.id, !user.isBlocked)}
+                                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] border ${
+                                            user.isBlocked 
+                                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs' 
+                                                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200/90'
+                                        }`}
+                                    >
+                                        {user.isBlocked ? (
+                                            <>
+                                                <CheckCircle2 size={14} />
+                                                <span>Unblock User</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserX size={14} />
+                                                <span>Block User</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteUser(user.id)}
+                                        className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 border border-rose-200/90 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98]"
+                                        title="Delete User"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );
@@ -671,7 +709,6 @@ const AdminDashboard = () => {
 
         return (
             <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
-                {/* Header & Filter Bar */}
                 <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">Platform Transaction Audit</h3>
@@ -699,7 +736,6 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Desktop Table View */}
                 <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                     <div className="max-h-[560px] overflow-y-auto custom-scrollbar">
                         <table className="w-full text-left text-xs border-collapse">
@@ -723,6 +759,7 @@ const AdminDashboard = () => {
                                     filteredTransactions.map(tx => {
                                         const merchant = users.find(u => u.id === tx.userId);
                                         const party = customers.find(c => c.id === tx.customerId);
+                                        const isGot = isTxGot(tx);
                                         return (
                                             <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-5 py-3.5">
@@ -734,15 +771,15 @@ const AdminDashboard = () => {
                                                 </td>
                                                 <td className="px-5 py-3.5 text-center">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
-                                                        tx.type === 'GOT' 
+                                                        isGot 
                                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                                             : 'bg-rose-50 text-rose-700 border-rose-200'
                                                     }`}>
-                                                        {tx.type === 'GOT' ? 'Got (Credit)' : 'Gave (Debit)'}
+                                                        {isGot ? 'Got (Credit)' : 'Gave (Debit)'}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3.5 text-right font-mono font-semibold">
-                                                    <span className={tx.type === 'GOT' ? 'text-emerald-600' : 'text-rose-600'}>
+                                                    <span className={isGot ? 'text-emerald-600' : 'text-rose-600'}>
                                                         ₹{Math.abs(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                     </span>
                                                 </td>
@@ -758,7 +795,6 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Mobile Cards View */}
                 <div className="md:hidden space-y-3">
                     {filteredTransactions.length === 0 ? (
                         <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-400">
@@ -768,6 +804,7 @@ const AdminDashboard = () => {
                         filteredTransactions.map(tx => {
                             const merchant = users.find(u => u.id === tx.userId);
                             const party = customers.find(c => c.id === tx.customerId);
+                            const isGot = isTxGot(tx);
                             return (
                                 <div key={tx.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
                                     <div className="flex items-start justify-between gap-2">
@@ -776,15 +813,15 @@ const AdminDashboard = () => {
                                             <p className="text-[11px] text-slate-500">Merchant: {merchant?.name || 'Unknown'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`font-mono font-bold text-sm ${tx.type === 'GOT' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                            <p className={`font-mono font-bold text-sm ${isGot ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                 ₹{Math.abs(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                             </p>
                                             <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold uppercase mt-0.5 border ${
-                                                tx.type === 'GOT' 
+                                                isGot 
                                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                                     : 'bg-rose-50 text-rose-700 border-rose-200'
                                             }`}>
-                                                {tx.type === 'GOT' ? 'Credit' : 'Debit'}
+                                                {isGot ? 'Credit' : 'Debit'}
                                             </span>
                                         </div>
                                     </div>
@@ -814,7 +851,6 @@ const AdminDashboard = () => {
 
         return (
             <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
-                {/* Header & Search Bar */}
                 <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">Public Customer Share Links</h3>
@@ -832,7 +868,6 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Desktop Table View */}
                 <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                     <table className="w-full text-left text-xs border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-600">
@@ -903,7 +938,6 @@ const AdminDashboard = () => {
                     </table>
                 </div>
 
-                {/* Mobile Cards View */}
                 <div className="md:hidden space-y-3">
                     {filteredLinks.length === 0 ? (
                         <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-400">
@@ -967,7 +1001,6 @@ const AdminDashboard = () => {
 
     const renderSettings = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
-            {/* Left Column: Global Feature Toggles */}
             <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-6 flex flex-col justify-between">
                 <div>
                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 mb-4">
@@ -1003,10 +1036,12 @@ const AdminDashboard = () => {
                                 
                                 <button
                                     type="button"
+                                    role="switch"
+                                    aria-checked={Boolean(globalSettings[feature.key])}
                                     onClick={() => handleToggleSetting(feature.key)}
-                                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${globalSettings[feature.key] ? 'bg-[#0057BB]' : 'bg-slate-200'}`}
+                                    className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${globalSettings[feature.key] ? 'bg-[#0057BB]' : 'bg-slate-300'}`}
                                 >
-                                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${globalSettings[feature.key] ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md transform ring-0 transition duration-200 ease-in-out ${globalSettings[feature.key] ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </button>
                             </div>
                         ))}
@@ -1019,9 +1054,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Right Column: Email Integrations & Database Tools */}
             <div className="space-y-6">
-                {/* Email Delivery Provider Selector Card */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                         <div className="p-2 bg-[#0057BB]/10 text-[#0057BB] rounded-lg">
@@ -1034,7 +1067,6 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        {/* Option 1: Project SMTP */}
                         <div
                             onClick={() => handleSelectEmailGateway('SMTP')}
                             className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
@@ -1069,7 +1101,6 @@ const AdminDashboard = () => {
                             </p>
                         </div>
 
-                        {/* Option 2: EmailJS */}
                         <div
                             onClick={() => handleSelectEmailGateway('EMAILJS')}
                             className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
@@ -1103,16 +1134,15 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Conditional View: Project SMTP Live Tester */}
                 {(emailGateway === 'SMTP' || !emailGateway) && (
-                    <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <div className="bg-white p-4 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0 border border-emerald-100">
                                     <Server size={18} />
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900">Project SMTP — Live Gateway</h3>
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-bold text-slate-900 leading-tight">Project SMTP — Live Gateway</h3>
                                     <p className="text-[11px] text-slate-500">Backend SMTP socket delivery engine</p>
                                 </div>
                             </div>
@@ -1120,32 +1150,31 @@ const AdminDashboard = () => {
                                 type="button"
                                 onClick={handleCheckSmtpStatus}
                                 disabled={checkingSmtp}
-                                className="px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                className="self-start sm:self-auto px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
                                 title="Check Worker status"
                             >
-                                <RefreshCw size={12} className={checkingSmtp ? 'animate-spin text-[#0057BB]' : ''} />
+                                <RefreshCw size={13} className={checkingSmtp ? 'animate-spin text-blue-600' : 'text-slate-500'} />
                                 <span>{checkingSmtp ? 'Checking...' : 'Check Status'}</span>
                             </button>
                         </div>
 
-                        {/* Status / Backend Endpoint */}
-                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                            <div>
-                                <span className="text-[11px] font-semibold text-slate-500 block">Worker Endpoint</span>
-                                <span className="font-mono text-slate-800 text-[11px] break-all">{getBackendEmailUrl()}</span>
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                            <div className="min-w-0">
+                                <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Worker Endpoint</span>
+                                <span className="font-mono text-slate-800 text-[11px] sm:text-xs font-semibold break-all">{getBackendEmailUrl()}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
                                 {smtpStatus ? (
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
                                         smtpStatus.status === 'ONLINE' || smtpStatus.configured
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : 'bg-amber-100 text-amber-700'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : 'bg-amber-50 text-amber-700 border-amber-200'
                                     }`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${smtpStatus.status === 'ONLINE' || smtpStatus.configured ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                         {smtpStatus.status === 'ONLINE' ? 'SMTP Online' : (smtpStatus.configured ? 'Configured' : 'Offline / Standby')}
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-100 text-emerald-700">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                         Active Provider
                                     </span>
@@ -1153,36 +1182,35 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Test Mail Section */}
                         <div className="space-y-3 pt-1">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                     Send Test Email
                                 </label>
                                 {(currentUser?.email || userData?.email) && (
                                     <button
                                         type="button"
                                         onClick={() => setTestEmailRecipient(currentUser?.email || userData?.email || '')}
-                                        className="text-[11px] text-[#0057BB] hover:underline font-medium cursor-pointer"
+                                        className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer text-left sm:text-right truncate"
                                     >
                                         Use my email ({currentUser?.email || userData?.email})
                                     </button>
                                 )}
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2.5">
                                 <input 
                                     type="email" 
                                     value={testEmailRecipient} 
                                     onChange={(e) => setTestEmailRecipient(e.target.value)}
-                                    placeholder="Enter recipient email (e.g. yourname@gmail.com)"
-                                    className="flex-1 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-colors" 
+                                    placeholder="Enter recipient email (e.g. name@gmail.com)"
+                                    className="flex-1 bg-slate-50/80 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-mono transition-all" 
                                 />
                                 <button 
                                     type="button"
                                     onClick={handleTestSmtpEmail}
                                     disabled={testingEmail}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+                                    className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm shrink-0 cursor-pointer"
                                 >
                                     {testingEmail ? (
                                         <>
@@ -1198,9 +1226,8 @@ const AdminDashboard = () => {
                                 </button>
                             </div>
 
-                            {/* Result feedback */}
                             {emailTestResult && (
-                                <div className={`p-3 rounded-lg border text-xs flex items-start gap-2.5 transition-all ${
+                                <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
                                     emailTestResult.success 
                                         ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
                                         : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -1211,10 +1238,10 @@ const AdminDashboard = () => {
                                         <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
                                     )}
                                     <div className="space-y-0.5">
-                                        <p className="font-semibold">
+                                        <p className="font-bold">
                                             {emailTestResult.success ? 'Test Email Sent Successfully!' : 'Email Delivery Failed'}
                                         </p>
-                                        <p className="text-[11px] opacity-90">
+                                        <p className="text-[11px] opacity-90 leading-relaxed">
                                             {emailTestResult.success 
                                                 ? (emailTestResult.message || `Delivered to recipient. (Message ID: ${emailTestResult.messageId || 'OK'})`)
                                                 : (emailTestResult.error || emailTestResult.message || 'Check your SMTP credentials on Cloudflare Worker.')
@@ -1224,23 +1251,21 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[11px] text-slate-600 space-y-1">
-                                <div className="font-semibold text-slate-800 flex items-center gap-1">
-                                    <ShieldCheck size={13} className="text-[#0057BB]" />
+                            <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 text-[11px] text-slate-600 space-y-1.5">
+                                <div className="font-bold text-blue-900 flex items-center gap-1.5">
+                                    <ShieldCheck size={14} className="text-blue-600 shrink-0" />
                                     <span>Zero Frontend Secrets Exposure</span>
                                 </div>
-                                <p className="text-slate-500 leading-normal">
-                                    SMTP credentials (<code className="font-mono text-[#0057BB]">SMTP_HOST</code>, <code className="font-mono text-[#0057BB]">SMTP_PORT</code>, <code className="font-mono text-[#0057BB]">SMTP_USER</code>, <code className="font-mono text-[#0057BB]">SMTP_PASS</code>) are stored exclusively in Cloudflare Worker encrypted secrets.
+                                <p className="text-slate-500 leading-relaxed">
+                                    SMTP credentials (<code className="font-mono font-semibold text-blue-700 bg-blue-100/70 px-1 py-0.2 rounded">SMTP_HOST</code>, <code className="font-mono font-semibold text-blue-700 bg-blue-100/70 px-1 py-0.2 rounded">SMTP_PORT</code>, <code className="font-mono font-semibold text-blue-700 bg-blue-100/70 px-1 py-0.2 rounded">SMTP_USER</code>, <code className="font-mono font-semibold text-blue-700 bg-blue-100/70 px-1 py-0.2 rounded">SMTP_PASS</code>) are stored exclusively in Cloudflare Worker encrypted secrets.
                                 </p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Conditional View: EmailJS Configurations (Only shown if EmailJS is selected) */}
                 {emailGateway === 'EMAILJS' && (
                     <>
-                        {/* Primary EmailJS Gateway */}
                         <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                             <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                                 <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
@@ -1311,7 +1336,6 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Payment Verification EmailJS */}
                         <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                             <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                                 <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
@@ -1373,7 +1397,6 @@ const AdminDashboard = () => {
                     </>
                 )}
 
-                {/* Database Tools */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-slate-100 text-slate-700 rounded-lg shrink-0">
@@ -1416,7 +1439,6 @@ const AdminDashboard = () => {
 
     const renderStorage = () => (
         <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header & Overview Banner */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 md:p-6 shadow-xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
@@ -1444,7 +1466,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Folder Directory Mapping Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start gap-3">
                     <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
@@ -1480,9 +1501,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Config & Operations Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* R2 Credentials Form */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs space-y-5">
                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                         <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
@@ -1552,7 +1571,6 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Test Status Banner */}
                         {r2TestResult && (
                             <div className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2.5 ${r2TestResult.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
                                 {r2TestResult.success ? <CheckCircle size={16} className="text-emerald-600 shrink-0" /> : <AlertCircle size={16} className="text-rose-600 shrink-0" />}
@@ -1582,7 +1600,6 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Base64 to R2 Migration Engine */}
                 <div className="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-5">
                     <div>
                         <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
@@ -1599,7 +1616,6 @@ const AdminDashboard = () => {
                         </p>
                     </div>
 
-                    {/* Progress Bar */}
                     {(migrationState.isRunning || migrationState.status === 'COMPLETED' || migrationState.status === 'ERROR') && (
                         <div className="space-y-2.5 bg-slate-50 p-4 rounded-lg border border-slate-200">
                             <div className="flex justify-between items-center text-xs font-semibold">
@@ -1660,7 +1676,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Migration Logs Terminal */}
             {migrationState.logs && migrationState.logs.length > 0 && (
                 <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 text-slate-300 font-mono text-xs shadow-sm space-y-2.5">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -1687,7 +1702,6 @@ const AdminDashboard = () => {
             <Sidebar />
 
             <main className="flex-1 md:ml-[260px] flex flex-col min-w-0 relative h-screen overflow-y-auto">
-                {/* Mobile Branded Header */}
                 <AppMobileHeader 
                     rightElement={
                         <div className="w-8 h-8 rounded-full border border-blue-100 p-0.5 overflow-hidden">
@@ -1699,7 +1713,6 @@ const AdminDashboard = () => {
                         </div>
                     }
                 />
-                {/* Page Title — Compact High Fidelity Branding */}
                 <div className="bg-white border-b border-gray-200 px-6 py-2 md:py-3 flex items-center justify-between sticky top-0 md:static z-20">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-100 shrink-0">
@@ -1729,8 +1742,7 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1 pb-24 md:pb-8">
-                    {/* Compact Clean Tab Bar */}
-                    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-5 w-full overflow-x-auto scrollbar-hide border border-slate-200/80">
+                    <div className="flex gap-1.5 p-1 bg-slate-100/90 rounded-2xl mb-5 w-full overflow-x-auto custom-scrollbar border border-slate-200/80">
                         {[
                             { id: 'OVERVIEW', label: 'Stats', icon: BarChart3 },
                             { id: 'USERS', label: 'Users', icon: Users },
@@ -1745,9 +1757,9 @@ const AdminDashboard = () => {
                                     key={tab.id}
                                     type="button"
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs transition-all whitespace-nowrap flex-1 shrink-0 cursor-pointer ${active 
-                                        ? 'bg-white text-[#0057BB] shadow-xs border border-slate-200/80 font-bold' 
-                                        : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-200/60'
+                                    className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs transition-all whitespace-nowrap shrink-0 cursor-pointer ${active 
+                                        ? 'bg-white text-[#0057BB] shadow-xs border border-slate-200 font-bold' 
+                                        : 'text-slate-600 hover:text-slate-900 font-semibold hover:bg-slate-200/60'
                                     }`}
                                 >
                                     <tab.icon size={15} />

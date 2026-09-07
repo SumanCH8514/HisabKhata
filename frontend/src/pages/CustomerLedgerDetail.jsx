@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import TransactionDrawer from '../components/TransactionDrawer';
 import EntryDetailsDrawer from '../components/EntryDetailsDrawer';
 import ImportTransactionsModal from '../components/ImportTransactionsModal';
+import CustomDatePicker from '../components/CustomDatePicker';
 import { dbService } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { getFutureDateString, formatDueDate, getDueDateStatus } from '../utils/dueDateUtils';
@@ -111,7 +112,6 @@ const CustomerLedgerDetail = () => {
             <Header />
             
             <main className="ml-0 md:ml-64 pt-16 flex flex-col h-[calc(100vh-4rem)] relative">
-                {/* Party Header Section — High Fidelity */}
                 <div className="bg-white border-b border-slate-200 p-4 md:p-6 flex items-center justify-between shadow-sm sticky top-0 z-20">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate('/customers')} className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors md:hidden">
@@ -139,11 +139,9 @@ const CustomerLedgerDetail = () => {
                     </div>
                 </div>
 
-                {/* Ledger Quick Actions */}
                 <div className="bg-white px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 min-h-[46px]">
                     <div className="flex items-center gap-2 flex-wrap">
                         {customer?.dueDate ? (
-                            /* Only show due date chip when date is selected */
                             (() => {
                                 const status = getDueDateStatus(customer.dueDate);
                                 if (!status) return null;
@@ -163,7 +161,6 @@ const CustomerLedgerDetail = () => {
                                 );
                             })()
                         ) : (
-                            /* Show presets when no date is set */
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1.5 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[13px]">timer</span>
@@ -185,28 +182,29 @@ const CustomerLedgerDetail = () => {
                                         </button>
                                     ))}
 
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="date"
-                                            min={getFutureDateString(0)}
-                                            value=""
-                                            onChange={(e) => handleCustomDueDate(e.target.value)}
-                                            className="sr-only"
-                                            id="mobile-due-date-picker"
-                                        />
-                                        <span 
-                                            onClick={() => {
-                                                const el = document.getElementById('mobile-due-date-picker');
-                                                if (el && typeof el.showPicker === 'function') {
-                                                    el.showPicker();
-                                                }
-                                            }}
-                                            className="px-2.5 py-1 bg-slate-100 rounded-md text-[11px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-200 flex items-center gap-1 cursor-pointer shadow-sm"
-                                        >
-                                            <span className="material-symbols-outlined text-[13px]">calendar_month</span>
-                                            Date
-                                        </span>
-                                    </label>
+                                    <CustomDatePicker
+                                        value={customer?.dueDate || ''}
+                                        onChange={handleCustomDueDate}
+                                        minDate={getFutureDateString(0)}
+                                        placement="bottom"
+                                        align="right"
+                                        presets={[
+                                            { label: 'Today', value: getFutureDateString(0) },
+                                            { label: '+7 Days', value: getFutureDateString(7) },
+                                            { label: '+14 Days', value: getFutureDateString(14) },
+                                            { label: '+30 Days', value: getFutureDateString(30) }
+                                        ]}
+                                        renderTrigger={({ open }) => (
+                                            <button
+                                                type="button"
+                                                onClick={open}
+                                                className="px-2.5 py-1 bg-slate-100 rounded-md text-[11px] font-bold text-slate-700 border border-slate-200 hover:bg-slate-200 flex items-center gap-1 cursor-pointer shadow-sm"
+                                            >
+                                                <span className="material-symbols-outlined text-[13px]">calendar_month</span>
+                                                Date
+                                            </button>
+                                        )}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -231,7 +229,6 @@ const CustomerLedgerDetail = () => {
                     </div>
                 </div>
 
-                {/* Ledger Table Section */}
                 <div className="flex-1 overflow-hidden flex flex-col">
                     <div className="bg-slate-50 border-b border-slate-200 px-4 py-2">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Entries</span>
@@ -272,7 +269,6 @@ const CustomerLedgerDetail = () => {
                     </div>
                 </div>
 
-                {/* Bottom Entry Buttons — Fixed with shadow */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 grid grid-cols-2 gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] z-30">
                     <button 
                         onClick={() => handleAddEntry('gave')}
@@ -329,17 +325,14 @@ const CustomerLedgerDetail = () => {
                 onClose={() => setIsImportModalOpen(false)}
                 customer={customer}
                 onSuccess={() => {
-                    // Realtime updates will automatically refresh ledger transactions
                 }}
             />
 
-            {/* Image Preview Modal Gallery */}
             {previewImages.length > 0 && (
                 <div 
                     className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
                     onClick={() => setPreviewImages([])}
                 >
-                    {/* Top bar */}
                     <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10 max-w-4xl mx-auto">
                         <div className="text-white text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
                             {previewImages.length > 1 ? `${previewIndex + 1} / ${previewImages.length} Bills` : 'Bill Attachment'}
@@ -352,7 +345,6 @@ const CustomerLedgerDetail = () => {
                         </button>
                     </div>
 
-                    {/* Main image with left/right buttons */}
                     <div className="relative max-w-4xl max-h-[75vh] flex items-center justify-center">
                         {previewImages.length > 1 && (
                             <button
@@ -386,7 +378,6 @@ const CustomerLedgerDetail = () => {
                         )}
                     </div>
 
-                    {/* Bottom thumbnail strip */}
                     {previewImages.length > 1 && (
                         <div 
                             className="mt-4 flex gap-2 overflow-x-auto max-w-full p-2 bg-black/40 rounded-2xl backdrop-blur-md z-10 custom-scrollbar"

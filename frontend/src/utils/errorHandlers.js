@@ -1,11 +1,7 @@
-/**
- * Maps Firebase Error Codes to user-friendly messages.
- */
 export const getFirebaseErrorMessage = (error) => {
   if (!error || !error.code) return error?.message || 'An unexpected error occurred.';
 
   switch (error.code) {
-    // Auth Errors
     case 'auth/user-not-found':
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
@@ -23,7 +19,6 @@ export const getFirebaseErrorMessage = (error) => {
     case 'auth/popup-closed-by-user':
       return 'Login cancelled. Please try again.';
       
-    // Database Errors
     case 'permission-denied':
       return 'You do not have permission to perform this action.';
     case 'unavailable':

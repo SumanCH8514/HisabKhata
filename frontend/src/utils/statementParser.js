@@ -2,7 +2,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import * as XLSX from 'xlsx';
 
-// Set worker source for Vite
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const MONTH_MAP = {
@@ -20,14 +19,10 @@ const MONTH_MAP = {
     dec: '12', december: '12'
 };
 
-/**
- * Standardize dates into YYYY-MM-DD
- */
 export const normalizeDate = (rawDate, fallbackYear = new Date().getFullYear()) => {
     if (!rawDate) return new Date().toISOString().split('T')[0];
     const cleaned = rawDate.trim().replace(/,/g, '');
 
-    // Format: 05 Aug 2026 or 05 August 2026
     const dayMonthYearRegex = /^(\d{1,2})\s+([A-Za-z]+)(?:\s+(\d{2,4}))?$/;
     const dmyMatch = cleaned.match(dayMonthYearRegex);
     if (dmyMatch) {
@@ -39,7 +34,6 @@ export const normalizeDate = (rawDate, fallbackYear = new Date().getFullYear()) 
         return `${year}-${month}-${day}`;
     }
 
-    // Format: DD/MM/YYYY or DD-MM-YYYY
     const slashRegex = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/;
     const slashMatch = cleaned.match(slashRegex);
     if (slashMatch) {
@@ -50,14 +44,12 @@ export const normalizeDate = (rawDate, fallbackYear = new Date().getFullYear()) 
         return `${year}-${month}-${day}`;
     }
 
-    // Format: YYYY-MM-DD
     const isoRegex = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
     const isoMatch = cleaned.match(isoRegex);
     if (isoMatch) {
         return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
     }
 
-    // Fallback Date object parsing
     const parsed = new Date(cleaned);
     if (!isNaN(parsed.getTime())) {
         return parsed.toISOString().split('T')[0];
@@ -66,9 +58,6 @@ export const normalizeDate = (rawDate, fallbackYear = new Date().getFullYear()) 
     return new Date().toISOString().split('T')[0];
 };
 
-/**
- * Extract structured rows from Khatabook PDF using text coordinates
- */
 export const parseKhatabookPdf = async (file) => {
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -87,12 +76,10 @@ export const parseKhatabookPdf = async (file) => {
         entriesCount: 0
     };
 
-    // Extract all text elements with coordinates page by page
     for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
         const page = await pdfDoc.getPage(pageNum);
         const textContent = await page.getTextContent();
         
-        // Items on this page
         const pageItems = textContent.items.map(item => ({
             text: item.str.trim(),
             x: Math.round(item.transform[4]),
@@ -105,11 +92,9 @@ export const parseKhatabookPdf = async (file) => {
         fullTextItems.push({ pageNum, items: pageItems });
     }
 
-    // Combine raw strings for metadata discovery
     const rawAllStrings = fullTextItems.flatMap(p => p.items.map(i => i.text));
     const fullTextJoined = rawAllStrings.join(' ');
 
-    // 1. Discover Statement Year & Date Range
     const dateRangeMatch = fullTextJoined.match(/\((\d{1,2}\s+[A-Za-z]+(?:\s+\d{4})?)\s*-\s*(\d{1,2}\s+[A-Za-z]+\s*(\d{4}))\)/i);
     if (dateRangeMatch) {
         headerMeta.dateRange = `${dateRangeMatch[1]} - ${dateRangeMatch[2]}`;
@@ -123,19 +108,16 @@ export const parseKhatabookPdf = async (file) => {
         }
     }
 
-    // 2. Discover Phone Number
     const phoneMatch = fullTextJoined.match(/Phone Number:\s*(\+?\d[\d\s-]{8,15})/i);
     if (phoneMatch) {
         headerMeta.phone = phoneMatch[1].replace(/[^\d+]/g, '');
     }
 
-    // 3. Discover Statement Title / Party Name
     const titleMatch = fullTextJoined.match(/([A-Za-z0-9\s._-]+Statement)/i);
     if (titleMatch) {
         headerMeta.title = titleMatch[1].replace(/Statement/i, '').trim();
     }
 
-    // 4. Discover Totals from Header Summary
     const totalDebitMatch = fullTextJoined.match(/Total Debit\(-?\)\s*₹?\s*([\d,]+\.?\d*)/i);
     if (totalDebitMatch) {
         headerMeta.totalDebit = parseFloat(totalDebitMatch[1].replace(/,/g, '')) || 0;
@@ -158,11 +140,9 @@ export const parseKhatabookPdf = async (file) => {
         headerMeta.netBalance = isCr ? amount : -amount;
     }
 
-    // 5. Parse Rows page by page
     const transactions = [];
 
     for (const { pageNum, items } of fullTextItems) {
-        // Group items by line (Y coordinate, tolerance ~ 4 units)
         const linesMap = new Map();
         for (const item of items) {
             let foundKey = null;
@@ -179,7 +159,6 @@ export const parseKhatabookPdf = async (file) => {
             }
         }
 
-        // Sort lines from top to bottom (Y descending in PDF coordinate system)
         const sortedYKeys = Array.from(linesMap.keys()).sort((a, b) => b - a);
 
         let colXDate = null;
@@ -192,7 +171,6 @@ export const parseKhatabookPdf = async (file) => {
             const lineItems = linesMap.get(y).sort((a, b) => a.x - b.x);
             const lineText = lineItems.map(i => i.text).join(' ');
 
-            // Check if this is the table header line
             if (lineText.includes('Date') && lineText.includes('Debit') && lineText.includes('Credit')) {
                 for (const item of lineItems) {
                     const t = item.text.toLowerCase();
@@ -205,7 +183,6 @@ export const parseKhatabookPdf = async (file) => {
                 continue;
             }
 
-            // Skip non-transaction headers, footers & branding
             if (
                 lineText.includes('Grand Total') ||
                 lineText.includes('Report Generated') ||
@@ -222,11 +199,9 @@ export const parseKhatabookPdf = async (file) => {
                 continue;
             }
 
-            // A valid transaction row begins with a date: e.g. "05 Aug" or "13 Aug" or "05 August 2026"
             const firstItem = lineItems[0];
             const dateRegex = /^(\d{1,2})\s+([A-Za-z]{3,9})(?:\s+(\d{4}))?$/;
             
-            // Check if first item or combined first 2 items form a date
             let rowDate = null;
             let itemIndexStart = 1;
 
@@ -245,11 +220,9 @@ export const parseKhatabookPdf = async (file) => {
 
             const normalizedDate = normalizeDate(rowDate, statementYear);
 
-            // Extract the remaining elements: details, debit, credit, balance
             const remainingItems = lineItems.slice(itemIndexStart);
             if (remainingItems.length === 0) continue;
 
-            // Look for numeric amounts and description
             let descriptionParts = [];
             let debitAmount = null;
             let creditAmount = null;
@@ -263,13 +236,11 @@ export const parseKhatabookPdf = async (file) => {
                     const val = parseFloat(numMatch[1]);
                     const suffix = numMatch[3] ? numMatch[3].toUpperCase() : '';
 
-                    // If it has Dr or Cr suffix, it's the balance column
                     if (suffix || (colXBalance && Math.abs(item.x - colXBalance) < 40)) {
                         rowBalance = suffix === 'CR' ? val : -val;
                         continue;
                     }
 
-                    // Check column position against header if available
                     if (colXDebit && colXCredit) {
                         const distToDebit = Math.abs(item.x - colXDebit);
                         const distToCredit = Math.abs(item.x - colXCredit);
@@ -281,7 +252,6 @@ export const parseKhatabookPdf = async (file) => {
                             descriptionParts.push(item.text);
                         }
                     } else {
-                        // Fallback positional heuristic:
                         if (debitAmount === null && creditAmount === null) {
                             if (item.x < (colXBalance || 500)) {
                                 debitAmount = val;
@@ -332,9 +302,6 @@ export const parseKhatabookPdf = async (file) => {
     };
 };
 
-/**
- * Parse XLSX or CSV statement
- */
 export const parseSpreadsheetStatement = async (file) => {
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data, { type: 'array', cellDates: true });
@@ -441,9 +408,6 @@ export const parseSpreadsheetStatement = async (file) => {
     };
 };
 
-/**
- * Universal statement file parser entry point
- */
 export const parseStatementFile = async (file) => {
     const extension = file.name.split('.').pop().toLowerCase();
     if (extension === 'pdf') {

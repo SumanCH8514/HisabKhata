@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService, db, dbService } from '../services/firebase';
-import { ref, get } from 'firebase/database';
+import { authService, dbService } from '../services/firebase';
 
 const AuthContext = createContext();
 
@@ -12,9 +11,9 @@ export const AuthProvider = ({ children }) => {
     const [globalSettings, setGlobalSettings] = useState({});
     const [loading, setLoading] = useState(true);
     const [userDataLoading, setUserDataLoading] = useState(false);
+    const [isSecurityVerified, setIsSecurityVerified] = useState(false);
 
     useEffect(() => {
-        // Listen to global settings
         const unsubSettings = dbService.listenGlobalSettings((settings) => {
             setGlobalSettings(settings);
         });
@@ -22,20 +21,47 @@ export const AuthProvider = ({ children }) => {
         let unsubUser = null;
 
         const unsubscribe = authService.onAuthStateChanged(async (user) => {
+            setCurrentUser(user);
             if (user) {
                 setUserDataLoading(true);
-                // Listen to user profile changes in real-time
+                const isSessionVerified = sessionStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true';
+
+                let initialLoadDone = false;
+                const safetyTimer = setTimeout(() => {
+                    if (!initialLoadDone) {
+                        initialLoadDone = true;
+                        setUserDataLoading(false);
+                        setLoading(false);
+                    }
+                }, 2000);
+
                 unsubUser = dbService.listenToUserProfile(user.uid, (data) => {
                     setUserData(data);
                     setUserDataLoading(false);
+
+                    const hasEmailOtp = data?.emailOtpLogin === true || data?.preferences?.emailOtpLogin === true;
+                    const has2Fa = (data?.twoFactorAuth === true || data?.preferences?.twoFactorAuth === true) && Boolean(data?.twoFactorSecret);
+                    const sessionOk = sessionStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true';
+
+                    if (hasEmailOtp || has2Fa) {
+                        setIsSecurityVerified(sessionOk);
+                    } else {
+                        setIsSecurityVerified(true);
+                    }
+
+                    if (!initialLoadDone) {
+                        initialLoadDone = true;
+                        clearTimeout(safetyTimer);
+                        setLoading(false);
+                    }
                 });
             } else {
                 if (typeof unsubUser === 'function') unsubUser();
                 setUserData(null);
                 setUserDataLoading(false);
+                setIsSecurityVerified(true);
+                setLoading(false);
             }
-            setCurrentUser(user);
-            setLoading(false);
         });
 
         return () => {
@@ -45,15 +71,32 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
+    const markSecurityVerified = (uid) => {
+        const targetUid = uid || currentUser?.uid;
+        if (targetUid) {
+            sessionStorage.setItem(`hk_auth_verified_${targetUid}`, 'true');
+        }
+        setIsSecurityVerified(true);
+    };
+
     const login = (email, password) => {
         return authService.login(email, password);
     };
 
-    const register = (name, email, password, phone) => {
-        return authService.register(name, email, password, phone);
+    const register = async (name, email, password, phone) => {
+        const res = await authService.register(name, email, password, phone);
+        if (res?.user?.uid) {
+            sessionStorage.setItem(`hk_auth_verified_${res.user.uid}`, 'true');
+            setIsSecurityVerified(true);
+        }
+        return res;
     };
 
     const logout = () => {
+        if (currentUser?.uid) {
+            sessionStorage.removeItem(`hk_auth_verified_${currentUser.uid}`);
+        }
+        setIsSecurityVerified(false);
         return authService.logout();
     };
 
@@ -62,6 +105,8 @@ export const AuthProvider = ({ children }) => {
         userData,
         userDataLoading,
         globalSettings,
+        isSecurityVerified,
+        markSecurityVerified,
         isAdmin: userData?.role === 'admin',
         isBlocked: userData?.isBlocked === true,
         login,
@@ -72,9 +117,17 @@ export const AuthProvider = ({ children }) => {
         logout
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+                <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#0057BB] border-t-transparent"></div>
+            </div>
+        );
+    }
+
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

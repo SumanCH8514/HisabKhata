@@ -41,7 +41,6 @@ const MobileDrawer = ({ isOpen, onClose }) => {
         <div className="fixed inset-0 z-[100] flex md:hidden">
             <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
             <aside className="relative w-64 h-full flex flex-col border-r border-[#1e2d42]" style={{ backgroundColor: '#0D1726' }}>
-                {/* Logo */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e2d42]">
                     <div className="flex items-center gap-2">
                         <span className="text-white font-bold text-lg tracking-tight">HisabKhata</span>
@@ -52,7 +51,6 @@ const MobileDrawer = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                {/* User profile */}
                 <div className="px-4 py-4 border-b border-[#1e2d42]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold overflow-hidden">
@@ -70,7 +68,6 @@ const MobileDrawer = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-                {/* Nav */}
                 <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto custom-scrollbar">
                     <p className="text-[#6b7c8d] text-[10px] font-semibold uppercase tracking-widest px-2 mb-2">Ledger Management</p>
                     {menuItems.map(item => (
@@ -90,7 +87,6 @@ const MobileDrawer = ({ isOpen, onClose }) => {
                     ))}
                 </nav>
 
-                {/* Logout */}
                 <div className="px-3 pb-4 border-t border-[#1e2d42] pt-3">
                     <button
                         onClick={handleLogout}

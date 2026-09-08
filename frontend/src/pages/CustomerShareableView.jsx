@@ -17,8 +17,8 @@ const CustomerShareableView = () => {
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, step: 'amount', customAmount: '', transactionId: '', screenshot: '', isSubmitting: false });
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [copiedUpi, setCopiedUpi] = useState(false);
-    const [activeMethodTab, setActiveMethodTab] = useState('upi'); // 'upi' | 'qr' | 'bank' | 'copy'
-    const [copiedField, setCopiedField] = useState(''); // track which field was copied
+    const [activeMethodTab, setActiveMethodTab] = useState('upi');
+    const [copiedField, setCopiedField] = useState('');
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -318,11 +318,11 @@ const CustomerShareableView = () => {
         const doc = new jsPDF();
 
         doc.setFontSize(24);
-        doc.setTextColor(0, 87, 187); // #0057BB
+        doc.setTextColor(0, 87, 187);
         doc.text("HisabKhata", 14, 20);
 
         doc.setFontSize(14);
-        doc.setTextColor(255, 107, 0); // #FF6B00
+        doc.setTextColor(255, 107, 0);
         doc.text("PRO", 62, 20);
 
         doc.setFontSize(8);
@@ -339,7 +339,7 @@ const CustomerShareableView = () => {
             doc.setTextColor(100);
 
             const nameLabel = "Merchant Name: ";
-            const nameVal = cleanText(owner.name || 'HisabKhata Merchant');
+            const nameVal = cleanText(owner.businessName || owner.shopName || owner.business || owner.name || 'HisabKhata Merchant');
             doc.text(nameLabel + nameVal, 196, 20, { align: 'right' });
             doc.setFillColor(0, 87, 187);
             doc.circle(196 - doc.getTextWidth(nameLabel + nameVal) - 3, 19.2, 0.8, 'F');
@@ -356,8 +356,8 @@ const CustomerShareableView = () => {
         doc.setDrawColor(241, 245, 249);
         doc.line(14, 45, 196, 45);
 
-        doc.setDrawColor(226, 232, 240); // #E2E8F0
-        doc.setFillColor(248, 250, 252); // #F8FAFC
+        doc.setDrawColor(226, 232, 240);
+        doc.setFillColor(248, 250, 252);
         doc.roundedRect(14, 52, 58, 22, 3, 3, 'FD');
         doc.roundedRect(77, 52, 58, 22, 3, 3, 'FD');
         doc.roundedRect(140, 52, 56, 22, 3, 3, 'FD');
@@ -369,9 +369,9 @@ const CustomerShareableView = () => {
         doc.text("NET BALANCE", 144, 60);
 
         doc.setFontSize(12);
-        doc.setTextColor(239, 68, 68); // Red
+        doc.setTextColor(239, 68, 68);
         doc.text(`Rs. ${totalGave}`, 18, 68);
-        doc.setTextColor(34, 197, 94); // Green
+        doc.setTextColor(34, 197, 94);
         doc.text(`Rs. ${totalGot}`, 81, 68);
         doc.setTextColor(balance < 0 ? 239 : 34, balance < 0 ? 68 : 197, balance < 0 ? 68 : 94);
         doc.text(`Rs. ${balanceAbsolute}`, 144, 68);
@@ -747,7 +747,7 @@ const CustomerShareableView = () => {
                                             {paymentModal.step === 'no_upi' && 'Payment Options'}
                                             {paymentModal.step === 'success' && 'Payment Submitted'}
                                         </h2>
-                                        <p className="text-[10px] text-slate-400 font-medium">To {owner?.name || 'Merchant'}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">To {owner?.businessName || owner?.shopName || owner?.business || owner?.name || 'Merchant'}</p>
                                     </div>
                                 </div>
                                 <button
@@ -784,7 +784,7 @@ const CustomerShareableView = () => {
                                             className="inline-flex items-center justify-center gap-2 w-full py-3 bg-[#0057BB] text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20"
                                         >
                                             <span className="material-symbols-outlined text-[18px]">call</span>
-                                            Call {owner.name || 'Merchant'} ({owner.phone})
+                                            Call {owner.businessName || owner.shopName || owner.business || owner.name || 'Merchant'} ({owner.phone})
                                         </a>
                                     )}
                                 </div>
@@ -858,7 +858,7 @@ const CustomerShareableView = () => {
                                 <div className="space-y-4">
                                     <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-2xl flex items-center justify-between">
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Paying To: {owner?.name || 'Merchant'}</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Paying To: {owner?.businessName || owner?.shopName || owner?.business || owner?.name || 'Merchant'}</p>
                                             <h3 className="text-2xl font-black text-slate-900 mt-0.5">₹{paymentAmount.toLocaleString('en-IN')}</h3>
                                         </div>
                                         <button
@@ -1092,7 +1092,7 @@ const CustomerShareableView = () => {
 
                                             <div>
                                                 <span className="text-[10px] font-semibold text-slate-400 uppercase">Beneficiary Name</span>
-                                                <p className="text-xs font-bold text-slate-900 mt-0.5">{owner?.name || 'Account Holder'}</p>
+                                                <p className="text-xs font-bold text-slate-900 mt-0.5">{owner?.businessName || owner?.shopName || owner?.name || 'Account Holder'}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1116,7 +1116,7 @@ const CustomerShareableView = () => {
                                             <span className="text-[10px] font-bold uppercase text-slate-400">Payment Amount</span>
                                             <p className="text-lg font-bold text-slate-800">₹{paymentAmount.toLocaleString('en-IN')}</p>
                                         </div>
-                                        <span className="text-xs font-semibold text-slate-500">To: {owner?.name || 'Merchant'}</span>
+                                        <span className="text-xs font-semibold text-slate-500">To: {owner?.businessName || owner?.shopName || owner?.business || owner?.name || 'Merchant'}</span>
                                     </div>
 
                                     <div>
@@ -1358,7 +1358,7 @@ const CustomerShareableView = () => {
                         <a
                             href={`tel:${owner.phone}`}
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
-                            title={`Call ${owner.name || 'Merchant'}`}
+                            title={`Call ${owner.businessName || owner.shopName || owner.business || owner.name || 'Merchant'}`}
                         >
                             <span className="material-symbols-outlined text-[18px]">call</span>
                             <span>{owner.phone}</span>
@@ -1492,7 +1492,7 @@ const CustomerShareableView = () => {
                             <span className="material-symbols-outlined text-slate-400 text-[16px]">verified</span>
                             <span className="font-semibold text-slate-700 tracking-wide uppercase text-[10px]">Verified Digital Statement</span>
                             <span className="text-slate-300">•</span>
-                            <span>Ref: <strong className="font-mono text-slate-700">HK-{(id || '').substring(0, 8).toUpperCase()}</strong></span>
+                            <span>Ref: <strong className="font-mono text-slate-700">HK-{(id || '').replace(/^[^a-zA-Z0-9]+/, '').substring(0, 8).toUpperCase()}</strong></span>
                         </div>
                         <div>
                             <span>Generated: <strong className="text-slate-700">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></span>
@@ -1532,7 +1532,7 @@ const CustomerShareableView = () => {
                                     </div>
                                     {owner && (
                                         <p className="text-[11px] text-slate-400 font-medium pt-0.5">
-                                            Issued by <span className="font-semibold text-slate-700">{owner.name || 'Merchant'}</span>{owner.phone ? ` • ${owner.phone}` : ''}
+                                            Issued by <span className="font-semibold text-slate-700">{owner.businessName || owner.shopName || owner.business || owner.name || 'Merchant'}</span>{owner.phone ? ` • ${owner.phone}` : ''}
                                         </p>
                                     )}
                                 </div>

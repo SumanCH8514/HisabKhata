@@ -32,6 +32,8 @@ export const sendEmailViaBackend = async (emailParams) => {
             merchantPhone: emailParams.merchant_phone || emailParams.phone || emailParams.merchantPhone,
             amount: emailParams.amount != null ? emailParams.amount : emailParams.transaction_amount,
             balance: emailParams.balance != null ? emailParams.balance : emailParams.current_balance,
+            isDebit: emailParams.isDebit != null ? emailParams.isDebit : (emailParams.is_debit != null ? emailParams.is_debit : (emailParams.is_due != null ? emailParams.is_due : emailParams.isDue)),
+            isDue: emailParams.isDue != null ? emailParams.isDue : (emailParams.is_due != null ? emailParams.is_due : (emailParams.is_debit != null ? emailParams.is_debit : emailParams.isDebit)),
             txType: emailParams.tx_type || emailParams.txType,
             type: emailParams.type || emailParams.template || emailParams.tx_type || emailParams.txType,
             template: emailParams.template || emailParams.type,

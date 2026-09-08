@@ -3,8 +3,44 @@ import { APP_HOME_URL, renderHeader, renderFooter, wrapHtmlDoc } from './base.js
 export function renderTransactionTemplate(data = {}) {
   const isGave = data.txType === 'Payment Requested' || data.txType === 'GAVE' || data.txType === 'Credit Given' || data.txType === 'credit' || (data.amount != null && Number(data.amount) < 0);
   const absAmount = data.amount != null ? Math.abs(Number(data.amount)).toLocaleString('en-IN') : '0';
-  const absBalance = data.balance != null ? Math.abs(Number(data.balance)).toLocaleString('en-IN') : absAmount;
-  const isBalanceDebit = data.balance != null ? Number(data.balance) < 0 : isGave;
+  const numBalance = data.balance != null ? Number(data.balance) : (data.current_balance != null ? Number(data.current_balance) : null);
+  let isBalanceDebit = false;
+  let absBalance = '0';
+  let balanceSuffix = '';
+  let balanceColor = '#16a34a';
+
+  if (data.isDebit === true || data.is_debit === true || data.isDue === true || data.is_due === true || data.isReceivable === true || data.balance_type === 'DEBIT' || data.balanceType === 'DEBIT') {
+    isBalanceDebit = true;
+    absBalance = numBalance != null && !isNaN(numBalance) ? Math.abs(numBalance).toLocaleString('en-IN') : absAmount;
+    balanceSuffix = '(Dr / Due)';
+    balanceColor = '#dc2626';
+  } else if (data.isCredit === true || data.is_credit === true || data.isAdvance === true || data.balance_type === 'CREDIT' || data.balanceType === 'CREDIT') {
+    isBalanceDebit = false;
+    absBalance = numBalance != null && !isNaN(numBalance) ? Math.abs(numBalance).toLocaleString('en-IN') : absAmount;
+    balanceSuffix = '(Cr / Advance)';
+    balanceColor = '#16a34a';
+  } else if (numBalance != null && !isNaN(numBalance)) {
+    absBalance = Math.abs(numBalance).toLocaleString('en-IN');
+    if (numBalance < 0) {
+      isBalanceDebit = true;
+      balanceSuffix = '(Dr / Due)';
+      balanceColor = '#dc2626';
+    } else if (numBalance > 0) {
+      isBalanceDebit = false;
+      balanceSuffix = '(Cr / Advance)';
+      balanceColor = '#16a34a';
+    } else {
+      isBalanceDebit = false;
+      balanceSuffix = '(Settled)';
+      balanceColor = '#64748b';
+    }
+  } else {
+    absBalance = absAmount;
+    isBalanceDebit = isGave;
+    balanceSuffix = isGave ? '(Dr / Due)' : '(Cr / Advance)';
+    balanceColor = isGave ? '#dc2626' : '#16a34a';
+  }
+
   const merchant = data.merchantName || data.businessName || data.merchant_name || data.business_name || 'HisabKhata Merchant';
   const customer = data.customerName || data.customer_name || data.toName || data.to_name || 'Valued Customer';
   const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -56,7 +92,7 @@ export function renderTransactionTemplate(data = {}) {
               Current Net Balance:
             </td>
             <td align="right" style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #0f172a; font-weight: 700;">
-              &#8377;${absBalance} ${isBalanceDebit ? '(Dr / Due)' : '(Cr / Advance)'}
+              &#8377;${absBalance} <span style="color: ${balanceColor}; font-weight: 700;">${balanceSuffix}</span>
             </td>
           </tr>
           <tr>

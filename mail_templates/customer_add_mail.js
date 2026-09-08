@@ -1,9 +1,9 @@
 import { APP_HOME_URL, renderHeader, renderFooter, wrapHtmlDoc } from './base.js';
 
 export function renderCustomerAddedTemplate(data = {}) {
-  const customer = data.customerName || data.toName || 'Valued Customer';
-  const merchant = data.merchantName || 'Your Merchant';
-  const actionUrl = data.actionUrl || APP_HOME_URL;
+  const customer = data.customerName || data.customer_name || data.toName || data.to_name || 'Valued Customer';
+  const merchant = data.merchantName || data.businessName || data.merchant_name || data.business_name || 'Your Merchant';
+  const actionUrl = data.actionUrl || data.action_url || APP_HOME_URL;
 
   const bodyContent = `
     ${renderHeader('Digital Account Advisory')}

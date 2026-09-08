@@ -1,8 +1,8 @@
 import { APP_HOME_URL, renderHeader, renderFooter, wrapHtmlDoc } from './base.js';
 
 export function renderPaymentVerificationTemplate(data = {}) {
-  const customer = data.customerName || 'Customer';
-  const merchant = data.merchantName || 'Merchant';
+  const customer = data.customerName || data.customer_name || data.toName || data.to_name || 'Customer';
+  const merchant = data.merchantName || data.businessName || data.merchant_name || data.business_name || 'Merchant';
   const amount = data.amount != null ? Math.abs(Number(data.amount)).toLocaleString('en-IN') : '0';
   const txRef = data.transactionId || data.utr || 'Not Provided';
   const actionUrl = data.actionUrl || `${APP_HOME_URL}admin`;

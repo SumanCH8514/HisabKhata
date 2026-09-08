@@ -1,11 +1,11 @@
 import { APP_HOME_URL, renderHeader, renderFooter, wrapHtmlDoc } from './base.js';
 
 export function renderPaymentReminderTemplate(data = {}) {
-  const customer = data.customerName || 'Valued Customer';
-  const merchant = data.merchantName || 'Your Merchant';
+  const customer = data.customerName || data.customer_name || data.toName || data.to_name || 'Valued Customer';
+  const merchant = data.merchantName || data.businessName || data.merchant_name || data.business_name || 'Your Merchant';
   const balance = data.balance != null ? Math.abs(Number(data.balance)).toLocaleString('en-IN') : '0';
-  const dueDate = data.dueDate || '';
-  const actionUrl = data.actionUrl || APP_HOME_URL;
+  const dueDate = data.dueDate || data.due_date || '';
+  const actionUrl = data.actionUrl || data.action_url || APP_HOME_URL;
 
   const bodyContent = `
     ${renderHeader('Payment Settlement Reminder')}

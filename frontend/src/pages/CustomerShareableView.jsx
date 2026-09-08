@@ -667,7 +667,7 @@ const CustomerShareableView = () => {
                     to_email: owner.email,
                     to_name: owner.name,
                     customer_name: customer.name,
-                    merchant_name: owner.name,
+                    merchant_name: owner.businessName || owner.shopName || owner.business || owner.name || 'Merchant',
                     amount: paymentAmount,
                     balance: Math.abs(balance),
                     transaction_id: paymentModal.transactionId || 'Not Provided',

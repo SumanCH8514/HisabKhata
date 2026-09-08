@@ -182,13 +182,15 @@ export const dbService = {
       try {
         const userSnap = await get(ref(db, `users/${userId}`));
         const merchant = userSnap.val() || {};
+        const merchantBusinessName = merchant.businessName || merchant.shopName || merchant.business || merchant.name || 'HisabKhata Merchant';
+        const merchantPhone = merchant.phone || merchant.mobile || '';
         await sendEmailNotification({
           to_email: newCustomer.email,
           to_name: newCustomer.name,
           subject: 'New Ledger Created - Track your balance live on HisabKhata 🛡️',
-          message: `You have been added as a customer on HisabKhata by ${merchant.name || 'a merchant'} (Phone: ${merchant.phone || 'N/A'}).`,
-          merchant_name: merchant.name,
-          merchant_phone: merchant.phone || 'N/A',
+          message: `You have been added as a customer on HisabKhata by ${merchantBusinessName} (Phone: ${merchantPhone || 'N/A'}).`,
+          merchant_name: merchantBusinessName,
+          merchant_phone: merchantPhone || 'N/A',
           action_url: `https://hisabkhata.sumanonline.com/customer/share/${customerRef.key}`,
           type: 'CUSTOMER_ADDED'
         });
@@ -325,17 +327,22 @@ export const dbService = {
         const typeStr = transactionData.type === 'GOT' ? 'Payment Received' : 'Credit Given';
         const userSnap = await get(ref(db, `users/${userId}`));
         const merchant = userSnap.val() || {};
+        const merchantBusinessName = merchant.businessName || merchant.shopName || merchant.business || merchant.name || 'HisabKhata Merchant';
+        const merchantPhone = merchant.phone || merchant.mobile || '';
+        const absAmt = Math.abs(transactionData.amount);
 
         await sendEmailNotification({
           to_email: customerEmail,
           to_name: customerName,
-          subject: `Transaction Alert: ₹${Math.abs(transactionData.amount)} - HisabKhata`,
-          message: `A new transaction has been recorded on your account.\nType: ${typeStr}\nAmount: ₹${Math.abs(transactionData.amount)}\nNote: ${transactionData.description || 'N/A'}\nTotal Balance: ₹${Math.abs(newBalance)}`,
-          merchant_name: merchant.name || 'HisabKhata Merchant',
-          merchant_phone: merchant.phone || merchant.mobile || 'N/A',
-          amount: Math.abs(transactionData.amount),
+          customer_name: customerName,
+          subject: `Transaction Alert: ₹${absAmt} - ${merchantBusinessName}`,
+          message: `A new transaction amount of ₹${absAmt} has been recorded on your account. Please check the details below:`,
+          merchant_name: merchantBusinessName,
+          merchant_phone: merchantPhone,
+          amount: absAmt,
           balance: Math.abs(newBalance),
           tx_type: typeStr,
+          description: transactionData.description || '',
           action_url: `https://hisabkhata.sumanonline.com/customer/share/${customerId}`,
           type: 'TRANSACTION'
         });

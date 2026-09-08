@@ -24,7 +24,7 @@ import AppMobileHeader from '../components/AppMobileHeader';
 const PaymentVerification = () => {
     const [searchParams] = useSearchParams();
     const id = searchParams.get('id');
-    const { currentUser } = useAuth();
+    const { currentUser, userData } = useAuth();
     const navigate = useNavigate();
     
     const [pendingPayment, setPendingPayment] = useState(null);
@@ -120,7 +120,7 @@ const PaymentVerification = () => {
                 await set(ref(db, `services/email_queue/${push(ref(db, 'services/email_queue')).key}`), {
                     to_email: pendingPayment.customerEmail, 
                     to_name: pendingPayment.customerName,
-                    merchant_name: currentUser?.displayName || 'Merchant',
+                    merchant_name: userData?.businessName || userData?.shopName || currentUser?.displayName || 'Merchant',
                     amount: pendingPayment.amount,
                     type: 'PAYMENT_REJECTED',
                     timestamp: Date.now()

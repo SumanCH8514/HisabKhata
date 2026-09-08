@@ -1,18 +1,19 @@
 import { APP_HOME_URL, renderHeader, renderFooter, wrapHtmlDoc } from './base.js';
 
 export function renderTransactionTemplate(data = {}) {
-  const isGave = data.txType === 'Payment Requested' || data.txType === 'GAVE' || data.txType === 'credit' || (data.amount != null && Number(data.amount) < 0);
+  const isGave = data.txType === 'Payment Requested' || data.txType === 'GAVE' || data.txType === 'Credit Given' || data.txType === 'credit' || (data.amount != null && Number(data.amount) < 0);
   const absAmount = data.amount != null ? Math.abs(Number(data.amount)).toLocaleString('en-IN') : '0';
   const absBalance = data.balance != null ? Math.abs(Number(data.balance)).toLocaleString('en-IN') : absAmount;
   const isBalanceDebit = data.balance != null ? Number(data.balance) < 0 : isGave;
-  const merchant = data.merchantName || 'HisabKhata Merchant';
-  const customer = data.customerName || 'Valued Customer';
+  const merchant = data.merchantName || data.businessName || data.merchant_name || data.business_name || 'HisabKhata Merchant';
+  const customer = data.customerName || data.customer_name || data.toName || data.to_name || 'Valued Customer';
   const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const verifyUrl = data.actionUrl || APP_HOME_URL;
+  const verifyUrl = data.actionUrl || data.action_url || APP_HOME_URL;
 
-  const formattedDesc = data.description 
-    ? String(data.description).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>') 
+  const rawDesc = data.description || data.note || data.remarks || '';
+  const formattedDesc = rawDesc 
+    ? String(rawDesc).replace(/^Note:\s*/i, '').replace(/^Note:\s*/i, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>') 
     : '';
 
   const bodyContent = `
@@ -24,9 +25,7 @@ export function renderTransactionTemplate(data = {}) {
         </div>
         
         <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
-          ${data.customMessage || (isGave 
-              ? `A new debit entry has been recorded by <strong>${merchant}</strong>.` 
-              : `Your payment was successfully received and credited by <strong>${merchant}</strong>.`)}
+          A new transaction amount of <strong>&#8377;${absAmount}</strong> has been recorded on your account. Please check the details below:
         </p>
 
         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 22px;">
@@ -68,13 +67,13 @@ export function renderTransactionTemplate(data = {}) {
               ${merchant}
             </td>
           </tr>
-          ${data.merchantPhone ? `
+          ${data.merchantPhone || data.merchant_phone ? `
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b; font-weight: 600;">
               Merchant Contact:
             </td>
             <td align="right" style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #0f172a; font-weight: 700;">
-              ${data.merchantPhone}
+              ${data.merchantPhone || data.merchant_phone}
             </td>
           </tr>` : ''}
           <tr>

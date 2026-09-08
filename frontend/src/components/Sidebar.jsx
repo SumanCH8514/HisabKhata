@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { currentUser, isAdmin, userData } = useAuth();
+    const { currentUser, isAdmin, userData, logout } = useAuth();
 
     const isActive = (path) => {
         if (path === '/customers') return location.pathname === '/customers' || location.pathname.startsWith('/customer/');
@@ -21,7 +21,7 @@ const Sidebar = () => {
 
     const handleLogout = async () => {
         try {
-            await authService.logout();
+            await logout();
             navigate('/login');
         } catch (err) {
             console.error(err);

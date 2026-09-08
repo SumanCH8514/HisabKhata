@@ -38,13 +38,13 @@ export async function sendSmtpEmail({
             const { value, done } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            
+
             const lines = buffer.split('\r\n');
             if (lines.length > 1) {
                 const lastCompleteLine = lines[lines.length - 2];
                 if (/^\d{3}\s/.test(lastCompleteLine)) {
                     const fullResp = buffer;
-                    buffer = lines[lines.length - 1]; // Keep remainder
+                    buffer = lines[lines.length - 1];
                     return fullResp;
                 }
             }
@@ -56,7 +56,7 @@ export async function sendSmtpEmail({
         await writer.write(encoder.encode(cmd + '\r\n'));
         const resp = await readResponse();
         const code = parseInt(resp.substring(0, 3), 10);
-        
+
         if (expectedCode && !resp.startsWith(String(expectedCode))) {
             throw new Error(`SMTP command "${cmd.split(' ')[0]}" failed: ${resp.trim()}`);
         }

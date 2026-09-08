@@ -1,10 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/firebase';
 
 const ProtectedRoute = ({ children }) => {
-    const { currentUser, isSecurityVerified, userDataLoading, isAdmin, isBlocked, globalSettings } = useAuth();
+    const { currentUser, isSecurityVerified, userDataLoading, isAdmin, isBlocked, globalSettings, logout } = useAuth();
 
     if (userDataLoading) {
         return (
@@ -28,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
                     <h1 className="text-2xl font-black text-slate-900 mb-4">Account Blocked</h1>
                     <p className="text-slate-500 mb-8">Your account has been suspended due to policy violations. Please contact support if you believe this is a mistake.</p>
                     <button 
-                        onClick={() => authService.logout()} 
+                        onClick={() => logout()} 
                         className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all"
                     >
                         Logout

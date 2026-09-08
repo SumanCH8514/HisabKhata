@@ -1,4 +1,3 @@
-// HisabKhata Progressive Web App Service Worker
 const CACHE_NAME = 'hisabkhata-pwa-v2';
 const STATIC_ASSETS = [
   '/',
@@ -12,7 +11,6 @@ const STATIC_ASSETS = [
   '/icons/icon-maskable-512x512.png'
 ];
 
-// 1. Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -23,7 +21,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. Activate Event - Clean up stale caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -38,20 +35,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch Strategy
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Only handle GET requests
   if (request.method !== 'GET') return;
 
-  // Only handle same-origin requests to prevent CSP/CORS conflicts with 3rd-party services & fonts
   if (url.origin !== self.location.origin) {
     return;
   }
 
-  // Navigation requests (HTML pages) -> Network-First, fallback to cached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -78,7 +71,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets (same-origin JS, CSS, PNG, SVG) -> Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request)

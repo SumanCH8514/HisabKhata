@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import MobileDrawer from './MobileDrawer';
-import { authService } from '../services/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
-            await authService.logout();
+            await logout();
             navigate('/login');
         } catch (err) {
             console.error(err);

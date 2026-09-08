@@ -6,11 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 const MobileDrawer = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { currentUser, isAdmin, userData } = useAuth();
+    const { currentUser, isAdmin, userData, logout } = useAuth();
 
     const handleLogout = async () => {
         try {
-            await authService.logout();
+            await logout();
             navigate('/login');
         } catch (err) {
             console.error(err);

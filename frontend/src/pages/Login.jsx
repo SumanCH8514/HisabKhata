@@ -6,6 +6,7 @@ import { ref, get, update } from 'firebase/database';
 import { db, sendEmailNotification } from '../services/firebase';
 import { verifyTotpCode } from '../utils/totpUtils';
 import { Smartphone, KeyRound, ArrowLeft, Loader2, ShieldCheck, AlertCircle, Mail, RotateCw } from 'lucide-react';
+import SecurityCaptcha from '../components/SecurityCaptcha';
 
 let globalLastOtpSentTime = 0;
 
@@ -15,6 +16,8 @@ const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+    const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
     const [is2FaRequired, setIs2FaRequired] = useState(false);
     const [totpCode, setTotpCode] = useState('');
@@ -29,6 +32,7 @@ const Login = () => {
     const [resendCooldown, setResendCooldown] = useState(0);
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
+    const otpSentForUidRef = useRef(null);
 
     const { login, logout, loginWithGoogle, globalSettings, currentUser, userData, isSecurityVerified, markSecurityVerified } = useAuth();
     const navigate = useNavigate();
@@ -48,7 +52,7 @@ const Login = () => {
 
     const sendLoginOtpEmail = async (userId, userEmail, userName) => {
         const now = Date.now();
-        if (now - globalLastOtpSentTime < 20000) {
+        if (now - globalLastOtpSentTime < 5000) {
             return;
         }
         globalLastOtpSentTime = now;
@@ -76,6 +80,24 @@ const Login = () => {
         });
     };
 
+    useEffect(() => {
+        if (!showEmailOtp) {
+            otpSentForUidRef.current = null;
+            return;
+        }
+
+        const activeUser = pendingEmailUser?.user || currentUser;
+        if (activeUser && activeUser.uid && otpSentForUidRef.current !== activeUser.uid) {
+            otpSentForUidRef.current = activeUser.uid;
+            setResendCooldown(60);
+            sendLoginOtpEmail(
+                activeUser.uid,
+                activeUser.email,
+                pendingEmailUser?.name || activeUser.displayName || userData?.name
+            );
+        }
+    }, [showEmailOtp, pendingEmailUser, currentUser, userData]);
+
     const checkAuthSecurityAndProceed = async (user) => {
         if (!user) return;
         try {
@@ -94,10 +116,8 @@ const Login = () => {
                     is2FaEnabled
                 });
                 setIsEmailOtpRequired(true);
-                setResendCooldown(60);
                 setEmailOtpCode('');
                 setError('');
-                await sendLoginOtpEmail(user.uid, user.email, profileData.name || user.displayName);
                 return;
             }
 
@@ -143,6 +163,11 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (globalSettings?.captcha && !isCaptchaVerified) {
+            setError('Please complete the security verification challenge.');
+            return;
+        }
+
         try {
             setError('');
             setLoading(true);
@@ -159,6 +184,10 @@ const Login = () => {
         } catch (err) {
             setError(getFirebaseErrorMessage(err));
             console.error(err);
+            if (globalSettings?.captcha) {
+                setCaptchaResetKey(k => k + 1);
+                setIsCaptchaVerified(false);
+            }
         } finally {
             setLoading(false);
         }
@@ -287,6 +316,7 @@ const Login = () => {
 
     const handleCancelAuth = async () => {
         globalLastOtpSentTime = 0;
+        otpSentForUidRef.current = null;
         setIsEmailOtpRequired(false);
         setIs2FaRequired(false);
         setPendingEmailUser(null);
@@ -301,18 +331,24 @@ const Login = () => {
         <div className="min-h-screen flex" style={{ fontFamily: "'Noto Sans', sans-serif" }}>
             <div className="hidden lg:flex flex-col justify-between w-[520px] flex-shrink-0 p-12 text-white relative overflow-hidden"
                 style={{ backgroundColor: '#1c2b3a' }}>
-                <div className="flex items-center gap-2">
-                    <span className="text-white font-bold text-2xl tracking-tight">HisabKhata</span>
-                    <span className="pro-badge">PRO</span>
+                <div className="flex flex-col select-none">
+                    <div className="flex items-center gap-2">
+                        <span className="text-white font-bold text-2xl tracking-tight leading-none">HisabKhata</span>
+                        <span className="pro-badge">PRO</span>
+                    </div>
+                    <span className="text-[11px] text-[#9bbdd4] font-medium tracking-wide mt-1">
+                        a SumanOnline Project
+                    </span>
                 </div>
 
                 <div className="space-y-6">
                     <h2 className="text-3xl font-bold text-white leading-tight">
-                        Manage your business<br/>with ease
+                        Manage your business<br />with confidence
                     </h2>
                     <p className="text-[#9bbdd4] text-base leading-relaxed">
                         Track credits, debits, and outstanding balances with your customers in real-time.
                     </p>
+
                     <div className="grid grid-cols-2 gap-4 mt-6">
                         <div className="bg-white/10 rounded-xl p-4">
                             <p className="text-2xl font-bold text-white">₹10Cr+</p>
@@ -323,6 +359,13 @@ const Login = () => {
                             <p className="text-[#9bbdd4] text-xs mt-1">Active businesses</p>
                         </div>
                     </div>
+
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-emerald-400 text-[20px] shrink-0">cloud_done</span>
+                        <p className="text-xs text-[#9bbdd4] leading-relaxed">
+                            Your ledger is continuously backed up and synced across all your devices.
+                        </p>
+                    </div>
                 </div>
 
                 <p className="text-[#5a7a95] text-xs">
@@ -332,9 +375,14 @@ const Login = () => {
 
             <div className="flex-1 flex lg:items-center items-start lg:justify-center justify-start pt-8 pb-20 px-6 bg-white overflow-y-auto">
                 <div className="w-full max-w-[400px]">
-                    <div className="lg:hidden flex items-center gap-2 mb-6 justify-center">
-                        <span className="font-bold text-2xl text-gray-900">HisabKhata</span>
-                        <span className="pro-badge">PRO</span>
+                    <div className="lg:hidden flex flex-col items-center mb-6 justify-center select-none">
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-2xl text-gray-900 tracking-tight leading-none">HisabKhata</span>
+                            <span className="pro-badge">PRO</span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-semibold tracking-wide mt-1">
+                            a SumanOnline Project
+                        </span>
                     </div>
 
                     {!showEmailOtp && !show2Fa ? (
@@ -343,8 +391,9 @@ const Login = () => {
                             <p className="text-gray-500 text-sm mb-8">Sign in to your account to continue</p>
 
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm mb-5">
-                                    {error}
+                                <div key={error} className="bg-red-50/90 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2.5 shadow-sm animate-shake mb-5">
+                                    <AlertCircle size={18} className="shrink-0 text-red-500" />
+                                    <span className="leading-snug">{error}</span>
                                 </div>
                             )}
 
@@ -394,10 +443,17 @@ const Login = () => {
                                         </div>
                                     </div>
 
+                                    {globalSettings?.captcha && (
+                                        <SecurityCaptcha
+                                            onVerify={setIsCaptchaVerified}
+                                            resetKey={captchaResetKey}
+                                        />
+                                    )}
+
                                     <button
-                                        disabled={loading}
+                                        disabled={loading || (globalSettings?.captcha && !isCaptchaVerified)}
                                         type="submit"
-                                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded text-sm font-semibold transition-colors shadow-sm"
+                                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
                                     >
                                         {loading ? 'Signing in...' : 'Login'}
                                     </button>
@@ -468,9 +524,9 @@ const Login = () => {
                             )}
 
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-xs font-semibold flex items-center gap-2">
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    <span>{error}</span>
+                                <div key={error} className="bg-red-50/90 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 shadow-sm animate-shake">
+                                    <AlertCircle size={16} className="shrink-0 text-red-500" />
+                                    <span className="leading-snug">{error}</span>
                                 </div>
                             )}
 
@@ -552,9 +608,9 @@ const Login = () => {
                             </div>
 
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-xs font-semibold flex items-center gap-2">
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    <span>{error}</span>
+                                <div key={error} className="bg-red-50/90 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 shadow-sm animate-shake">
+                                    <AlertCircle size={16} className="shrink-0 text-red-500" />
+                                    <span className="leading-snug">{error}</span>
                                 </div>
                             )}
 

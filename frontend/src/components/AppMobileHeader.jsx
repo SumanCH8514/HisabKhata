@@ -1,15 +1,16 @@
 import React from 'react';
-import { authService } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const AppMobileHeader = ({ rightElement, onBack, showLogout = true, sticky = true }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
         if (window.confirm('Are you sure you want to logout?')) {
             try {
-                await authService.logout();
+                await logout();
                 navigate('/login');
             } catch (err) {
                 console.error('Logout error:', err);

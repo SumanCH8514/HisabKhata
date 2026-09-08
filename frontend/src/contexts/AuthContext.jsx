@@ -24,8 +24,6 @@ export const AuthProvider = ({ children }) => {
             setCurrentUser(user);
             if (user) {
                 setUserDataLoading(true);
-                const isSessionVerified = sessionStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true';
-
                 let initialLoadDone = false;
                 const safetyTimer = setTimeout(() => {
                     if (!initialLoadDone) {
@@ -41,10 +39,10 @@ export const AuthProvider = ({ children }) => {
 
                     const hasEmailOtp = data?.emailOtpLogin === true || data?.preferences?.emailOtpLogin === true;
                     const has2Fa = (data?.twoFactorAuth === true || data?.preferences?.twoFactorAuth === true) && Boolean(data?.twoFactorSecret);
-                    const sessionOk = sessionStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true';
+                    const isVerifiedInStorage = localStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true' || sessionStorage.getItem(`hk_auth_verified_${user.uid}`) === 'true';
 
                     if (hasEmailOtp || has2Fa) {
-                        setIsSecurityVerified(sessionOk);
+                        setIsSecurityVerified(isVerifiedInStorage);
                     } else {
                         setIsSecurityVerified(true);
                     }
@@ -74,6 +72,7 @@ export const AuthProvider = ({ children }) => {
     const markSecurityVerified = (uid) => {
         const targetUid = uid || currentUser?.uid;
         if (targetUid) {
+            localStorage.setItem(`hk_auth_verified_${targetUid}`, 'true');
             sessionStorage.setItem(`hk_auth_verified_${targetUid}`, 'true');
         }
         setIsSecurityVerified(true);
@@ -86,6 +85,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (name, email, password, phone) => {
         const res = await authService.register(name, email, password, phone);
         if (res?.user?.uid) {
+            localStorage.setItem(`hk_auth_verified_${res.user.uid}`, 'true');
             sessionStorage.setItem(`hk_auth_verified_${res.user.uid}`, 'true');
             setIsSecurityVerified(true);
         }
@@ -94,6 +94,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         if (currentUser?.uid) {
+            localStorage.removeItem(`hk_auth_verified_${currentUser.uid}`);
             sessionStorage.removeItem(`hk_auth_verified_${currentUser.uid}`);
         }
         setIsSecurityVerified(false);

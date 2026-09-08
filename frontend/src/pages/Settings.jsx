@@ -42,8 +42,8 @@ const Settings = () => {
         autoBackup: true
     });
 
-    const [activeModal, setActiveModal] = useState(null); // 'password' | 'language' | 'currency' | '2fa' | 'delete' | null
-    const [toast, setToast] = useState(null); // { type: 'success' | 'error' | 'info', message: string }
+    const [activeModal, setActiveModal] = useState(null);
+    const [toast, setToast] = useState(null);
     const [loadingAction, setLoadingAction] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
 

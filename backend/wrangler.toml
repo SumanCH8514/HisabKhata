@@ -8,20 +8,19 @@ routes = [
 	{ pattern = "backend.hisabkhata.sumanonline.com", custom_domain = true }
 ]
 
-# Cloudflare R2 Bucket Binding
 [[r2_buckets]]
 binding = "MY_BUCKET"
 bucket_name = "hisabkhata"
 
+[triggers]
+crons = [ "0 4 * * *", "0 4 * * 1" ]
+
 [vars]
 PUBLIC_CDN_URL = "https://cdn.backend.hisabkhata.sumanonline.com"
 ENVIRONMENT = "production"
-
-# Custom SMTP Configuration (Static vars - Secrets like SMTP_USER, SMTP_PASS set in Dashboard or via wrangler secret)
+FIREBASE_DB_URL = "https://hisabkhata-sumanonline-default-rtdb.asia-southeast1.firebasedatabase.app"
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = "465"
 SMTP_SECURE = "true"
 SMTP_FROM_NAME = "HisabKhata PRO"
 SMTP_FROM_EMAIL = "hisabkhata@sumanonline.com"
-
-

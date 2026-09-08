@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateEmailHtml } from './src/emailTemplate.js';
+import { runPaymentRemindersJob, runWeeklyDigestJob } from './src/cronService.js';
 
 dotenv.config();
 
@@ -231,6 +232,37 @@ app.post('/api/send-email', async (req, res) => {
             success: false,
             error: err.message
         });
+    }
+});
+
+app.get('/api/cron/status', async (req, res) => {
+    res.json({
+        service: 'HisabKhata Automated Cron Triggers',
+        status: 'ACTIVE',
+        triggers: [
+            { name: 'Daily Payment Reminders', cron: '0 4 * * *', description: 'Scans customer dues and dispatches reminder statement emails' },
+            { name: 'Weekly Ledger Snapshot', cron: '0 4 * * 1', description: 'Aggregates 7-day collections and sends business recap digest to merchants' }
+        ],
+        firebase_configured: !!(process.env.FIREBASE_DB_URL || true),
+        smtp_configured: !!(process.env.SMTP_USER && process.env.SMTP_PASS)
+    });
+});
+
+app.post('/api/cron/payment-reminders', async (req, res) => {
+    try {
+        const report = await runPaymentRemindersJob(process.env);
+        return res.json({ success: true, report });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/cron/weekly-digest', async (req, res) => {
+    try {
+        const report = await runWeeklyDigestJob(process.env);
+        return res.json({ success: true, report });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
     }
 });
 

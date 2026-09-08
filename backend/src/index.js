@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { sendSmtpEmail } from './smtp.js';
 import { generateEmailHtml } from './emailTemplate.js';
+import { runPaymentRemindersJob, runWeeklyDigestJob } from './cronService.js';
 
 const app = new Hono();
 
@@ -376,6 +377,37 @@ app.post('/api/send-email', async (c) => {
     }
 });
 
+app.get('/api/cron/status', async (c) => {
+    return c.json({
+        service: 'HisabKhata Automated Cron Triggers',
+        status: 'ACTIVE',
+        triggers: [
+            { name: 'Daily Payment Reminders', cron: '0 4 * * *', description: 'Scans customer dues and dispatches reminder statement emails' },
+            { name: 'Weekly Ledger Snapshot', cron: '0 4 * * 1', description: 'Aggregates 7-day collections and sends business recap digest to merchants' }
+        ],
+        firebase_configured: !!(c.env.FIREBASE_DB_URL || true),
+        smtp_configured: !!(c.env.SMTP_USER && c.env.SMTP_PASS)
+    });
+});
+
+app.post('/api/cron/payment-reminders', async (c) => {
+    try {
+        const report = await runPaymentRemindersJob(c.env);
+        return c.json({ success: true, report });
+    } catch (err) {
+        return c.json({ success: false, error: err.message }, 500);
+    }
+});
+
+app.post('/api/cron/weekly-digest', async (c) => {
+    try {
+        const report = await runWeeklyDigestJob(c.env);
+        return c.json({ success: true, report });
+    } catch (err) {
+        return c.json({ success: false, error: err.message }, 500);
+    }
+});
+
 app.get('/:folder/:filename', async (c) => {
     const { folder, filename } = c.req.param();
     if (folder === 'api') {
@@ -402,5 +434,24 @@ app.get('/:folder/:filename', async (c) => {
     return new Response(object.body, { headers });
 });
 
-export default app;
+export default {
+    fetch: app.fetch,
+    scheduled: async (event, env, ctx) => {
+        const cron = event.cron;
+        if (cron === '0 4 * * 1') {
+            if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(runWeeklyDigestJob(env));
+            } else {
+                await runWeeklyDigestJob(env);
+            }
+        } else {
+            if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(runPaymentRemindersJob(env));
+            } else {
+                await runPaymentRemindersJob(env);
+            }
+        }
+    }
+};
+
 

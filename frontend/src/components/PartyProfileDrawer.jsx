@@ -48,7 +48,8 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImpo
             const compressedBase64 = await compressImage(file, 500, 500, 0.8);
             setEditPhoto(compressedBase64);
             try {
-                const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${customer.id}_${Date.now()}`);
+                const safeName = (customer.name || 'customer').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+                const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${safeName}_${Date.now()}`);
                 setEditPhoto(r2Url);
                 if (previousPhoto && previousPhoto.startsWith('http') && previousPhoto !== r2Url) {
                     deleteFromR2(previousPhoto).catch(() => {});
@@ -216,7 +217,7 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImpo
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0 ring-4 ring-blue-100/80">
                                         {customer.photoURL ? (
-                                            <img key={customer.photoURL} src={customer.photoURL} alt="" className="w-full h-full object-cover" />
+                                            <img key={customer.photoURL} src={customer.photoURL} alt={`${customer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                         ) : (
                                             <div 
                                                 style={{ backgroundColor: getInitialColor(customer.name) }}
@@ -384,7 +385,7 @@ const PartyProfileDrawer = ({ isOpen, onClose, customer, onDeleteSuccess, onImpo
                                                 <div className="w-6 h-6 border-2 border-[#0057BB] border-t-transparent rounded-full animate-spin" />
                                             </div>
                                         ) : editPhoto ? (
-                                            <img key={editPhoto} src={editPhoto} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                            <img key={editPhoto} src={editPhoto} alt={`${editName || customer?.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                                         ) : (
                                             <div 
                                                 style={{ backgroundColor: getInitialColor(editName || customer?.name) }}

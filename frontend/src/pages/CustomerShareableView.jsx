@@ -1427,7 +1427,7 @@ const CustomerShareableView = () => {
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white text-base border border-white/30 uppercase overflow-hidden shrink-0 shadow-inner">
                                 {customer.photoURL ? (
-                                    <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                                    <img src={customer.photoURL} alt={`${customer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                 ) : (
                                     initials
                                 )}
@@ -1504,7 +1504,7 @@ const CustomerShareableView = () => {
                             <div className="col-span-7 flex items-start gap-5">
                                 <div className="h-16 w-16 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center font-bold text-slate-700 text-2xl uppercase overflow-hidden shrink-0 shadow-xs">
                                     {customer.photoURL ? (
-                                        <img src={customer.photoURL} alt={customer.name} className="w-full h-full object-cover" />
+                                        <img src={customer.photoURL} alt={`${customer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                     ) : (
                                         initials
                                     )}

@@ -29,7 +29,8 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
             const compressedBase64 = await compressImage(file, 500, 500, 0.8);
             setPhoto(compressedBase64);
             try {
-                const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${Date.now()}`);
+                const safeName = (name || 'customer').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+                const r2Url = await uploadToR2(compressedBase64, R2_FOLDERS.PROFILE, `cust_${safeName}_${Date.now()}`);
                 setPhoto(r2Url);
             } catch (r2Err) {
                 console.warn("R2 upload error, storing compressed image fallback:", r2Err);
@@ -177,7 +178,7 @@ const CustomerDrawer = ({ isOpen, onClose, customer = null }) => {
                                             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                                         </div>
                                     ) : photo ? (
-                                        <img src={photo} alt="" className="w-full h-full object-cover" />
+                                        <img src={photo} alt={`${name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="material-symbols-outlined text-slate-300 text-3xl">add_a_photo</span>
                                     )}

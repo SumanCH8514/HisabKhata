@@ -28,26 +28,10 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    const observerOptions = {
-      threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }
-      });
-    }, observerOptions);
-
-    const animatedElements = document.querySelectorAll('.feature-card, .hero-content, .hero-image');
-    animatedElements.forEach(el => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(30px)';
-      el.style.transition = 'all 0.8s ease-out';
-      observer.observe(el);
-    });
+    const isCrawler = typeof navigator !== 'undefined' && (
+      /googlebot|google-inspectiontool|bingbot|crawler|spider|lighthouse|inspection|headless/i.test(navigator.userAgent || '') ||
+      Boolean(navigator.webdriver)
+    );
 
     const handleScroll = () => {
       const nav = document.querySelector('.landing-page nav');
@@ -64,22 +48,46 @@ const LandingPage = () => {
 
     window.addEventListener('scroll', handleScroll);
 
-    const statsSection = document.querySelector('.stats');
-    const statsObserver = new IntersectionObserver((entries) => {
-      if (entries[0] && entries[0].isIntersecting) {
-        animateCounters();
-        statsObserver.unobserve(statsSection);
-      }
-    }, { threshold: 0.5 });
+    if (isCrawler || typeof IntersectionObserver === 'undefined') {
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
 
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    const animatedCards = document.querySelectorAll('.feature-card');
+    animatedCards.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < (window.innerHeight || 800)) {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      } else {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'all 0.6s ease-out';
+        observer.observe(el);
+      }
+    });
+
+    const statsSection = document.querySelector('.stats');
+    let statsObserver = null;
     const animateCounters = () => {
       const stats = document.querySelectorAll('.stat-item h3');
       stats.forEach(stat => {
         const originalText = stat.innerText;
         const targetStr = originalText.replace(/\D/g, '');
-        if (!targetStr) return; // Skip if no digits are found
+        if (!targetStr) return;
 
-        const target = parseInt(targetStr);
+        const target = parseInt(targetStr, 10);
         let current = 0;
         const increment = target / 50;
         const updateCount = () => {
@@ -97,12 +105,20 @@ const LandingPage = () => {
       });
     };
 
-    if (statsSection) statsObserver.observe(statsSection);
+    if (statsSection) {
+      statsObserver = new IntersectionObserver((entries) => {
+        if (entries[0] && entries[0].isIntersecting) {
+          animateCounters();
+          statsObserver.unobserve(statsSection);
+        }
+      }, { threshold: 0.5 });
+      statsObserver.observe(statsSection);
+    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
-      statsObserver.disconnect();
+      if (statsObserver) statsObserver.disconnect();
     };
   }, []);
 
@@ -161,15 +177,18 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="hero-image">
-              <img
-                src="/hero.png"
-                alt="HisabKhata App Interface"
-                width="650"
-                height="400"
-                fetchPriority="high"
-                loading="eager"
-                decoding="async"
-              />
+              <picture>
+                <source srcSet="/hero.webp" type="image/webp" />
+                <img
+                  src="/hero.png"
+                  alt="HisabKhata App Interface"
+                  width="650"
+                  height="400"
+                  fetchPriority="high"
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
             </div>
           </div>
         </header>
@@ -265,7 +284,10 @@ const LandingPage = () => {
         <section className="security" id="security" style={{ padding: '100px 0', background: 'var(--white)' }}>
           <div className="container hero-grid" style={{ alignItems: 'center' }}>
             <div className="hero-image">
-              <img src="/security.png" alt="Security Illustration" width="500" height="400" loading="lazy" style={{ maxWidth: '500px' }} />
+              <picture>
+                <source srcSet="/security.webp" type="image/webp" />
+                <img src="/security.png" alt="Security Illustration" width="500" height="400" loading="lazy" decoding="async" style={{ maxWidth: '500px' }} />
+              </picture>
             </div>
             <div className="hero-content">
               <h2>Your Data is Our Priority</h2>

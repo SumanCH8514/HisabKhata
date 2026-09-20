@@ -7,7 +7,7 @@
     (function () {
       const origError = console.error;
       const origWarn = console.warn;
-      const regex = /message channel closed before a response was received/i;
+      const regex = /(?:message channel closed before a response was received|wrsParams|Service Worker registration failed)/i;
 
       console.error = function (...args) {
         if (args.some(a => (typeof a === 'string' && regex.test(a)) || (a && typeof a.message === 'string' && regex.test(a.message)))) {
@@ -219,11 +219,17 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="image" href="/hero.webp" type="image/webp" fetchpriority="high" />
 
-  
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700;900&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet" />
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet" />
+  </noscript>
 </head>
 
 <body>

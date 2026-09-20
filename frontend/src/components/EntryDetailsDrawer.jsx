@@ -143,7 +143,7 @@ const EntryDetailsDrawer = ({ isOpen, onClose, transaction, customerName, custom
                             <div className="flex gap-3">
                                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl border border-gray-100 shrink-0 overflow-hidden">
                                     {customerPhoto ? (
-                                        <img src={customerPhoto} alt="" className="w-full h-full object-cover" />
+                                        <img src={customerPhoto} alt={`${customerName || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                     ) : (
                                         customerName?.[0]?.toUpperCase() || 'C'
                                     )}

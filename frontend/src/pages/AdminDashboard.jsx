@@ -526,7 +526,7 @@ const AdminDashboard = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
                                             {user.photoURL ? (
-                                                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                                                <img src={user.photoURL} alt={`${user.name || 'User'} - HisabKhata`} className="w-full h-full object-cover" />
                                             ) : (user.name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
@@ -606,7 +606,7 @@ const AdminDashboard = () => {
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0 overflow-hidden shadow-xs ring-2 ring-blue-50">
                                             {user.photoURL ? (
-                                                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                                                <img src={user.photoURL} alt={`${user.name || 'User'} - HisabKhata`} className="w-full h-full object-cover" />
                                             ) : (
                                                 initialChar
                                             )}
@@ -1706,7 +1706,7 @@ const AdminDashboard = () => {
                     rightElement={
                         <div className="w-8 h-8 rounded-full border border-blue-100 p-0.5 overflow-hidden">
                             {userData?.photoURL ? (
-                                <img src={userData.photoURL} alt="" className="w-full h-full object-cover rounded-full" />
+                                <img src={userData.photoURL} alt={`${displayName || 'Admin'} - HisabKhata`} className="w-full h-full object-cover rounded-full" />
                             ) : (
                                 <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-[10px]">{initial}</div>
                             )}
@@ -1732,7 +1732,7 @@ const AdminDashboard = () => {
                         <div className="w-10 h-10 rounded-full border-2 border-blue-100 p-0.5 overflow-hidden">
                             <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
                                 {userData?.photoURL ? (
-                                    <img src={userData.photoURL} alt="" className="w-full h-full object-cover" />
+                                    <img src={userData.photoURL} alt={`${displayName || 'Admin'} - HisabKhata`} className="w-full h-full object-cover" />
                                 ) : (
                                     initial
                                 )}

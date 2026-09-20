@@ -59,7 +59,7 @@ const Sidebar = () => {
                             <img 
                                 key={userData.photoURL}
                                 src={userData.photoURL} 
-                                alt="Profile" 
+                                alt={`${displayName || 'User'} - HisabKhata`} 
                                 className="w-full h-full object-cover" 
                             />
                         ) : (

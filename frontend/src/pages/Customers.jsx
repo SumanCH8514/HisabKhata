@@ -590,7 +590,7 @@ const Customers = () => {
                                         style={{ backgroundColor: customer.photoURL ? 'transparent' : bgColor }}
                                     >
                                         {customer.photoURL ? (
-                                            <img key={customer.photoURL} src={customer.photoURL} alt="" className="w-full h-full object-cover" />
+                                            <img key={customer.photoURL} src={customer.photoURL} alt={`${customer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                         ) : (
                                             customer.name?.substring(0, 1).toUpperCase()
                                         )}
@@ -708,7 +708,7 @@ const Customers = () => {
                                         <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden flex-shrink-0 flex items-center justify-center"
                                              style={{ backgroundColor: selectedCustomer.photoURL ? 'transparent' : getInitialColor(selectedCustomer.name) }}>
                                             {selectedCustomer.photoURL ? (
-                                                <img key={selectedCustomer.photoURL} src={selectedCustomer.photoURL} alt="" className="w-full h-full object-cover" />
+                                                <img key={selectedCustomer.photoURL} src={selectedCustomer.photoURL} alt={`${selectedCustomer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="font-bold text-lg">{selectedCustomer.name?.substring(0, 1).toUpperCase()}</span>
                                             )}
@@ -862,7 +862,7 @@ const Customers = () => {
                                             style={{ backgroundColor: !selectedCustomer.photoURL ? getInitialColor(selectedCustomer.name) : 'transparent' }}
                                         >
                                             {selectedCustomer.photoURL ? (
-                                                <img src={selectedCustomer.photoURL} alt="" className="w-full h-full object-cover" />
+                                                <img src={selectedCustomer.photoURL} alt={`${selectedCustomer.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                                             ) : (
                                                 selectedCustomer.name?.substring(0, 1).toUpperCase()
                                             )}

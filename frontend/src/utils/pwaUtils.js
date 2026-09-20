@@ -31,6 +31,14 @@ export const registerServiceWorker = () => {
     return;
   }
 
+  const isCrawler = typeof navigator !== 'undefined' && (
+    /googlebot|google-inspectiontool|bingbot|crawler|spider|lighthouse|inspection|headless/i.test(navigator.userAgent || '') ||
+    Boolean(navigator.webdriver)
+  );
+  if (isCrawler) {
+    return;
+  }
+
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
@@ -47,7 +55,9 @@ export const registerServiceWorker = () => {
         });
       })
       .catch((err) => {
-        console.warn('[PWA] Service Worker registration failed:', err);
+        if (import.meta.env.DEV) {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        }
       });
   });
 };

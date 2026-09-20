@@ -368,7 +368,7 @@ const PaymentsDashboard = () => {
                                                             {photo ? (
                                                                 <img 
                                                                     src={photo} 
-                                                                    alt={payment.customerName} 
+                                                                    alt={`${payment.customerName || 'Customer'} - HisabKhata`} 
                                                                     className="w-full h-full object-cover" 
                                                                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                                 />
@@ -452,7 +452,7 @@ const PaymentsDashboard = () => {
                                                                 <div className="w-4 h-4 rounded overflow-hidden bg-slate-100 shrink-0">
                                                                     <img 
                                                                         src={payment.screenshot} 
-                                                                        alt="" 
+                                                                        alt="Payment Proof - HisabKhata" 
                                                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
                                                                     />
                                                                 </div>

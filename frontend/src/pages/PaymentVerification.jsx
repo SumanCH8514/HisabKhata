@@ -234,7 +234,7 @@ const PaymentVerification = () => {
                                             {pendingPayment.customerPhoto ? (
                                                 <img 
                                                     src={pendingPayment.customerPhoto} 
-                                                    alt={pendingPayment.customerName} 
+                                                    alt={`${pendingPayment.customerName || 'Customer'} - HisabKhata`} 
                                                     className="w-full h-full object-cover" 
                                                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                 />

@@ -211,7 +211,7 @@ const More = () => {
                                         <img 
                                             key={userData.photoURL}
                                             src={userData.photoURL} 
-                                            alt="Shop" 
+                                            alt={`${shopName || displayName || 'User'} - HisabKhata`} 
                                             className="w-full h-full object-cover" 
                                         />
                                     ) : (

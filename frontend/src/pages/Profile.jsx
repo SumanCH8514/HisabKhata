@@ -258,7 +258,7 @@ const Profile = () => {
                                             <img 
                                                 key={profileData.photoURL}
                                                 src={profileData.photoURL} 
-                                                alt="Profile" 
+                                                alt={`${profileData.businessName || profileData.name || 'User'} - HisabKhata`} 
                                                 className="w-full h-full object-cover" 
                                             />
                                         ) : (
@@ -505,7 +505,7 @@ const Profile = () => {
                                     <img 
                                         key={profileData.photoURL}
                                         src={profileData.photoURL} 
-                                        alt="Profile" 
+                                        alt={`${profileData.businessName || profileData.name || 'User'} - HisabKhata`} 
                                         className="w-full h-full object-cover" 
                                     />
                                 ) : (

@@ -119,7 +119,7 @@ const CustomerLedgerDetail = () => {
                         </button>
                         <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-[#0b5cba]/10 flex items-center justify-center font-black text-[#0b5cba] text-xl md:text-2xl border border-blue-50 overflow-hidden shrink-0">
                             {customer?.photoURL ? (
-                                <img src={customer.photoURL} alt="" className="w-full h-full object-cover" />
+                                <img src={customer.photoURL} alt={`${customer?.name || 'Customer'} - HisabKhata`} className="w-full h-full object-cover" />
                             ) : (
                                 customer?.name?.substring(0, 1).toUpperCase()
                             )}

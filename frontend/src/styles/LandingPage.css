@@ -221,6 +221,12 @@
   text-shadow: 0 10px 20px rgba(23, 92, 211, 0.05);
 }
 
+.landing-page .hero-content,
+.landing-page .hero-image {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .landing-page .hero-content {
   position: relative;
 }

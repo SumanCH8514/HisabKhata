@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { usePWAInstall } from '../utils/pwaUtils';
 
 const DISMISS_KEY = 'hk_pwa_banner_dismissed_until';
@@ -48,33 +49,30 @@ const PWAInstallBanner = () => {
   if (location.pathname !== '/' || !isVisible) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:max-w-sm z-[95] animate-in fade-in slide-in-from-bottom-4 duration-300 no-print">
-      <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/60 flex items-center gap-3.5">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-blue-500/20 border border-white/20 shrink-0 flex items-center justify-center bg-[#0057BB]">
+    <div className="fixed bottom-6 right-6 z-[95] animate-in fade-in slide-in-from-bottom-3 duration-250 no-print">
+      <div className="bg-slate-900/95 backdrop-blur-xl text-white pl-3.5 pr-2.5 py-2.5 rounded-2xl shadow-2xl border border-slate-700/70 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shrink-0 flex items-center justify-center bg-[#0057BB]">
           <img src="/icons/icon.svg" alt="HisabKhata" className="w-full h-full object-cover" />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <h4 className="text-xs font-bold text-white tracking-tight leading-tight truncate">Install HisabKhata</h4>
-          <p className="text-[11px] text-slate-300 font-medium leading-tight mt-0.5">
-            Fast 1-tap ledger &amp; offline access
-          </p>
+        <div className="pr-1">
+          <div className="text-sm font-semibold text-white tracking-tight whitespace-nowrap">Install HisabKhata</div>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleInstallClick}
             disabled={installing}
-            className="px-3.5 py-2 bg-[#0057BB] hover:bg-[#004291] active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-1.5 bg-[#0057BB] hover:bg-[#004596] active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
             {installing ? 'Installing...' : 'Install'}
           </button>
           <button
             onClick={handleDismiss}
             aria-label="Dismiss Install Prompt"
-            className="w-8 h-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -5,14 +5,22 @@ import { renderWeeklyNewsletterTemplate } from './mail_templates/weekly_report_m
 const DEFAULT_FIREBASE_DB_URL = 'https://hisabkhata-sumanonline-default-rtdb.asia-southeast1.firebasedatabase.app';
 const APP_BASE_URL = 'https://hisabkhata.sumanonline.com';
 
-async function fetchFromFirebase(dbUrl, endpoint) {
+async function fetchFromFirebase(dbUrl, endpoint, env = {}) {
   const baseUrl = (dbUrl || DEFAULT_FIREBASE_DB_URL).replace(/\/+$/, '');
-  const url = `${baseUrl}/${endpoint.replace(/^\/+/, '')}.json`;
+  let url = `${baseUrl}/${endpoint.replace(/^\/+/, '')}.json`;
+  
+  const authSecret = env.FIREBASE_DB_SECRET || env.FIREBASE_AUTH_TOKEN || env.FIREBASE_SECRET;
+  if (authSecret) {
+    url += `?auth=${encodeURIComponent(authSecret)}`;
+  }
+
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Firebase REST API error [${res.status}]: ${res.statusText}`);
+    const errorBody = await res.text().catch(() => '');
+    throw new Error(`Firebase [${endpoint}] error [${res.status}]: ${res.statusText} ${errorBody}`);
   }
-  return await res.json();
+  const data = await res.json();
+  return data || {};
 }
 
 function sendEmailHelper(env, toEmail, subject, html, text) {
@@ -44,16 +52,31 @@ export async function runPaymentRemindersJob(env = {}) {
   };
 
   if (!env.SMTP_USER || !env.SMTP_PASS) {
-    results.errors.push('SMTP credentials not configured in environment.');
+    results.errors.push('SMTP credentials not configured in environment (SMTP_USER / SMTP_PASS).');
     return results;
   }
 
   try {
-    const [customersData, usersData, settingsData] = await Promise.all([
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'customers').catch(() => ({})),
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'users').catch(() => ({})),
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'settings').catch(() => ({}))
-    ]);
+    let customersData = {};
+    let usersData = {};
+    let settingsData = {};
+
+    try {
+      customersData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'customers', env);
+    } catch (err) {
+      results.errors.push(`Failed to fetch customers: ${err.message}`);
+    }
+
+    try {
+      usersData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'users', env);
+    } catch (err) {
+      results.errors.push(`Failed to fetch users: ${err.message}`);
+    }
+
+    try {
+      settingsData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'settings', env);
+    } catch (err) {
+    }
 
     if (settingsData && settingsData.emailNotifications === false) {
       results.errors.push('Email notifications disabled in global settings.');
@@ -64,11 +87,12 @@ export async function runPaymentRemindersJob(env = {}) {
     results.totalCustomersScanned = customers.length;
 
     for (const cust of customers) {
-      const balance = Number(cust.balance || cust.netBalance || 0);
+      const rawBalance = Number(cust.balance ?? cust.netBalance ?? 0);
       const email = String(cust.email || '').trim();
 
-      if (balance > 0 && email && email.includes('@')) {
+      if (rawBalance < 0 && email && email.includes('@')) {
         results.eligibleReminders++;
+        const balance = Math.abs(rawBalance);
         const merchant = (usersData && cust.userId && usersData[cust.userId]) ? usersData[cust.userId] : {};
         const merchantName = merchant.businessName || merchant.name || cust.merchantName || 'Your Merchant';
         const merchantPhone = merchant.phone || cust.merchantPhone || '';
@@ -84,8 +108,8 @@ export async function runPaymentRemindersJob(env = {}) {
           actionUrl
         });
 
-        const subject = `Payment Reminder: ₹${Math.abs(balance).toLocaleString('en-IN')} balance due to ${merchantName}`;
-        const text = `Hello ${cust.name || 'Customer'}, you have an outstanding balance of ₹${Math.abs(balance).toLocaleString('en-IN')} with ${merchantName}. View statement and pay online: ${actionUrl}`;
+        const subject = `Payment Reminder: ₹${balance.toLocaleString('en-IN')} balance due to ${merchantName}`;
+        const text = `Hello ${cust.name || 'Customer'}, you have an outstanding balance of ₹${balance.toLocaleString('en-IN')} with ${merchantName}. View statement and pay online: ${actionUrl}`;
 
         try {
           await sendEmailHelper(env, email, subject, html, text);
@@ -116,17 +140,38 @@ export async function runWeeklyDigestJob(env = {}) {
   };
 
   if (!env.SMTP_USER || !env.SMTP_PASS) {
-    results.errors.push('SMTP credentials not configured in environment.');
+    results.errors.push('SMTP credentials not configured in environment (SMTP_USER / SMTP_PASS).');
     return results;
   }
 
   try {
-    const [usersData, customersData, txData, settingsData] = await Promise.all([
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'users').catch(() => ({})),
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'customers').catch(() => ({})),
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'transactions').catch(() => ({})),
-      fetchFromFirebase(env.FIREBASE_DB_URL, 'settings').catch(() => ({}))
-    ]);
+    let usersData = {};
+    let customersData = {};
+    let txData = {};
+    let settingsData = {};
+
+    try {
+      usersData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'users', env);
+    } catch (err) {
+      results.errors.push(`Failed to fetch users: ${err.message}`);
+    }
+
+    try {
+      customersData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'customers', env);
+    } catch (err) {
+      results.errors.push(`Failed to fetch customers: ${err.message}`);
+    }
+
+    try {
+      txData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'transactions', env);
+    } catch (err) {
+      results.errors.push(`Failed to fetch transactions: ${err.message}`);
+    }
+
+    try {
+      settingsData = await fetchFromFirebase(env.FIREBASE_DB_URL, 'settings', env);
+    } catch (err) {
+    }
 
     if (settingsData && settingsData.emailNotifications === false) {
       results.errors.push('Email notifications disabled in global settings.');
@@ -160,9 +205,9 @@ export async function runWeeklyDigestJob(env = {}) {
 
       let totalPendingDues = 0;
       for (const c of userCustomers) {
-        const bal = Number(c.balance || c.netBalance || 0);
-        if (bal > 0) {
-          totalPendingDues += bal;
+        const bal = Number(c.balance ?? c.netBalance ?? 0);
+        if (bal < 0) {
+          totalPendingDues += Math.abs(bal);
         }
       }
 

@@ -7,7 +7,7 @@
     (function () {
       const origError = console.error;
       const origWarn = console.warn;
-      const regex = /(?:message channel closed before a response was received|wrsParams|Service Worker registration failed)/i;
+      const regex = /(?:message channel closed before a response was received|wrsParams|Service Worker registration failed|beforeinstallpromptevent|cloudflareinsights\.com|assets\/fonts)/i;
 
       console.error = function (...args) {
         if (args.some(a => (typeof a === 'string' && regex.test(a)) || (a && typeof a.message === 'string' && regex.test(a.message)))) {
@@ -44,7 +44,7 @@
   <link rel="icon" type="image/png" href="/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
-  
+
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0057BB" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -55,55 +55,53 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
 
-  
-  <title>HisabKhata - Free Billing Software, Digital Udhaar Book &amp; Shop Ledger App for India</title>
-  <meta name="title" content="HisabKhata - Free Billing Software, Digital Udhaar Book &amp; Shop Ledger App for India" />
+
+  <title>HisabKhata Pro - Smart Personal Expense Tracker &amp; Lending Hisab App</title>
+  <meta name="title" content="HisabKhata Pro - Smart Personal Expense Tracker &amp; Lending Hisab App" />
   <meta name="description"
-    content="HisabKhata is India's leading 100% free digital billing software, udhaar book (bahi khata), UPI payment collection &amp; shop management app. Manage customer credit, generate PDF statements, track cash flow &amp; automate WhatsApp payment reminders." />
+    content="HisabKhata Pro is India's leading 100% free personal expense tracker &amp; digital lending hisab ledger. Easily track daily expenses, manage money lent or borrowed with friends and roommates, and send polite WhatsApp reminders with direct UPI payment links." />
   <meta name="keywords"
-    content="HisabKhata, Hisab Khata, hisabkhata app, free billing software India, udhaar book app, bahi khata app, billing app for shop, credit book app, GST invoice generator, shop management app, dukan management, POS billing free, inventory management, hisab kitab app, khata book, digital ledger India, merchant udhar book" />
+    content="HisabKhata, Hisab Khata, HisabKhata Pro, personal expense tracker, lending hisab, money tracker app, udhar book, friend split bill, room rent split, daily expense ledger, hisab kitab app, khata book personal, personal finance India" />
   <meta name="author" content="HisabKhata - SumanOnline Web Services" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <link rel="canonical" href="https://hisabkhata.sumanonline.com/" />
 
-  
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="HisabKhata" />
+  <meta property="og:site_name" content="HisabKhata Pro" />
   <meta property="og:locale" content="en_IN" />
   <meta property="og:url" content="https://hisabkhata.sumanonline.com/" />
-  <meta property="og:title" content="HisabKhata - Free Billing, Digital Udhaar Book &amp; Shop Ledger App" />
+  <meta property="og:title" content="HisabKhata Pro - Smart Personal Expense Tracker &amp; Lending Hisab" />
   <meta property="og:description"
-    content="India's #1 free billing software, digital bahi khata &amp; shop management platform. Track customer credit, create PDF bills, collect UPI payments, and send automatic WhatsApp reminders." />
+    content="Track daily personal expenses, manage money lent or borrowed with friends, roommates, and family, and settle dues with polite WhatsApp reminders and UPI links." />
   <meta property="og:image" content="https://hisabkhata.sumanonline.com/icons/icon-512x512.png" />
   <meta property="og:image:secure_url" content="https://hisabkhata.sumanonline.com/icons/icon-512x512.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
-  <meta property="og:image:alt" content="HisabKhata - Free Digital Ledger &amp; Billing App Logo" />
+  <meta property="og:image:alt" content="HisabKhata Pro - Personal Expense Tracker &amp; Lending Ledger" />
 
-  
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@HisabKhata" />
   <meta name="twitter:creator" content="@HisabKhata" />
   <meta name="twitter:url" content="https://hisabkhata.sumanonline.com/" />
-  <meta name="twitter:title" content="HisabKhata - Free Billing &amp; Digital Udhaar Book App" />
+  <meta name="twitter:title" content="HisabKhata Pro - Smart Personal Expense Tracker &amp; Lending Hisab" />
   <meta name="twitter:description"
-    content="India's leading free billing software &amp; digital ledger for merchants. Record credits, download statements, and accept online UPI payments." />
+    content="Track daily personal expenses, manage money lent or borrowed with friends and roommates, and settle dues with 1-tap WhatsApp reminders." />
   <meta name="twitter:image" content="https://hisabkhata.sumanonline.com/hero.png" />
-  <meta name="twitter:image:alt" content="HisabKhata App Interface" />
+  <meta name="twitter:image:alt" content="HisabKhata Pro Interface" />
 
-  
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "HisabKhata",
-    "alternateName": ["Hisab Khata", "HisabKhata Pro", "HisabKhata App", "HisabKhata Digital Ledger"],
+    "alternateName": ["Hisab Khata", "HisabKhata Pro", "HisabKhata App", "HisabKhata Expense Tracker"],
     "url": "https://hisabkhata.sumanonline.com",
     "logo": "https://hisabkhata.sumanonline.com/icons/icon-512x512.png",
-    "description": "HisabKhata is India's leading 100% free digital billing software, udhaar book (bahi khata), and shop management platform for local retail stores and MSMEs.",
+    "description": "HisabKhata Pro is India's 100% free personal expense tracker, digital lending ledger (udhar book), and bill splitting platform.",
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+91-8918153949",
@@ -115,15 +113,14 @@
   }
   </script>
 
-  
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "HisabKhata App",
-    "alternateName": "HisabKhata Digital Udhaar Book",
+    "name": "HisabKhata Pro App",
+    "alternateName": "HisabKhata Personal Expense & Lending Ledger",
     "url": "https://hisabkhata.sumanonline.com",
-    "applicationCategory": "BusinessApplication",
+    "applicationCategory": "FinanceApplication",
     "operatingSystem": "Web, Android, iOS, Windows, macOS, Chrome OS",
     "browserRequirements": "Requires JavaScript. Requires HTML5.",
     "offers": {
@@ -138,11 +135,11 @@
       "bestRating": "5",
       "worstRating": "1"
     },
-    "description": "Free billing software, digital udhaar book, invoice generator, online UPI payment collection & customer statement platform for shop owners and businesses.",
+    "description": "Free personal expense tracker, digital lending ledger, friend split calculator, online UPI payment collection & PDF statement platform.",
     "featureList": [
-      "1-Tap Credit (Got/Gave) Udhaar Tracking",
-      "Instant WhatsApp Payment Reminders",
-      "GST-Ready PDF & Excel Statement Export",
+      "1-Tap Got/Gave Personal Expense & Lending Tracking",
+      "Instant WhatsApp Payment & Settlement Reminders",
+      "Clean PDF & Excel Statement Export",
       "Dynamic Amount QR Code & Direct UPI Pay Launcher",
       "Cloudflare R2 & Real-Time Cloud Backup",
       "Offline Ledger Mode with Auto Cloud Sync",
@@ -151,7 +148,7 @@
   }
   </script>
 
-  
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -167,7 +164,7 @@
   }
   </script>
 
-  
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -219,17 +216,9 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="image" href="/hero.webp" type="image/webp" fetchpriority="high" />
-
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet" media="print" onload="this.media='all'" />
-  <noscript>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-      rel="stylesheet" />
-  </noscript>
+    rel="stylesheet" />
 </head>
 
 <body>

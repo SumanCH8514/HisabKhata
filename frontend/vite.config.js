@@ -50,11 +50,21 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/database'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
-          'vendor-excel': ['xlsx']
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router-dom') || id.includes('react-dom') || id.includes('/react/')) {
+              return 'vendor-react'
+            }
+            if (id.includes('firebase')) {
+              return 'vendor-firebase'
+            }
+            if (id.includes('jspdf')) {
+              return 'vendor-pdf'
+            }
+            if (id.includes('xlsx')) {
+              return 'vendor-excel'
+            }
+          }
         }
       }
     }

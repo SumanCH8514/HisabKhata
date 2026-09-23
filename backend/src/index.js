@@ -385,7 +385,8 @@ app.get('/api/cron/status', async (c) => {
             { name: 'Daily Payment Reminders', cron: '0 4 * * *', description: 'Scans customer dues and dispatches reminder statement emails' },
             { name: 'Weekly Ledger Snapshot', cron: '0 4 * * 1', description: 'Aggregates 7-day collections and sends business recap digest to merchants' }
         ],
-        firebase_configured: !!(c.env.FIREBASE_DB_URL || true),
+        firebase_configured: !!(c.env.FIREBASE_DB_URL),
+        firebase_auth_configured: !!(c.env.FIREBASE_DB_SECRET || c.env.FIREBASE_AUTH_TOKEN),
         smtp_configured: !!(c.env.SMTP_USER && c.env.SMTP_PASS)
     });
 });
